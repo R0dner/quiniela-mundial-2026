@@ -335,8 +335,7 @@
         if (!grid) return;
 
         grid.innerHTML = estadios.map((e, i) => {
-            // Si tiene imagen local, la usamos con fallback al icono
-            // Si no, mostramos directamente el fallback con el emoji y nombre
+
             const imgHTML = e.tieneImg ? `
                 <img 
                     src="${e.img}" 
