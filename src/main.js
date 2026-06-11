@@ -33,6 +33,7 @@ let currentGrupoId = '';
 let currentGrupoNombre = '';
 let currentParticipante = '';
 let currentFecha = '';
+let eventosConfigurados = false;
 
 // Elementos DOM
 const gruposLista = document.getElementById('grupos-lista');
@@ -125,6 +126,88 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
     }, 3000);
 }
 
+// ============ MANEJADORES DE EVENTOS (DELEGACIÓN) ============
+
+// Manejador de eventos para agregar apuestas
+async function handleAgregarClick(e) {
+    const btn = e.target.closest('.btn-agregar-apuesta');
+    if (!btn) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const partidoId = parseInt(btn.dataset.id);
+    const card = btn.closest('.apuesta-card');
+    const localInput = card.querySelector('.score-local');
+    const visitanteInput = card.querySelector('.score-visitante');
+    
+    const local = parseInt(localInput.value);
+    const visitante = parseInt(visitanteInput.value);
+    
+    if (isNaN(local) || isNaN(visitante)) {
+        mostrarNotificacion('❌ Ingresá un marcador válido', 'error');
+        return;
+    }
+    
+    if (local < 0 || local > 20 || visitante < 0 || visitante > 20) {
+        mostrarNotificacion('❌ Usá números entre 0 y 20', 'error');
+        return;
+    }
+    
+    const limite = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
+    const apuestasActuales = await getApuestasDePartido(currentGrupoId, currentParticipante, partidoId);
+    
+    if (apuestasActuales.length >= limite) {
+        mostrarNotificacion(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
+        return;
+    }
+    
+    // Deshabilitar botón temporalmente
+    btn.disabled = true;
+    btn.textContent = '⏳ Guardando...';
+    
+    const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
+    
+    if (apuestaId) {
+        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado (${apuestasActuales.length + 1}/${limite})`, 'success');
+        localInput.value = '';
+        visitanteInput.value = '';
+        await cargarPartidos(currentFecha);
+    } else {
+        mostrarNotificacion('❌ Error al agregar pronóstico', 'error');
+    }
+    
+    btn.disabled = false;
+    btn.textContent = '➕ Agregar';
+}
+
+// Manejador de eventos para eliminar apuestas
+async function handleEliminarClick(e) {
+    const btn = e.target.closest('.btn-eliminar-apuesta');
+    if (!btn) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const partidoId = parseInt(btn.dataset.partido);
+    const apuestaId = btn.dataset.apuesta;
+    
+    if (confirm('¿Eliminar este pronóstico?')) {
+        btn.disabled = true;
+        btn.textContent = '⏳';
+        
+        const resultado = await eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
+        if (resultado) {
+            mostrarNotificacion('🗑️ Pronóstico eliminado correctamente', 'success');
+            await cargarPartidos(currentFecha);
+        } else {
+            mostrarNotificacion('❌ Error al eliminar pronóstico', 'error');
+            btn.disabled = false;
+            btn.textContent = '🗑️';
+        }
+    }
+}
+
 // ============ INICIALIZACIÓN ============
 async function init() {
     console.log('🚀 Iniciando aplicación...');
@@ -133,6 +216,16 @@ async function init() {
     configurarEventListeners();
     await verificarSesionGuardada();
     mostrarPopupReglas();
+    configurarEventDelegation();
+}
+
+function configurarEventDelegation() {
+    if (apuestasContainer && !eventosConfigurados) {
+        apuestasContainer.addEventListener('click', handleAgregarClick);
+        apuestasContainer.addEventListener('click', handleEliminarClick);
+        eventosConfigurados = true;
+        console.log('✅ Event delegation configurado');
+    }
 }
 
 async function verificarSesionGuardada() {
@@ -602,7 +695,6 @@ async function cargarPartidos(fecha) {
     
     apuestasContainer.innerHTML = partidos.map(partido => {
         const puedeApostar = esHoy && puedeApostarPartido(partido.fecha, partido.hora);
-        const apuestasActuales = 0; // Se actualizará después
         
         let mensajeBloqueo = '';
         if (!puedeApostar) {
@@ -637,7 +729,6 @@ async function cargarPartidos(fecha) {
     }).join('');
     
     await cargarApuestasExistentes(fecha);
-    configurarBotonesAgregar();
 }
 
 async function cargarApuestasExistentes(fecha) {
@@ -689,48 +780,6 @@ async function cargarApuestasExistentes(fecha) {
             readonlyContainer.innerHTML = `<div class="resultado-oficial">🏆 Resultado oficial: ${resultados[partido.id].local} - ${resultados[partido.id].visitante}</div>`;
         }
     }
-    
-    document.querySelectorAll('.btn-eliminar-apuesta').forEach(btn => {
-        btn.onclick = async () => {
-            const partidoId = parseInt(btn.dataset.partido);
-            const apuestaId = btn.dataset.apuesta;
-            await eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
-            await cargarPartidos(currentFecha);
-            mostrarNotificacion('🗑️ Pronóstico eliminado correctamente', 'success');
-        };
-    });
-}
-
-function configurarBotonesAgregar() {
-    document.querySelectorAll('.btn-agregar-apuesta').forEach(btn => {
-        btn.onclick = async () => {
-            const partidoId = parseInt(btn.dataset.id);
-            const card = btn.closest('.apuesta-card');
-            const local = parseInt(card.querySelector('.score-local').value);
-            const visitante = parseInt(card.querySelector('.score-visitante').value);
-            
-            if (isNaN(local) || isNaN(visitante)) {
-                mostrarNotificacion('❌ Ingresá un marcador válido', 'error');
-                return;
-            }
-            
-            const limite = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-            const apuestasActuales = await getApuestasDePartido(currentGrupoId, currentParticipante, partidoId);
-            
-            if (apuestasActuales.length >= limite) {
-                mostrarNotificacion(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
-                return;
-            }
-            
-            const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
-            if (apuestaId) {
-                mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado (${apuestasActuales.length + 1}/${limite})`, 'success');
-                await cargarPartidos(currentFecha);
-            } else {
-                mostrarNotificacion('❌ Error al agregar pronóstico', 'error');
-            }
-        };
-    });
 }
 
 // ============ CAMBIAR GRUPO ============
@@ -760,7 +809,6 @@ async function mostrarMisApuestas() {
     const modalBody = document.getElementById('modal-body');
     const modal = document.getElementById('modal-apuestas');
     const reglas = await getReglasDelGrupo(currentGrupoId);
-    const grupo = await getGrupo(currentGrupoId);
     
     if (!modalBody || !modal) {
         console.error('Modal no encontrado');
