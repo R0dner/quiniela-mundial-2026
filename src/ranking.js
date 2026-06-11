@@ -1,4 +1,4 @@
-// src/ranking.js - Ranking diario y acumulado por grupos
+// src/ranking.js - Ranking diario y acumulado por grupos (con Firebase)
 import { 
     getGrupos, 
     getRankingDelGrupo, 
@@ -13,7 +13,7 @@ let currentTipoRanking = 'acumulado';
 let currentFecha = '';
 
 function init() {
-    console.log('Ranking inicializado');
+    console.log('🏆 Ranking inicializado');
     cargarGrupos();
     setupEventListeners();
     
@@ -24,8 +24,9 @@ function init() {
     });
 }
 
-function cargarGrupos() {
-    grupos = getGrupos();
+async function cargarGrupos() {
+    console.log('📋 Cargando grupos para ranking...');
+    grupos = await getGrupos();
     const select = document.getElementById('grupo-select-ranking');
     if (!select) return;
     
@@ -50,14 +51,14 @@ function cargarGrupos() {
     if (ultimoGrupo && grupos[ultimoGrupo]) {
         select.value = ultimoGrupo;
         currentGrupoId = ultimoGrupo;
-        cargarRankingDelGrupo(currentGrupoId);
+        await cargarRankingDelGrupo(currentGrupoId);
     }
     
-    select.addEventListener('change', (e) => {
+    select.addEventListener('change', async (e) => {
         currentGrupoId = e.target.value;
         if (currentGrupoId) {
             localStorage.setItem('ultimo_grupo_ranking', currentGrupoId);
-            cargarRankingDelGrupo(currentGrupoId);
+            await cargarRankingDelGrupo(currentGrupoId);
         } else {
             ocultarRanking();
         }
@@ -74,7 +75,7 @@ function ocultarRanking() {
     document.getElementById('exportar-csv').style.display = 'none';
 }
 
-function cargarRankingDelGrupo(grupoId) {
+async function cargarRankingDelGrupo(grupoId) {
     const grupo = grupos[grupoId];
     if (!grupo) return;
     
@@ -86,14 +87,14 @@ function cargarRankingDelGrupo(grupoId) {
     document.getElementById('grupo-nombre-display').innerHTML = `🏆 ${grupo.nombre}`;
     document.getElementById('grupo-participantes-display').innerHTML = `👥 ${grupo.participantes.length} participantes`;
     
-    const reglas = getReglasDelGrupo(grupoId);
+    const reglas = await getReglasDelGrupo(grupoId);
     document.getElementById('grupo-reglas-display').innerHTML = `📜 ${reglas.puntosExacto} pts exacto / ${reglas.puntosGanador} pts ganador`;
     
-    cargarDiasDisponibles();
-    actualizarRanking();
+    await cargarDiasDisponibles();
+    await actualizarRanking();
 }
 
-function cargarDiasDisponibles() {
+async function cargarDiasDisponibles() {
     const dias = getDiasCalendario();
     const select = document.getElementById('dia-select-ranking');
     if (!select) return;
@@ -112,47 +113,48 @@ function cargarDiasDisponibles() {
     
     const newSelect = select.cloneNode(true);
     select.parentNode.replaceChild(newSelect, select);
-    newSelect.addEventListener('change', (e) => {
+    newSelect.addEventListener('change', async (e) => {
         currentFecha = e.target.value;
         if (currentFecha && currentTipoRanking === 'diario') {
-            actualizarRanking();
+            await actualizarRanking();
         }
     });
 }
 
-function actualizarRanking() {
+async function actualizarRanking() {
     if (!currentGrupoId) return;
     
     let ranking = [];
     
     if (currentTipoRanking === 'acumulado') {
-        ranking = getRankingDelGrupo(currentGrupoId);
+        ranking = await getRankingDelGrupo(currentGrupoId);
         document.getElementById('dia-selector-container').style.display = 'none';
     } else {
         if (!currentFecha) {
             const dias = getDiasCalendario();
             if (dias.length > 0) currentFecha = dias[0];
         }
-        ranking = getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
+        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
         document.getElementById('dia-selector-container').style.display = 'flex';
     }
     
-    const premios = getPremiosDelGrupo(currentGrupoId);
+    const premios = await getPremiosDelGrupo(currentGrupoId);
     const cantidadGanadores = premios.cantidadGanadores || 3;
     mostrarPodio(ranking, cantidadGanadores);
     
-    mostrarPremios(currentGrupoId);
+    await mostrarPremios(currentGrupoId);
     mostrarRanking(ranking, currentTipoRanking, currentFecha);
 }
 
-function getRankingDelGrupoPorDia(grupoId, fecha) {
-    const grupo = getGrupo(grupoId);
+async function getRankingDelGrupoPorDia(grupoId, fecha) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return [];
     
     // Obtener todos los partidos de esa fecha
     const partidosDeFecha = getPartidosPorFecha(fecha);
     
-    const ranking = grupo.participantes.map(participante => {
+    const ranking = [];
+    for (const participante of grupo.participantes) {
         let puntos = 0;
         const apuestas = grupo.apuestas[participante] || {};
         const resultados = grupo.resultados || {};
@@ -179,13 +181,13 @@ function getRankingDelGrupoPorDia(grupoId, fecha) {
             }
         }
         
-        return {
+        ranking.push({
             nombre: participante,
             puntos: puntos,
             telefono: grupo.participantesInfo?.[participante]?.telefono || '',
             fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
-        };
-    });
+        });
+    }
     
     ranking.sort((a, b) => b.puntos - a.puntos);
     
@@ -196,8 +198,6 @@ function getRankingDelGrupoPorDia(grupoId, fecha) {
 }
 
 function getPartidosPorFecha(fecha) {
-    // Esta función debería venir de data.js
-    // Como alternativa, usamos la variable global
     if (typeof window.todosLosPartidos !== 'undefined') {
         return window.todosLosPartidos.filter(p => p.fecha === fecha);
     }
@@ -239,12 +239,12 @@ function mostrarPodio(ranking, cantidadGanadores) {
     container.style.display = 'flex';
 }
 
-function mostrarPremios(grupoId) {
+async function mostrarPremios(grupoId) {
     const container = document.getElementById('premios-info');
     if (!container) return;
     
     const grupo = grupos[grupoId];
-    const premios = getPremiosDelGrupo(grupoId);
+    const premios = await getPremiosDelGrupo(grupoId);
     const cantidadGanadores = premios.cantidadGanadores || 3;
     
     let premiosHtml = '';
@@ -336,11 +336,11 @@ function mostrarRanking(ranking, tipo, fecha) {
 function setupEventListeners() {
     const tipoBtns = document.querySelectorAll('.tipo-btn');
     tipoBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async () => {
             tipoBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentTipoRanking = btn.dataset.tipo;
-            actualizarRanking();
+            await actualizarRanking();
         });
     });
     
@@ -350,7 +350,7 @@ function setupEventListeners() {
     }
 }
 
-function exportarCSV() {
+async function exportarCSV() {
     if (!currentGrupoId) {
         mostrarToast('Seleccioná un grupo primero', 'error');
         return;
@@ -360,9 +360,9 @@ function exportarCSV() {
     let ranking = [];
     
     if (currentTipoRanking === 'acumulado') {
-        ranking = getRankingDelGrupo(currentGrupoId);
+        ranking = await getRankingDelGrupo(currentGrupoId);
     } else {
-        ranking = getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
+        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
     }
     
     const titulo = currentTipoRanking === 'acumulado' 
@@ -417,5 +417,14 @@ function mostrarToast(msg, tipo) {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
+
+// Función auxiliar para obtener un grupo (necesaria para getRankingDelGrupoPorDia)
+async function getGrupo(grupoId) {
+    const gruposCompletos = await getGrupos();
+    return gruposCompletos[grupoId];
+}
+
+// Hacer disponible globalmente
+window.getGrupo = getGrupo;
 
 init();
