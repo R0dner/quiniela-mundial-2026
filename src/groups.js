@@ -25,27 +25,33 @@ export function setPartidosGlobal(partidos) {
 
 // ============ GRUPOS ============
 
+// src/groups.js - Reemplazar la función getGrupos
+
 export async function getGrupos() {
-    // Si ya tenemos caché, devolver
-    if (Object.keys(gruposCache).length > 0) {
-        return gruposCache;
+    try {
+        // Intentar cargar desde Firebase primero
+        const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
+        
+        if (Object.keys(gruposFirebase).length > 0) {
+            // Si hay datos en Firebase, usarlos y actualizar localStorage
+            gruposCache = gruposFirebase;
+            localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
+            console.log('✅ Grupos cargados desde Firebase:', Object.keys(gruposFirebase).length);
+            return gruposFirebase;
+        }
+    } catch (error) {
+        console.error('Error cargando desde Firebase:', error);
     }
     
-    // Intentar cargar desde Firebase
-    const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
-    if (Object.keys(gruposFirebase).length > 0) {
-        gruposCache = gruposFirebase;
-        localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
-        return gruposFirebase;
-    }
-    
-    // Fallback a localStorage
+    // Fallback: cargar desde localStorage
     const gruposGuardados = localStorage.getItem('quiniela_grupos');
     if (gruposGuardados) {
         gruposCache = JSON.parse(gruposGuardados);
+        console.log('📦 Grupos cargados desde localStorage:', Object.keys(gruposCache).length);
         return gruposCache;
     }
     
+    console.log('⚠️ No hay grupos disponibles');
     return {};
 }
 
