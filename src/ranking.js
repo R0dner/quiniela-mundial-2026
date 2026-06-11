@@ -1,8 +1,7 @@
-// src/ranking.js - Ranking diario y acumulado (SIN PAGOS)
+// src/ranking.js - Ranking diario y acumulado por grupos
 import { 
     getGrupos, 
     getRankingDelGrupo, 
-    getRankingDelGrupoPorDia,
     getReglasDelGrupo,
     getPremiosDelGrupo
 } from './groups.js';
@@ -14,6 +13,7 @@ let currentTipoRanking = 'acumulado';
 let currentFecha = '';
 
 function init() {
+    console.log('Ranking inicializado');
     cargarGrupos();
     setupEventListeners();
     
@@ -71,6 +71,7 @@ function ocultarRanking() {
     document.getElementById('podium-container').style.display = 'none';
     document.getElementById('premios-info').style.display = 'none';
     document.getElementById('ranking-table').innerHTML = '<div class="empty-ranking">🏆 Seleccioná un grupo para ver su ranking</div>';
+    document.getElementById('exportar-csv').style.display = 'none';
 }
 
 function cargarRankingDelGrupo(grupoId) {
@@ -80,6 +81,7 @@ function cargarRankingDelGrupo(grupoId) {
     document.getElementById('grupo-info-panel').style.display = 'flex';
     document.getElementById('tipo-ranking-selector').style.display = 'flex';
     document.getElementById('premios-info').style.display = 'block';
+    document.getElementById('exportar-csv').style.display = 'block';
     
     document.getElementById('grupo-nombre-display').innerHTML = `🏆 ${grupo.nombre}`;
     document.getElementById('grupo-participantes-display').innerHTML = `👥 ${grupo.participantes.length} participantes`;
@@ -141,6 +143,65 @@ function actualizarRanking() {
     
     mostrarPremios(currentGrupoId);
     mostrarRanking(ranking, currentTipoRanking, currentFecha);
+}
+
+function getRankingDelGrupoPorDia(grupoId, fecha) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return [];
+    
+    // Obtener todos los partidos de esa fecha
+    const partidosDeFecha = getPartidosPorFecha(fecha);
+    
+    const ranking = grupo.participantes.map(participante => {
+        let puntos = 0;
+        const apuestas = grupo.apuestas[participante] || {};
+        const resultados = grupo.resultados || {};
+        const reglas = grupo.reglas;
+        
+        for (const [partidoId, apuestasArray] of Object.entries(apuestas)) {
+            const partido = partidosDeFecha.find(p => p.id === parseInt(partidoId));
+            if (partido && Array.isArray(apuestasArray)) {
+                const resultado = resultados[partidoId];
+                if (resultado) {
+                    for (const apuesta of apuestasArray) {
+                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                            puntos += reglas.puntosExacto;
+                        }
+                        else if (
+                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                        ) {
+                            puntos += reglas.puntosGanador;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return {
+            nombre: participante,
+            puntos: puntos,
+            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
+            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
+        };
+    });
+    
+    ranking.sort((a, b) => b.puntos - a.puntos);
+    
+    return ranking.map((item, index) => ({
+        ...item,
+        posicion: index + 1
+    }));
+}
+
+function getPartidosPorFecha(fecha) {
+    // Esta función debería venir de data.js
+    // Como alternativa, usamos la variable global
+    if (typeof window.todosLosPartidos !== 'undefined') {
+        return window.todosLosPartidos.filter(p => p.fecha === fecha);
+    }
+    return [];
 }
 
 function mostrarPodio(ranking, cantidadGanadores) {
@@ -231,12 +292,20 @@ function mostrarRanking(ranking, tipo, fecha) {
             <tbody>
                 ${ranking.map((p, index) => {
                     let medalla = '';
-                    if (index === 0) medalla = '🥇 ';
-                    else if (index === 1) medalla = '🥈 ';
-                    else if (index === 2) medalla = '🥉 ';
+                    let claseTop = '';
+                    if (index === 0) {
+                        medalla = '🥇 ';
+                        claseTop = 'top-1';
+                    } else if (index === 1) {
+                        medalla = '🥈 ';
+                        claseTop = 'top-2';
+                    } else if (index === 2) {
+                        medalla = '🥉 ';
+                        claseTop = 'top-3';
+                    }
                     
                     return `
-                        <tr>
+                        <tr class="${claseTop}">
                             <td><span class="posicion-medal">${medalla}${p.posicion}</span></td>
                             <td><strong>${p.nombre}</strong></td>
                             <td>${p.telefono || '—'}</td>
@@ -349,23 +418,4 @@ function mostrarToast(msg, tipo) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-function agregarEstilosDinamicos() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .btn-secondary {
-            background: rgba(255,215,0,0.15);
-            border: 1px solid rgba(255,215,0,0.3);
-            color: #ffd700;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-secondary:hover {
-            background: rgba(255,215,0,0.3);
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-agregarEstilosDinamicos();
 init();

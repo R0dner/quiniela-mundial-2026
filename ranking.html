@@ -2,10 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Ranking | Quiniela Mundial 2026</title>
     <link rel="stylesheet" href="styles/main.css">
     <style>
+        /* Selector de grupos */
         .grupo-selector-ranking {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
@@ -29,6 +30,8 @@
             font-size: 1rem;
             cursor: pointer;
         }
+
+        /* Información del grupo */
         .ranking-header {
             display: flex;
             justify-content: space-between;
@@ -39,6 +42,20 @@
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
         }
+        .grupo-info {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .grupo-badge {
+            background: rgba(255, 215, 0, 0.15);
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: #ffd700;
+            font-size: 0.85rem;
+        }
+
+        /* Selector de tipo de ranking */
         .tipo-ranking-selector {
             display: flex;
             gap: 10px;
@@ -59,6 +76,8 @@
             border-color: #ffd700;
             color: #ffd700;
         }
+
+        /* Selector de día */
         .dia-selector {
             display: flex;
             gap: 10px;
@@ -77,18 +96,8 @@
             color: white;
             flex: 1;
         }
-        .grupo-info {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .grupo-badge {
-            background: rgba(255, 215, 0, 0.15);
-            padding: 5px 12px;
-            border-radius: 20px;
-            color: #ffd700;
-            font-size: 0.85rem;
-        }
+
+        /* Podio */
         .podium {
             display: flex;
             justify-content: center;
@@ -141,6 +150,8 @@
             color: rgba(255, 255, 255, 0.6);
             margin-top: 5px;
         }
+
+        /* Tabla de ranking */
         .ranking-table-container {
             overflow-x: auto;
         }
@@ -165,11 +176,17 @@
         .ranking-table tr:hover {
             background: rgba(255, 255, 255, 0.05);
         }
+        .top-1 td:first-child { background: rgba(255, 215, 0, 0.2); }
+        .top-2 td:first-child { background: rgba(192, 192, 192, 0.2); }
+        .top-3 td:first-child { background: rgba(205, 127, 50, 0.2); }
+
         .empty-ranking {
             text-align: center;
             padding: 50px;
             color: rgba(255, 255, 255, 0.5);
         }
+
+        /* Premios */
         .premios-info {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
@@ -185,6 +202,8 @@
             color: #ffd700;
             font-weight: bold;
         }
+
+        /* Botones */
         .btn-secondary {
             background: rgba(255, 215, 0, 0.15);
             border: 1px solid rgba(255, 215, 0, 0.3);
@@ -198,6 +217,7 @@
         .btn-secondary:hover {
             background: rgba(255, 215, 0, 0.3);
         }
+
         .admin-links {
             text-align: center;
             padding: 20px;
@@ -212,6 +232,7 @@
         .admin-links a:hover {
             text-decoration: underline;
         }
+
         @media (max-width: 768px) {
             .podium {
                 flex-direction: column;
@@ -224,6 +245,10 @@
             .podium-1 { order: 1; }
             .podium-2 { order: 2; }
             .podium-3 { order: 3; }
+            .ranking-table th, .ranking-table td {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -237,9 +262,10 @@
                      onerror="this.outerHTML='<span style=\'font-size:32px;\'>🏆</span>'">
             </div>
             <h1>🏆 Ranking de Participantes</h1>
-            <p>Ranking diario y acumulado - Cada día tiene su propio podio</p>
+            <p>Ranking diario y acumulado - Cada grupo tiene su propio podio</p>
         </header>
 
+        <!-- Selector de grupo -->
         <div class="grupo-selector-ranking">
             <label>🏆 Seleccioná un grupo para ver su ranking:</label>
             <select id="grupo-select-ranking">
@@ -247,6 +273,7 @@
             </select>
         </div>
 
+        <!-- Información del grupo -->
         <div id="grupo-info-panel" class="ranking-header" style="display: none;">
             <div class="grupo-info">
                 <span class="grupo-badge" id="grupo-nombre-display"></span>
@@ -255,11 +282,13 @@
             </div>
         </div>
 
+        <!-- Selector de tipo de ranking -->
         <div class="tipo-ranking-selector" id="tipo-ranking-selector" style="display: none;">
             <button class="tipo-btn active" data-tipo="acumulado">🏆 Ranking Acumulado</button>
             <button class="tipo-btn" data-tipo="diario">📅 Ranking por Día</button>
         </div>
 
+        <!-- Selector de día (solo visible en modo diario) -->
         <div id="dia-selector-container" class="dia-selector" style="display: none;">
             <label>📅 Seleccioná el día:</label>
             <select id="dia-select-ranking">
@@ -267,22 +296,27 @@
             </select>
         </div>
 
+        <!-- Podio -->
         <div id="podium-container" class="podium" style="display: none;"></div>
 
+        <!-- Tabla de ranking -->
         <div id="ranking-table" class="ranking-table-container"></div>
 
+        <!-- Información de premios -->
         <div id="premios-info" class="premios-info" style="display: none;"></div>
 
+        <!-- Botón exportar -->
         <div style="text-align: center;">
             <button id="exportar-csv" class="btn-secondary">📎 Exportar CSV</button>
         </div>
 
         <div class="admin-links">
-            <a href="admin.html">👑 Panel Admin</a>
-            <a href="index.html">📅 Volver a Apuestas</a>
             <a href="home.html">🏠 Inicio</a>
+            <a href="index.html">⚽ Apuestas</a>
+            <a href="admin.html">👑 Admin</a>
         </div>
     </div>
+
     <script type="module" src="src/ranking.js"></script>
 </body>
 </html>
