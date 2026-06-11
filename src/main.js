@@ -16,7 +16,6 @@ import {
     registrarParticipanteEnGrupo,
     participanteRegistrado,
     getInfoParticipante,
-    validarContrasenaGrupo,
     agregarApuestaEnGrupo,
     getApuestasMultiplesDeParticipante,
     getResultadosDelGrupo,
@@ -28,21 +27,17 @@ import {
 let currentGrupoId = '';
 let currentGrupoNombre = '';
 let currentParticipante = '';
-let grupoAutenticado = false;
 let currentFecha = '';
 
 // Elementos del DOM
 const gruposLista = document.getElementById('grupos-lista');
-const contrasenaPanel = document.getElementById('contrasena-panel');
 const registroPanel = document.getElementById('registro-panel');
 const apuestasPanel = document.getElementById('apuestas-panel');
+const seleccionGruposDiv = document.getElementById('seleccion-grupos');
 const grupoSeleccionadoNombre = document.getElementById('grupo-seleccionado-nombre');
 const registroNombre = document.getElementById('registro-nombre');
 const registroTelefono = document.getElementById('registro-telefono');
 const registrarBtn = document.getElementById('registrar-btn');
-const validarContrasenaBtn = document.getElementById('validar-contrasena-btn');
-const grupoContrasena = document.getElementById('grupo-contrasena');
-const contrasenaError = document.getElementById('contrasena-error');
 const registroMensaje = document.getElementById('registro-mensaje');
 const cambiarGrupoBtn = document.getElementById('cambiar-grupo-btn');
 const participanteNombreDisplay = document.getElementById('participante-nombre-display');
@@ -55,14 +50,21 @@ const verApuestasBtn = document.getElementById('ver-mis-apuestas');
 function init() {
     cargarGrupos();
     setupEventListeners();
-    cargarReglas();
+    verificarSesion();
 }
 
-function cargarReglas() {
-    const reglasGuardadas = localStorage.getItem('quiniela_reglas');
-    const reglasDiv = document.getElementById('reglas-display');
-    if (reglasDiv && reglasGuardadas) {
-        reglasDiv.innerHTML = reglasGuardadas;
+function verificarSesion() {
+    // Verificar si hay una sesión guardada
+    const sesionGuardada = sessionStorage.getItem('quiniela_sesion_actual');
+    if (sesionGuardada) {
+        const sesion = JSON.parse(sesionGuardada);
+        const grupos = getGrupos();
+        if (grupos[sesion.grupoId]) {
+            currentGrupoId = sesion.grupoId;
+            currentGrupoNombre = grupos[sesion.grupoId].nombre;
+            currentParticipante = sesion.participante;
+            iniciarSesionParticipante();
+        }
     }
 }
 
@@ -100,49 +102,19 @@ function cargarGrupos() {
 function seleccionarGrupo(grupoId, grupoNombre) {
     currentGrupoId = grupoId;
     currentGrupoNombre = grupoNombre;
-    grupoAutenticado = false;
     currentParticipante = '';
     
     // Limpiar estados
-    contrasenaPanel.style.display = 'block';
-    registroPanel.style.display = 'none';
+    registroPanel.style.display = 'block';
     apuestasPanel.style.display = 'none';
+    seleccionGruposDiv.style.display = 'block';
     grupoSeleccionadoNombre.innerHTML = `🏆 ${grupoNombre}`;
-    grupoContrasena.value = '';
-    contrasenaError.innerHTML = '';
     registroMensaje.innerHTML = '';
     registroNombre.value = '';
     registroTelefono.value = '';
     
-    // Verificar si ya hay una sesión guardada para este grupo
-    const sesionGuardada = sessionStorage.getItem(`quiniela_sesion_${grupoId}`);
-    if (sesionGuardada) {
-        const sesion = JSON.parse(sesionGuardada);
-        if (sesion.participante) {
-            currentParticipante = sesion.participante;
-            grupoAutenticado = true;
-            contrasenaPanel.style.display = 'none';
-            iniciarSesionParticipante();
-        }
-    }
-}
-
-function validarContrasena() {
-    const contrasena = grupoContrasena.value;
-    if (!contrasena) {
-        contrasenaError.innerHTML = '❌ Ingresá la contraseña del grupo';
-        return;
-    }
-    
-    const esValida = validarContrasenaGrupo(currentGrupoId, contrasena);
-    
-    if (esValida) {
-        contrasenaPanel.style.display = 'none';
-        registroPanel.style.display = 'block';
-        contrasenaError.innerHTML = '';
-    } else {
-        contrasenaError.innerHTML = '❌ Contraseña incorrecta';
-    }
+    // Scroll al registro
+    registroPanel.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function registrarParticipante() {
@@ -159,10 +131,9 @@ async function registrarParticipante() {
     if (resultado.success) {
         registroMensaje.innerHTML = `<div class="mensaje-exito">✅ ${resultado.message}</div>`;
         currentParticipante = nombre;
-        grupoAutenticado = true;
         
         // Guardar sesión
-        sessionStorage.setItem(`quiniela_sesion_${currentGrupoId}`, JSON.stringify({
+        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
             participante: nombre,
             grupoId: currentGrupoId,
             timestamp: Date.now()
@@ -179,12 +150,13 @@ async function registrarParticipante() {
 function iniciarSesionParticipante() {
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'block';
+    seleccionGruposDiv.style.display = 'none';
     
     participanteNombreDisplay.textContent = currentParticipante;
     participanteGrupoDisplay.textContent = `Grupo: ${currentGrupoNombre}`;
     
-    cargarCalendario();
     cargarDias();
+    cargarEventosCalendario();
 }
 
 function cargarDias() {
@@ -213,20 +185,36 @@ function cargarDias() {
         diaSelect.value = hoy;
         currentFecha = hoy;
         cargarPartidosDelDia(hoy);
+        actualizarEstadoDia(hoy);
     } else if (dias[0]) {
         diaSelect.value = dias[0];
         currentFecha = dias[0];
         cargarPartidosDelDia(dias[0]);
+        actualizarEstadoDia(dias[0]);
     }
 }
 
-function cargarCalendario() {
+function cargarEventosCalendario() {
     diaSelect.addEventListener('change', (e) => {
         currentFecha = e.target.value;
         if (currentFecha) {
             cargarPartidosDelDia(currentFecha);
+            actualizarEstadoDia(currentFecha);
         }
     });
+}
+
+function actualizarEstadoDia(fecha) {
+    const esPasado = isPartidoPasado(fecha);
+    const esHoy = !esPasado && (fecha === getDiaActualLocal());
+    
+    if (esPasado) {
+        estadoDia.innerHTML = '<span class="badge-pasado">🔒 DÍA FINALIZADO - Solo consulta</span>';
+    } else if (esHoy) {
+        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Podés apostar</span>';
+    } else {
+        estadoDia.innerHTML = '<span class="badge-futuro">⏳ DÍA FUTURO - Apuestas disponibles el día del partido</span>';
+    }
 }
 
 function cargarPartidosDelDia(fecha) {
@@ -239,13 +227,20 @@ function cargarPartidosDelDia(fecha) {
         const limiteParticipante = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
         const apuestasActuales = getApuestasDePartido(currentGrupoId, currentParticipante, partido.id).length;
         
+        let mensajeBloqueo = '';
+        if (!puedeApostar) {
+            if (esPasado) mensajeBloqueo = '🔒 Partido finalizado';
+            else if (!esHoy) mensajeBloqueo = '⏳ Apuestas solo el día del partido';
+            else mensajeBloqueo = '⏰ Apuestas cerradas';
+        }
+        
         return `
             <div class="apuesta-card ${!puedeApostar ? 'bloqueado' : ''}" data-id="${partido.id}">
                 <div class="match-info">
                     <div class="match-teams">${conBandera(partido.local)} vs ${conBandera(partido.visitante)}</div>
                     <div class="match-date">
                         🕐 ${partido.hora} | ${getFaseNombre(partido.fase)}
-                        ${!puedeApostar ? ' | 🔒 Partido cerrado' : ' | ✅ Disponible'}
+                        ${!puedeApostar ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
                     </div>
                 </div>
                 
@@ -284,79 +279,113 @@ function cargarApuestasExistentes(fecha) {
         const container = document.getElementById(`apuestas-lista-${partido.id}`);
         const readonlyContainer = document.getElementById(`readonly-${partido.id}`);
         
-        if (container && apuestasPartido.length > 0) {
-            let html = '<div class="apuestas-multiples">';
-            apuestasPartido.forEach((apuesta, idx) => {
-                const resultado = resultados[partido.id];
-                let claseAcierto = '';
-                if (resultado) {
-                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                        claseAcierto = 'acierto-exacto';
-                    } else if (
-                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                    ) {
-                        claseAcierto = 'acierto-ganador';
-                    } else {
-                        claseAcierto = 'acierto-error';
+        if (container) {
+            if (apuestasPartido.length === 0) {
+                container.innerHTML = '<div class="no-apuestas">📭 Sin pronósticos</div>';
+            } else {
+                let html = '<div class="apuestas-multiples">';
+                apuestasPartido.forEach((apuesta, idx) => {
+                    const resultado = resultados[partido.id];
+                    let claseAcierto = '';
+                    if (resultado) {
+                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                            claseAcierto = 'acierto-exacto';
+                        } else if (
+                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                        ) {
+                            claseAcierto = 'acierto-ganador';
+                        } else {
+                            claseAcierto = 'acierto-error';
+                        }
                     }
-                }
-                html += `
-                    <div class="apuesta-item ${claseAcierto}">
-                        <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
-                        ${puedeApostar ? `<button class="btn-eliminar-apuesta" data-partido="${partido.id}" data-apuesta="${apuesta.id}">🗑️</button>` : ''}
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        } else if (container && apuestasPartido.length === 0) {
-            container.innerHTML = '<div class="no-apuestas">📭 Sin pronósticos</div>';
+                    html += `
+                        <div class="apuesta-item ${claseAcierto}">
+                            <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
+                            ${puedeApostar ? `<button class="btn-eliminar-apuesta" data-partido="${partido.id}" data-apuesta="${apuesta.id}">🗑️</button>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
         }
         
         if (readonlyContainer && !puedeApostar && resultados[partido.id]) {
-            readonlyContainer.innerHTML = `<div class="resultado-oficial">🏆 Resultado: ${resultados[partido.id].local} - ${resultados[partido.id].visitante}</div>`;
+            readonlyContainer.innerHTML = `<div class="resultado-oficial">🏆 Resultado oficial: ${resultados[partido.id].local} - ${resultados[partido.id].visitante}</div>`;
+        } else if (readonlyContainer && !puedeApostar && apuestasPartido.length > 0) {
+            let html = '<div class="apuestas-multiples">';
+            apuestasPartido.forEach((apuesta, idx) => {
+                html += `<div class="apuesta-item">Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</div>`;
+            });
+            html += '</div>';
+            readonlyContainer.innerHTML = html;
         }
     });
     
     // Eventos para eliminar
     document.querySelectorAll('.btn-eliminar-apuesta').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const partidoId = parseInt(btn.dataset.partido);
-            const apuestaId = btn.dataset.apuesta;
-            eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
-            cargarPartidosDelDia(currentFecha);
-        });
+        btn.removeEventListener('click', handleEliminarApuesta);
+        btn.addEventListener('click', handleEliminarApuesta);
     });
+}
+
+function handleEliminarApuesta(e) {
+    const btn = e.currentTarget;
+    const partidoId = parseInt(btn.dataset.partido);
+    const apuestaId = btn.dataset.apuesta;
+    eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
+    cargarPartidosDelDia(currentFecha);
+    mostrarMensaje('Pronóstico eliminado', 'success');
 }
 
 function setupAgregarApuestas() {
     document.querySelectorAll('.btn-agregar-apuesta').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const partidoId = parseInt(btn.dataset.id);
-            const card = btn.closest('.apuesta-card');
-            const local = parseInt(card.querySelector('.score-local').value);
-            const visitante = parseInt(card.querySelector('.score-visitante').value);
-            
-            if (isNaN(local) || isNaN(visitante)) {
-                mostrarMensaje('Ingresá un marcador válido', 'error');
-                return;
-            }
-            
-            const limite = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-            const actuales = getApuestasDePartido(currentGrupoId, currentParticipante, partidoId).length;
-            
-            if (actuales >= limite) {
-                mostrarMensaje(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
-                return;
-            }
-            
-            agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
-            mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
-            cargarPartidosDelDia(currentFecha);
-        });
+        btn.removeEventListener('click', handleAgregarApuesta);
+        btn.addEventListener('click', handleAgregarApuesta);
     });
+}
+
+function handleAgregarApuesta(e) {
+    const btn = e.currentTarget;
+    const partidoId = parseInt(btn.dataset.id);
+    const card = btn.closest('.apuesta-card');
+    const localInput = card.querySelector('.score-local');
+    const visitanteInput = card.querySelector('.score-visitante');
+    
+    const local = parseInt(localInput.value);
+    const visitante = parseInt(visitanteInput.value);
+    
+    if (isNaN(local) || isNaN(visitante)) {
+        mostrarMensaje('Ingresá un marcador válido', 'error');
+        return;
+    }
+    
+    if (local < 0 || local > 20 || visitante < 0 || visitante > 20) {
+        mostrarMensaje('Usá números entre 0 y 20', 'error');
+        return;
+    }
+    
+    const partido = todosLosPartidos.find(p => p.id === partidoId);
+    if (partido && !puedeApostarPartido(partido.fecha, partido.hora)) {
+        mostrarMensaje('⏰ Ya no se puede apostar a este partido', 'error');
+        return;
+    }
+    
+    const limite = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
+    const actuales = getApuestasDePartido(currentGrupoId, currentParticipante, partidoId).length;
+    
+    if (actuales >= limite) {
+        mostrarMensaje(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
+        return;
+    }
+    
+    agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
+    mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado (${actuales + 1}/${limite})`, 'success');
+    localInput.value = '';
+    visitanteInput.value = '';
+    cargarPartidosDelDia(currentFecha);
 }
 
 function mostrarMensaje(msg, tipo) {
@@ -371,16 +400,15 @@ function mostrarMensaje(msg, tipo) {
 
 function cambiarGrupo() {
     // Limpiar sesión
-    sessionStorage.removeItem(`quiniela_sesion_${currentGrupoId}`);
+    sessionStorage.removeItem('quiniela_sesion_actual');
     currentGrupoId = '';
     currentGrupoNombre = '';
     currentParticipante = '';
-    grupoAutenticado = false;
     
     // Resetear UI
-    contrasenaPanel.style.display = 'none';
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'none';
+    seleccionGruposDiv.style.display = 'block';
     
     // Recargar grupos
     cargarGrupos();
@@ -391,6 +419,7 @@ function verMisApuestas() {
     const resultados = getResultadosDelGrupo(currentGrupoId);
     const modalBody = document.getElementById('modal-body');
     const modal = document.getElementById('modal-apuestas');
+    const reglas = getReglasDelGrupo(currentGrupoId);
     
     if (Object.keys(todasApuestas).length === 0) {
         modalBody.innerHTML = '<p style="text-align:center;">📭 No has realizado ningún pronóstico</p>';
@@ -401,45 +430,65 @@ function verMisApuestas() {
     let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
     let totalPuntos = 0;
     
+    // Ordenar por fecha
+    const apuestasArray = [];
     for (const [partidoId, apuestas] of Object.entries(todasApuestas)) {
         const partido = todosLosPartidos.find(p => p.id === parseInt(partidoId));
         if (partido && apuestas.length > 0) {
-            html += `<h4>📅 ${formatearFecha(partido.fecha)} - ${partido.local} vs ${partido.visitante}</h4>`;
             apuestas.forEach(apuesta => {
-                const resultado = resultados[partidoId];
-                let puntos = 0;
-                let acierto = '';
-                if (resultado) {
-                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                        puntos = 3;
-                        acierto = '✅ EXACTO +3';
-                    } else if (
-                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                    ) {
-                        puntos = 1;
-                        acierto = '🎯 GANADOR +1';
-                    } else {
-                        acierto = '❌ ERROR 0';
-                    }
-                    totalPuntos += puntos;
-                }
-                html += `<div class="apuesta-resumen">
-                    Pronóstico: ${apuesta.local} - ${apuesta.visitante}
-                    ${resultado ? `<br>Resultado: ${resultado.local} - ${resultado.visitante}<br>${acierto} ${puntos > 0 ? `(+${puntos})` : ''}` : '<br>⏳ Resultado pendiente'}
-                </div>`;
+                apuestasArray.push({
+                    ...apuesta,
+                    partido,
+                    resultado: resultados[partidoId]
+                });
             });
         }
     }
+    apuestasArray.sort((a, b) => a.partido.fecha.localeCompare(b.partido.fecha));
+    
+    let currentFechaHtml = '';
+    apuestasArray.forEach(ap => {
+        if (currentFechaHtml !== ap.partido.fecha) {
+            currentFechaHtml = ap.partido.fecha;
+            html += `<h4>📅 ${formatearFecha(ap.partido.fecha)} - ${ap.partido.local} vs ${ap.partido.visitante}</h4>`;
+        }
+        
+        let puntos = 0;
+        let acierto = '';
+        if (ap.resultado) {
+            if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
+                puntos = reglas.puntosExacto;
+                acierto = '✅ EXACTO';
+            } else if (
+                (ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
+                (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
+                (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)
+            ) {
+                puntos = reglas.puntosGanador;
+                acierto = '🎯 GANADOR';
+            } else {
+                acierto = '❌ ERROR';
+            }
+            totalPuntos += puntos;
+        }
+        
+        html += `<div class="apuesta-resumen">
+            Pronóstico: ${ap.local} - ${ap.visitante}
+            ${ap.resultado ? `<br>Resultado: ${ap.resultado.local} - ${ap.resultado.visitante}<br>${acierto} ${puntos > 0 ? `(+${puntos})` : ''}` : '<br>⏳ Resultado pendiente'}
+        </div>`;
+    });
     
     html += `<div class="total-puntos">🏆 TOTAL DE PUNTOS: ${totalPuntos}</div>`;
     modalBody.innerHTML = html;
     modal.style.display = 'block';
 }
 
+function getReglasDelGrupo(grupoId) {
+    const grupos = getGrupos();
+    return grupos[grupoId]?.reglas || { puntosExacto: 3, puntosGanador: 1 };
+}
+
 function setupEventListeners() {
-    validarContrasenaBtn.addEventListener('click', validarContrasena);
     registrarBtn.addEventListener('click', registrarParticipante);
     cambiarGrupoBtn.addEventListener('click', cambiarGrupo);
     verApuestasBtn.addEventListener('click', verMisApuestas);
@@ -451,14 +500,4 @@ function setupEventListeners() {
     window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
 
-// Cargar reglas en el modal
-function cargarReglasEnModal() {
-    const reglasGuardadas = localStorage.getItem('quiniela_reglas');
-    const reglasDiv = document.getElementById('reglas-display');
-    if (reglasDiv && reglasGuardadas) {
-        reglasDiv.innerHTML = reglasGuardadas;
-    }
-}
-
 init();
-cargarReglasEnModal();

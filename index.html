@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Quiniela Mundial 2026 | Apuestas</title>
     <link rel="stylesheet" href="styles/main.css">
     <style>
-        /* Estilos adicionales */
+        /* Estilos para la lista de grupos */
         .grupos-lista {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -84,6 +84,10 @@
             cursor: pointer;
             height: 42px;
         }
+        .btn-registrar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
         .mensaje-exito {
             background: rgba(76, 175, 80, 0.2);
             color: #4caf50;
@@ -102,7 +106,7 @@
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
             padding: 15px;
-            margin-top: 20px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -117,28 +121,162 @@
             border-radius: 8px;
             cursor: pointer;
         }
+        .cambiar-grupo-btn:hover {
+            background: rgba(255, 215, 0, 0.3);
+        }
         .loading {
             text-align: center;
             padding: 40px;
             color: rgba(255, 255, 255, 0.5);
         }
-        .contrasena-panel {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
+        .apuestas-lista {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
         }
-        .contrasena-input-group {
+        .apuestas-multiples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .apuesta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .apuesta-item.acierto-exacto {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4caf50;
+        }
+        .apuesta-item.acierto-ganador {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #ffc107;
+        }
+        .apuesta-item.acierto-error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            opacity: 0.7;
+        }
+        .btn-eliminar-apuesta {
+            background: rgba(255, 80, 80, 0.2);
+            border: none;
+            color: #ff6666;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 0.8rem;
+        }
+        .no-apuestas {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 5px;
+        }
+        .nueva-apuesta-form {
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+        }
+        .score-inputs {
             display: flex;
             gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
         }
-        .contrasena-input-group input {
-            flex: 1;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 215, 0, 0.3);
+        .score-local, .score-visitante {
+            width: 70px;
+            padding: 8px;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,215,0,0.3);
             border-radius: 8px;
             color: white;
+        }
+        .btn-agregar-apuesta {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #4caf50;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .limite-apuestas {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .resultado-oficial {
+            margin-top: 8px;
+            padding: 5px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #ffd700;
+            text-align: center;
+        }
+        .total-puntos {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .apuesta-resumen {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .badge-activo { background: rgba(76, 175, 80, 0.2); color: #4caf50; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; }
+        .badge-pasado { background: rgba(244, 67, 54, 0.2); color: #f44336; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; }
+        .badge-futuro { background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; }
+        .admin-links {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .admin-links a {
+            color: #ffd700;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+        }
+        .modal-content {
+            background: #1a1a2e;
+            margin: 10% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,215,0,0.3);
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .modal-close {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            color: #ffd700;
         }
     </style>
 </head>
@@ -146,28 +284,24 @@
     <div class="container">
         <header class="worldcup-header">
             <div class="logo">
-                <img src="/assets/trophy.png" alt="Copa Mundial FIFA" class="copa-oficial" onerror="this.outerHTML='<span style=\'font-size:32px;\'>🏆</span>'">
+                <img src="/assets/trophy.png" 
+                     alt="Copa Mundial FIFA"
+                     class="copa-oficial"
+                     onerror="this.outerHTML='<span style=\'font-size:32px;\'>🏆</span>'">
             </div>
             <h1>🇲🇽🇺🇸🇨🇦 Quiniela Mundial 2026</h1>
             <p class="subtitle">Seleccioná un grupo, registrate y comenzá a apostar</p>
         </header>
 
         <!-- Lista de grupos -->
-        <div class="grupos-lista" id="grupos-lista">
-            <div class="loading">Cargando grupos...</div>
-        </div>
-
-        <!-- Panel de contraseña (se muestra al seleccionar grupo) -->
-        <div id="contrasena-panel" class="contrasena-panel" style="display: none;">
-            <label>🔐 Contraseña del grupo:</label>
-            <div class="contrasena-input-group">
-                <input type="password" id="grupo-contrasena" placeholder="Ingresá la contraseña del grupo" autocomplete="off">
-                <button id="validar-contrasena-btn" class="btn-secondary">🔓 Validar</button>
+        <div id="seleccion-grupos">
+            <h2>🏆 Grupos Disponibles</h2>
+            <div id="grupos-lista" class="grupos-lista">
+                <div class="loading">Cargando grupos...</div>
             </div>
-            <div id="contrasena-error" class="error-msg"></div>
         </div>
 
-        <!-- Panel de registro (se muestra después de validar contraseña) -->
+        <!-- Panel de registro (se muestra al seleccionar grupo) -->
         <div id="registro-panel" class="registro-panel" style="display: none;">
             <h3 id="grupo-seleccionado-nombre"></h3>
             <div class="form-registro">
