@@ -690,7 +690,7 @@ function actualizarEstadoDia(fecha) {
     if (esPasado) {
         estadoDia.innerHTML = '<span class="badge-pasado">🔒 DÍA FINALIZADO - Solo consulta</span>';
     } else if (esHoy) {
-        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Podés apostar</span>';
+        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Puedes apostar</span>';
     } else {
         estadoDia.innerHTML = '<span class="badge-futuro">⏳ DÍA FUTURO - Apuestas disponibles el día del partido</span>';
     }
@@ -702,28 +702,43 @@ async function cargarPartidos(fecha) {
     const esHoy = !esPasado && (fecha === getDiaActualLocal());
     
     const limiteParticipante = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
+    const apuestasExistentes = await getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
     
     apuestasContainer.innerHTML = partidos.map(partido => {
         const puedeApostar = esHoy && puedeApostarPartido(partido.fecha, partido.hora);
+        const apuestasActuales = apuestasExistentes[partido.id] || [];
+        const alcanzoLimite = apuestasActuales.length >= limiteParticipante;
         
         let mensajeBloqueo = '';
+        let botonDisabled = false;
+        
         if (!puedeApostar) {
-            if (esPasado) mensajeBloqueo = '🔒 Partido finalizado';
-            else if (!esHoy) mensajeBloqueo = '⏳ Apuestas solo el día del partido';
-            else mensajeBloqueo = '⏰ Apuestas cerradas';
+            if (esPasado) {
+                mensajeBloqueo = '🔒 Partido finalizado';
+                botonDisabled = true;
+            } else if (!esHoy) {
+                mensajeBloqueo = '⏳ Apuestas solo el día del partido';
+                botonDisabled = true;
+            } else if (alcanzoLimite) {
+                mensajeBloqueo = `🔒 Límite alcanzado (${limiteParticipante}/${limiteParticipante})`;
+                botonDisabled = true;
+            } else {
+                mensajeBloqueo = '⏰ Apuestas cerradas';
+                botonDisabled = true;
+            }
         }
         
         return `
-            <div class="apuesta-card ${!puedeApostar ? 'bloqueado' : ''}" data-id="${partido.id}">
+            <div class="apuesta-card ${!puedeApostar || alcanzoLimite ? 'bloqueado' : ''}" data-id="${partido.id}">
                 <div class="match-info">
                     <div class="match-teams">${conBandera(partido.local)} vs ${conBandera(partido.visitante)}</div>
                     <div class="match-date">
                         🕐 ${partido.hora} | ${getFaseNombre(partido.fase)}
-                        ${!puedeApostar ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
+                        ${!puedeApostar || alcanzoLimite ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
                     </div>
                 </div>
                 <div id="apuestas-lista-${partido.id}" class="apuestas-lista"></div>
-                ${puedeApostar ? `
+                ${puedeApostar && !alcanzoLimite ? `
                     <div class="nueva-apuesta-form">
                         <div class="score-inputs">
                             <input type="number" class="score-local" placeholder="Local" min="0" max="20">
@@ -731,9 +746,13 @@ async function cargarPartidos(fecha) {
                             <input type="number" class="score-visitante" placeholder="Visitante" min="0" max="20">
                             <button class="btn-agregar-apuesta" data-id="${partido.id}" onclick="agregarApuestaHandler(${partido.id}, this)">➕ Agregar</button>
                         </div>
-                        <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
+                        <div class="limite-apuestas">📊 Usados: ${apuestasActuales.length}/${limiteParticipante}</div>
                     </div>
-                ` : `<div class="score-readonly" id="readonly-${partido.id}"></div>`}
+                ` : `
+                    <div class="score-readonly" id="readonly-${partido.id}">
+                        ${!puedeApostar && !esPasado && !esHoy ? '<div class="no-apuestas">⏳ Apuestas disponibles el día del partido</div>' : ''}
+                    </div>
+                `}
             </div>
         `;
     }).join('');
@@ -1150,6 +1169,8 @@ function configurarEventListeners() {
 }
 // ============ MOSTRAR QR DESPUÉS DE APOSTAR ============
 
+// ============ MOSTRAR QR DESPUÉS DE LA PRIMERA APUESTA ============
+
 let qrMostrado = false;
 
 function mostrarQR() {
@@ -1158,10 +1179,25 @@ function mostrarQR() {
         qrDiv.style.display = 'block';
         qrMostrado = true;
         
+        // Guardar en localStorage que ya se mostró el QR
+        localStorage.setItem('quiniela_qr_mostrado', 'true');
+        
         // Scroll suave al QR
         setTimeout(() => {
             qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 500);
+    }
+}
+
+// Verificar si ya se mostró el QR antes
+function verificarQRMostrado() {
+    const qrMostradoStorage = localStorage.getItem('quiniela_qr_mostrado');
+    if (qrMostradoStorage === 'true') {
+        qrMostrado = true;
+        const qrDiv = document.getElementById('qr-pago');
+        if (qrDiv) {
+            qrDiv.style.display = 'block';
+        }
     }
 }
 
