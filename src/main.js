@@ -33,7 +33,6 @@ let currentGrupoId = '';
 let currentGrupoNombre = '';
 let currentParticipante = '';
 let currentFecha = '';
-let eventosConfigurados = false;
 
 // Elementos DOM
 const gruposLista = document.getElementById('grupos-lista');
@@ -126,18 +125,15 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
     }, 3000);
 }
 
-// ============ MANEJADORES DE EVENTOS (DELEGACIÓN) ============
+// ============ MANEJADOR GLOBAL PARA AGREGAR APUESTAS ============
 
-// Manejador de eventos para agregar apuestas
-async function handleAgregarClick(e) {
-    const btn = e.target.closest('.btn-agregar-apuesta');
-    if (!btn) return;
+window.agregarApuestaHandler = async function(partidoId, btnElement) {
+    // Evitar ejecución múltiple
+    if (btnElement.disabled) return;
     
-    e.preventDefault();
-    e.stopPropagation();
+    const card = btnElement.closest('.apuesta-card');
+    if (!card) return;
     
-    const partidoId = parseInt(btn.dataset.id);
-    const card = btn.closest('.apuesta-card');
     const localInput = card.querySelector('.score-local');
     const visitanteInput = card.querySelector('.score-visitante');
     
@@ -162,9 +158,10 @@ async function handleAgregarClick(e) {
         return;
     }
     
-    // Deshabilitar botón temporalmente
-    btn.disabled = true;
-    btn.textContent = '⏳ Guardando...';
+    // Deshabilitar botón
+    btnElement.disabled = true;
+    const textoOriginal = btnElement.textContent;
+    btnElement.textContent = '⏳ Guardando...';
     
     const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
     
@@ -175,26 +172,17 @@ async function handleAgregarClick(e) {
         await cargarPartidos(currentFecha);
     } else {
         mostrarNotificacion('❌ Error al agregar pronóstico', 'error');
+        btnElement.disabled = false;
+        btnElement.textContent = textoOriginal;
     }
-    
-    btn.disabled = false;
-    btn.textContent = '➕ Agregar';
-}
+};
 
-// Manejador de eventos para eliminar apuestas
-async function handleEliminarClick(e) {
-    const btn = e.target.closest('.btn-eliminar-apuesta');
-    if (!btn) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const partidoId = parseInt(btn.dataset.partido);
-    const apuestaId = btn.dataset.apuesta;
+window.eliminarApuestaHandler = async function(partidoId, apuestaId, btnElement) {
+    if (btnElement.disabled) return;
     
     if (confirm('¿Eliminar este pronóstico?')) {
-        btn.disabled = true;
-        btn.textContent = '⏳';
+        btnElement.disabled = true;
+        btnElement.textContent = '⏳';
         
         const resultado = await eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
         if (resultado) {
@@ -202,11 +190,11 @@ async function handleEliminarClick(e) {
             await cargarPartidos(currentFecha);
         } else {
             mostrarNotificacion('❌ Error al eliminar pronóstico', 'error');
-            btn.disabled = false;
-            btn.textContent = '🗑️';
+            btnElement.disabled = false;
+            btnElement.textContent = '🗑️';
         }
     }
-}
+};
 
 // ============ INICIALIZACIÓN ============
 async function init() {
@@ -216,16 +204,6 @@ async function init() {
     configurarEventListeners();
     await verificarSesionGuardada();
     mostrarPopupReglas();
-    configurarEventDelegation();
-}
-
-function configurarEventDelegation() {
-    if (apuestasContainer && !eventosConfigurados) {
-        apuestasContainer.addEventListener('click', handleAgregarClick);
-        apuestasContainer.addEventListener('click', handleEliminarClick);
-        eventosConfigurados = true;
-        console.log('✅ Event delegation configurado');
-    }
 }
 
 async function verificarSesionGuardada() {
@@ -719,7 +697,7 @@ async function cargarPartidos(fecha) {
                             <input type="number" class="score-local" placeholder="Local" min="0" max="20">
                             <span class="vs">-</span>
                             <input type="number" class="score-visitante" placeholder="Visitante" min="0" max="20">
-                            <button class="btn-agregar-apuesta" data-id="${partido.id}">➕ Agregar</button>
+                            <button class="btn-agregar-apuesta" data-id="${partido.id}" onclick="agregarApuestaHandler(${partido.id}, this)">➕ Agregar</button>
                         </div>
                         <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
                     </div>
@@ -768,7 +746,7 @@ async function cargarApuestasExistentes(fecha) {
                     }
                     html += `<div class="apuesta-item ${clase}">
                         <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
-                        ${puedeApostar ? `<button class="btn-eliminar-apuesta" data-partido="${partido.id}" data-apuesta="${apuesta.id}">🗑️</button>` : ''}
+                        ${puedeApostar ? `<button class="btn-eliminar-apuesta" onclick="eliminarApuestaHandler(${partido.id}, '${apuesta.id}', this)">🗑️</button>` : ''}
                     </div>`;
                 });
                 html += '</div>';
