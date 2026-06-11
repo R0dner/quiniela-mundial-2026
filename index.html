@@ -1498,6 +1498,28 @@
         }
     </style>
 </head>
+<!-- Firebase SDK -->
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyDUvg4anoICh5_cXqcrp3D3ljid06COkkM",
+        authDomain: "quiniela-mundial-2026-b02eb.firebaseapp.com",
+        projectId: "quiniela-mundial-2026-b02eb",
+        storageBucket: "quiniela-mundial-2026-b02eb.firebasestorage.app",
+        messagingSenderId: "490180467242",
+        appId: "1:490180467242:web:84f19878a66605446e4153",
+        measurementId: "G-P0WF5N56DL"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    window.db = db;
+    console.log('✅ Firebase conectado correctamente');
+</script>
+
 <body>
     <div class="container">
         <header class="worldcup-header">

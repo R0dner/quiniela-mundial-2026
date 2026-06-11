@@ -1,4 +1,4 @@
-// src/admin.js - Admin con todas las funciones (sin contraseñas, sin agregar participantes)
+// src/admin.js - Admin con todas las funciones (con Firebase)
 import { 
     getGrupos, 
     guardarGrupos, 
@@ -14,68 +14,23 @@ import {
     getPremiosDelGrupo,
     actualizarPremiosDelGrupo,
     actualizarLimiteApuestasParticipante,
-    getApuestasExtrasDelGrupo
+    getApuestasExtrasDelGrupo,
+    obtenerGrupoGeneral
 } from './groups.js';
 import { todosLosPartidos, conBandera, getFaseNombre } from './data.js';
-
-// ============ POPUP DE REGLAS ============
-
-function mostrarPopupReglas() {
-    // Verificar si el usuario ya eligió no mostrar más
-    const noMostrar = localStorage.getItem('quiniela_no_mostrar_reglas');
-    if (noMostrar === 'true') {
-        return;
-    }
-    
-    const popup = document.getElementById('popup-rules');
-    if (popup) {
-        popup.style.display = 'flex';
-        
-        // Evento para cerrar
-        const cerrarBtn = document.getElementById('cerrar-rules-btn');
-        const noMostrarCheck = document.getElementById('no-mostrar-rules');
-        
-        const cerrarPopup = () => {
-            popup.style.display = 'none';
-            if (noMostrarCheck && noMostrarCheck.checked) {
-                localStorage.setItem('quiniela_no_mostrar_reglas', 'true');
-            }
-        };
-        
-        // Remover eventos anteriores para evitar duplicados
-        const newCerrarBtn = cerrarBtn.cloneNode(true);
-        cerrarBtn.parentNode.replaceChild(newCerrarBtn, cerrarBtn);
-        
-        newCerrarBtn.addEventListener('click', cerrarPopup);
-        
-        // Cerrar al hacer clic fuera
-        popup.addEventListener('click', (e) => {
-            if (e.target === popup) {
-                cerrarPopup();
-            }
-        });
-        
-        // Cerrar con Escape
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') {
-                cerrarPopup();
-                document.removeEventListener('keydown', handleEsc);
-            }
-        };
-        document.addEventListener('keydown', handleEsc);
-    }
-}
+import { sincronizarLocalAFirebase, cargarFirebaseALocal } from './firebase.js';
 
 let todosLosPartidosData = todosLosPartidos;
 let currentGrupoId = '';
 
 function init() {
-    console.log('Admin inicializado');
+    console.log('Admin inicializado - Con sincronización en la nube');
     cargarGruposEnSelectores();
     cargarListaGrupos();
     actualizarEstadisticas();
     setupEventListeners();
     cargarSelectoresApuestasExtra();
+    cargarSelectoresSincronizacion();
 }
 
 function setupEventListeners() {
@@ -169,77 +124,81 @@ function setupEventListeners() {
     if (cantidadGanadoresSelect) {
         cantidadGanadoresSelect.addEventListener('change', (e) => {
             const cantidad = parseInt(e.target.value);
-            document.getElementById('segundo-puesto-group').style.display = cantidad >= 2 ? 'block' : 'none';
-            document.getElementById('tercer-puesto-group').style.display = cantidad >= 3 ? 'block' : 'none';
+            const segundoGroup = document.getElementById('segundo-puesto-group');
+            const tercerGroup = document.getElementById('tercer-puesto-group');
+            if (segundoGroup) segundoGroup.style.display = cantidad >= 2 ? 'block' : 'none';
+            if (tercerGroup) tercerGroup.style.display = cantidad >= 3 ? 'block' : 'none';
         });
     }
 }
 
 function cargarGruposEnSelectores() {
-    const grupos = getGrupos();
-    const selectores = [
-        'grupo-participantes-select',
-        'grupo-resultados-select',
-        'grupo-reglas-select',
-        'grupo-premios-select',
-        'grupo-apuestasextras-select'
-    ];
-    
-    selectores.forEach(selectorId => {
-        const select = document.getElementById(selectorId);
-        if (select) {
-            let options = '<option value="">-- Seleccionar grupo --</option>';
-            for (const [id, grupo] of Object.entries(grupos)) {
-                options += `<option value="${id}">${grupo.nombre}</option>`;
-            }
-            select.innerHTML = options;
-        }
-    });
-}
-
-function cargarListaGrupos() {
-    const grupos = getGrupos();
-    const container = document.getElementById('lista-grupos');
-    if (!container) return;
-    
-    if (Object.keys(grupos).length === 0) {
-        container.innerHTML = '<p class="empty">No hay grupos creados. Creá el primero 👆</p>';
-        return;
-    }
-    
-    let html = '';
-    for (const [id, grupo] of Object.entries(grupos)) {
-        const premios = grupo.premios || { cantidadGanadores: 3, primero: 50, segundo: 30, tercero: 20 };
-        html += `
-            <div class="grupo-card">
-                <h3>🏆 ${grupo.nombre}</h3>
-                <p><strong>ID:</strong> ${id}</p>
-                <p><strong>👥 Participantes:</strong> ${grupo.participantes.length}</p>
-                <p><strong>📜 Reglas:</strong> ${grupo.reglas?.puntosExacto || 3} pts exacto / ${grupo.reglas?.puntosGanador || 1} pts ganador</p>
-                <p><strong>🏆 Premios:</strong> ${premios.cantidadGanadores} ganador(es) (${premios.primero}% / ${premios.segundo}% / ${premios.tercero}%)</p>
-                <div class="grupo-actions">
-                    <button class="btn-danger btn-small" data-grupo="${id}">🗑️ Eliminar Grupo</button>
-                </div>
-            </div>
-        `;
-    }
-    container.innerHTML = html;
-    
-    document.querySelectorAll('.btn-danger[data-grupo]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const grupoId = btn.dataset.grupo;
-            if (confirm(`¿Eliminar el grupo "${grupoId}"? Se perderán todas las apuestas.`)) {
-                eliminarGrupo(grupoId);
-                mostrarMensaje(`Grupo "${grupoId}" eliminado`, 'success');
-                cargarListaGrupos();
-                cargarGruposEnSelectores();
-                actualizarEstadisticas();
+    getGrupos().then(grupos => {
+        const selectores = [
+            'grupo-participantes-select',
+            'grupo-resultados-select',
+            'grupo-reglas-select',
+            'grupo-premios-select',
+            'grupo-apuestasextras-select'
+        ];
+        
+        selectores.forEach(selectorId => {
+            const select = document.getElementById(selectorId);
+            if (select) {
+                let options = '<option value="">-- Seleccionar grupo --</option>';
+                for (const [id, grupo] of Object.entries(grupos)) {
+                    options += `<option value="${id}">${grupo.nombre}</option>`;
+                }
+                select.innerHTML = options;
             }
         });
     });
 }
 
-function crearNuevoGrupo() {
+function cargarListaGrupos() {
+    getGrupos().then(grupos => {
+        const container = document.getElementById('lista-grupos');
+        if (!container) return;
+        
+        if (Object.keys(grupos).length === 0) {
+            container.innerHTML = '<p class="empty">No hay grupos creados. Creá el primero 👆</p>';
+            return;
+        }
+        
+        let html = '';
+        for (const [id, grupo] of Object.entries(grupos)) {
+            const premios = grupo.premios || { cantidadGanadores: 3, primero: 50, segundo: 30, tercero: 20 };
+            html += `
+                <div class="grupo-card">
+                    <h3>🏆 ${grupo.nombre}</h3>
+                    <p><strong>ID:</strong> ${id}</p>
+                    <p><strong>👥 Participantes:</strong> ${grupo.participantes.length}</p>
+                    <p><strong>📜 Reglas:</strong> ${grupo.reglas?.puntosExacto || 3} pts exacto / ${grupo.reglas?.puntosGanador || 1} pts ganador</p>
+                    <p><strong>🏆 Premios:</strong> ${premios.cantidadGanadores} ganador(es) (${premios.primero}% / ${premios.segundo}% / ${premios.tercero}%)</p>
+                    <div class="grupo-actions">
+                        <button class="btn-danger btn-small" data-grupo="${id}">🗑️ Eliminar Grupo</button>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        
+        document.querySelectorAll('.btn-danger[data-grupo]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const grupoId = btn.dataset.grupo;
+                if (confirm(`¿Eliminar el grupo "${grupoId}"? Se perderán todas las apuestas.`)) {
+                    await eliminarGrupo(grupoId);
+                    mostrarMensaje(`Grupo "${grupoId}" eliminado`, 'success');
+                    cargarListaGrupos();
+                    cargarGruposEnSelectores();
+                    actualizarEstadisticas();
+                }
+            });
+        });
+    });
+}
+
+async function crearNuevoGrupo() {
     const grupoId = document.getElementById('nuevo-grupo-id').value.trim();
     const grupoNombre = document.getElementById('nuevo-grupo-nombre').value.trim();
     
@@ -259,7 +218,7 @@ function crearNuevoGrupo() {
     }
     
     try {
-        crearGrupo(grupoId, {
+        await crearGrupo(grupoId, {
             nombre: grupoNombre,
             codigo: grupoId.toUpperCase()
         });
@@ -278,8 +237,8 @@ function crearNuevoGrupo() {
 
 // ============ PARTICIPANTES POR GRUPO ============
 
-function cargarParticipantesDelGrupoEnPanel(grupoId) {
-    const participantes = getParticipantesDelGrupo(grupoId);
+async function cargarParticipantesDelGrupoEnPanel(grupoId) {
+    const participantes = await getParticipantesDelGrupo(grupoId);
     const container = document.getElementById('lista-participantes-grupo');
     
     if (participantes.length === 0) {
@@ -288,8 +247,8 @@ function cargarParticipantesDelGrupoEnPanel(grupoId) {
     }
     
     let html = '';
-    participantes.forEach(participante => {
-        const info = getInfoParticipante(grupoId, participante);
+    for (const participante of participantes) {
+        const info = await getInfoParticipante(grupoId, participante);
         html += `
             <div class="participante-item" data-nombre="${participante}">
                 <div class="participante-info">
@@ -302,16 +261,16 @@ function cargarParticipantesDelGrupoEnPanel(grupoId) {
                 </div>
             </div>
         `;
-    });
+    }
     container.innerHTML = html;
     
     document.querySelectorAll('#lista-participantes-grupo .btn-danger').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             const participante = btn.dataset.participante;
             if (confirm(`¿Eliminar a "${participante}" del grupo? Se perderán todas sus apuestas.`)) {
-                eliminarParticipanteDeGrupo(currentGrupoId, participante);
+                await eliminarParticipanteDeGrupo(currentGrupoId, participante);
                 mostrarMensaje(`${participante} eliminado del grupo`, 'success');
-                cargarParticipantesDelGrupoEnPanel(currentGrupoId);
+                await cargarParticipantesDelGrupoEnPanel(currentGrupoId);
                 cargarListaGrupos();
                 actualizarEstadisticas();
             }
@@ -321,8 +280,8 @@ function cargarParticipantesDelGrupoEnPanel(grupoId) {
 
 // ============ RESULTADOS ============
 
-function cargarResultados(grupoId, filtro = 'all') {
-    const resultados = getResultadosDelGrupo(grupoId);
+async function cargarResultados(grupoId, filtro = 'all') {
+    const resultados = await getResultadosDelGrupo(grupoId);
     const container = document.getElementById('resultados-container');
     if (!container) return;
     
@@ -366,7 +325,7 @@ function cargarResultados(grupoId, filtro = 'all') {
     }).join('');
 }
 
-function guardarResultadosDelGrupo(grupoId) {
+async function guardarResultadosDelGrupo(grupoId) {
     if (!grupoId) {
         mostrarMensaje('Seleccioná un grupo', 'error');
         return;
@@ -393,7 +352,7 @@ function guardarResultadosDelGrupo(grupoId) {
     }
     
     for (const [id, resultado] of Object.entries(resultados)) {
-        guardarResultadoEnGrupo(grupoId, parseInt(id), resultado);
+        await guardarResultadoEnGrupo(grupoId, parseInt(id), resultado);
     }
     
     mostrarMensaje(`✅ ${Object.keys(resultados).length} resultados guardados en el grupo`, 'success');
@@ -402,13 +361,13 @@ function guardarResultadosDelGrupo(grupoId) {
 
 // ============ REGLAS ============
 
-function cargarReglasDelGrupoEnPanel(grupoId) {
-    const reglas = getReglasDelGrupo(grupoId);
+async function cargarReglasDelGrupoEnPanel(grupoId) {
+    const reglas = await getReglasDelGrupo(grupoId);
     document.getElementById('puntos-exacto').value = reglas.puntosExacto || 3;
     document.getElementById('puntos-ganador').value = reglas.puntosGanador || 1;
 }
 
-function guardarReglasDelGrupo() {
+async function guardarReglasDelGrupo() {
     const grupoId = document.getElementById('grupo-reglas-select').value;
     if (!grupoId) {
         mostrarMensaje('Seleccioná un grupo', 'error');
@@ -422,15 +381,15 @@ function guardarReglasDelGrupo() {
         cierreAutomatico: true
     };
     
-    actualizarReglasDelGrupo(grupoId, nuevasReglas);
+    await actualizarReglasDelGrupo(grupoId, nuevasReglas);
     mostrarMensaje(`✅ Reglas actualizadas para el grupo ${grupoId}`, 'success');
     cargarListaGrupos();
 }
 
 // ============ PREMIOS ============
 
-function cargarPremiosDelGrupoEnPanel(grupoId) {
-    const premios = getPremiosDelGrupo(grupoId);
+async function cargarPremiosDelGrupoEnPanel(grupoId) {
+    const premios = await getPremiosDelGrupo(grupoId);
     document.getElementById('cantidad-ganadores').value = premios.cantidadGanadores || 3;
     document.getElementById('premio-primero').value = premios.primero || 50;
     document.getElementById('premio-segundo').value = premios.segundo || 30;
@@ -443,7 +402,7 @@ function cargarPremiosDelGrupoEnPanel(grupoId) {
     if (tercerGroup) tercerGroup.style.display = cantidad >= 3 ? 'block' : 'none';
 }
 
-function guardarPremiosDelGrupo() {
+async function guardarPremiosDelGrupo() {
     const grupoId = document.getElementById('grupo-premios-select').value;
     if (!grupoId) {
         mostrarMensaje('Seleccioná un grupo', 'error');
@@ -458,7 +417,7 @@ function guardarPremiosDelGrupo() {
         tercero: cantidadGanadores >= 3 ? parseInt(document.getElementById('premio-tercero').value) : 0
     };
     
-    actualizarPremiosDelGrupo(grupoId, nuevosPremios);
+    await actualizarPremiosDelGrupo(grupoId, nuevosPremios);
     mostrarMensaje(`✅ Premios actualizados para el grupo ${grupoId}`, 'success');
     cargarListaGrupos();
 }
@@ -468,10 +427,10 @@ function guardarPremiosDelGrupo() {
 function cargarSelectoresApuestasExtra() {
     const grupoSelect = document.getElementById('grupo-apuestasextras-select');
     if (grupoSelect) {
-        grupoSelect.addEventListener('change', (e) => {
+        grupoSelect.addEventListener('change', async (e) => {
             const grupoId = e.target.value;
             if (grupoId) {
-                cargarApuestasExtraEnPanel(grupoId);
+                await cargarApuestasExtraEnPanel(grupoId);
                 document.getElementById('apuestasextras-panel').style.display = 'block';
             } else {
                 document.getElementById('apuestasextras-panel').style.display = 'none';
@@ -480,9 +439,9 @@ function cargarSelectoresApuestasExtra() {
     }
 }
 
-function cargarApuestasExtraEnPanel(grupoId) {
-    const participantes = getParticipantesDelGrupo(grupoId);
-    const apuestasExtras = getApuestasExtrasDelGrupo(grupoId);
+async function cargarApuestasExtraEnPanel(grupoId) {
+    const participantes = await getParticipantesDelGrupo(grupoId);
+    const apuestasExtras = await getApuestasExtrasDelGrupo(grupoId);
     const container = document.getElementById('lista-apuestasextras');
     
     if (participantes.length === 0) {
@@ -490,7 +449,7 @@ function cargarApuestasExtraEnPanel(grupoId) {
         return;
     }
     
-    let html = '<table class="tabla-limites"><thead><td><th>Participante</th><th>Límite actual</th><th>Nuevo límite</th><th>Acción</th></tr></thead><tbody>';
+    let html = '<table class="tabla-limites"><thead><tr><th>Participante</th><th>Límite actual</th><th>Nuevo límite</th><th>Acción</th></tr></thead><tbody>';
     
     participantes.forEach(participante => {
         const limiteActual = apuestasExtras[participante] || 1;
@@ -520,28 +479,56 @@ function cargarApuestasExtraEnPanel(grupoId) {
     container.innerHTML = html;
     
     document.querySelectorAll('.btn-actualizar-limite').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             const participante = btn.dataset.participante;
             const participanteId = btn.dataset.participanteId;
             const select = document.getElementById(`select-${participanteId}`);
             const nuevoLimite = parseInt(select.value);
-            const resultado = actualizarLimiteApuestasParticipante(grupoId, participante, nuevoLimite);
+            const resultado = await actualizarLimiteApuestasParticipante(grupoId, participante, nuevoLimite);
             
             if (resultado) {
                 const limiteSpan = document.getElementById(`limite-${participanteId}`);
                 if (limiteSpan) limiteSpan.textContent = nuevoLimite;
-                mostrarMensaje(`✅ Límite de ${participante} actualizado a ${nuevoLimite} pronóstico(s)`, 'success');
+                mostrarMensagem(`✅ Límite de ${participante} actualizado a ${nuevoLimite} pronóstico(s)`, 'success');
             } else {
-                mostrarMensaje(`❌ Error al actualizar límite de ${participante}`, 'error');
+                mostrarMensagem(`❌ Error al actualizar límite de ${participante}`, 'error');
             }
         });
     });
 }
 
+// ============ SINCRONIZACIÓN CON FIREBASE ============
+
+function cargarSelectoresSincronizacion() {
+    const syncBtn = document.getElementById('sincronizar-ahora');
+    const forceBtn = document.getElementById('forzar-carga');
+    
+    if (syncBtn) {
+        syncBtn.addEventListener('click', async () => {
+            mostrarMensagem('🔄 Sincronizando con la nube...', 'info');
+            await sincronizarLocalAFirebase();
+            mostrarMensagem('✅ Datos sincronizados correctamente', 'success');
+        });
+    }
+    
+    if (forceBtn) {
+        forceBtn.addEventListener('click', async () => {
+            mostrarMensagem('📥 Cargando datos desde la nube...', 'info');
+            const cargados = await cargarFirebaseALocal();
+            if (cargados) {
+                mostrarMensagem('✅ Datos cargados desde la nube. Recargando...', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                mostrarMensagem('❌ No hay datos en la nube', 'error');
+            }
+        });
+    }
+}
+
 // ============ ESTADÍSTICAS ============
 
-function actualizarEstadisticas() {
-    const grupos = getGrupos();
+async function actualizarEstadisticas() {
+    const grupos = await getGrupos();
     
     const totalGrupos = Object.keys(grupos).length;
     const totalParticipantesGrupos = Object.values(grupos).reduce((sum, grupo) => sum + grupo.participantes.length, 0);
@@ -559,14 +546,14 @@ function actualizarEstadisticas() {
     if (totalApuestasSpan) totalApuestasSpan.textContent = totalApuestas;
 }
 
-function mostrarMensaje(msg, tipo) {
+function mostrarMensagem(msg, tipo) {
     const toast = document.createElement('div');
     toast.textContent = msg;
     toast.style.cssText = `
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: ${tipo === 'success' ? '#4caf50' : '#f44336'};
+        background: ${tipo === 'success' ? '#4caf50' : tipo === 'error' ? '#f44336' : '#2196f3'};
         color: white;
         padding: 12px 24px;
         border-radius: 12px;
@@ -580,6 +567,7 @@ function mostrarMensaje(msg, tipo) {
     }, 3000);
 }
 
+// Inicializar
 setTimeout(() => {
     if (document.getElementById('admin-content')?.style.display !== 'none') {
         init();

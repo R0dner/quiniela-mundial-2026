@@ -1,8 +1,23 @@
-// src/groups.js - Sistema de grupos SIN CONTRASEÑAS (auto-registro de usuarios)
-
-const GRUPOS_INICIALES = {};
+// src/groups.js - Con soporte para Firebase
+import { 
+    guardarGrupoEnFirebase, 
+    obtenerGrupoDeFirebase, 
+    obtenerTodosLosGruposDeFirebase,
+    eliminarGrupoDeFirebase,
+    registrarParticipanteEnFirebase,
+    eliminarParticipanteDeFirebase,
+    agregarApuestaEnFirebase,
+    eliminarApuestaEnFirebase,
+    guardarResultadoEnFirebase,
+    actualizarReglasEnFirebase,
+    actualizarPremiosEnFirebase,
+    cargarFirebaseALocal,
+    sincronizarLocalAFirebase
+} from './firebase.js';
 
 let todosLosPartidosGlobal = [];
+let gruposCache = {};
+let sincronizando = false;
 
 export function setPartidosGlobal(partidos) {
     todosLosPartidosGlobal = partidos;
@@ -10,33 +25,60 @@ export function setPartidosGlobal(partidos) {
 
 // ============ GRUPOS ============
 
-export function getGrupos() {
+export async function getGrupos() {
+    // Si ya tenemos caché, devolver
+    if (Object.keys(gruposCache).length > 0) {
+        return gruposCache;
+    }
+    
+    // Intentar cargar desde Firebase
+    const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
+    if (Object.keys(gruposFirebase).length > 0) {
+        gruposCache = gruposFirebase;
+        localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
+        return gruposFirebase;
+    }
+    
+    // Fallback a localStorage
     const gruposGuardados = localStorage.getItem('quiniela_grupos');
     if (gruposGuardados) {
-        return JSON.parse(gruposGuardados);
+        gruposCache = JSON.parse(gruposGuardados);
+        return gruposCache;
     }
-    return { ...GRUPOS_INICIALES };
+    
+    return {};
 }
 
-export function guardarGrupos(grupos) {
+export async function guardarGrupos(grupos) {
+    gruposCache = grupos;
     localStorage.setItem('quiniela_grupos', JSON.stringify(grupos));
     window.dispatchEvent(new Event('grupos-actualizados'));
+    
+    // Sincronizar con Firebase en segundo plano
+    if (!sincronizando) {
+        sincronizando = true;
+        for (const [id, data] of Object.entries(grupos)) {
+            await guardarGrupoEnFirebase(id, data);
+        }
+        sincronizando = false;
+    }
 }
 
-export function getGrupo(grupoId) {
-    const grupos = getGrupos();
+export async function getGrupo(grupoId) {
+    const grupos = await getGrupos();
     return grupos[grupoId];
 }
 
-export function crearGrupo(grupoId, config) {
-    const grupos = getGrupos();
+export async function crearGrupo(grupoId, config) {
+    const grupos = await getGrupos();
     if (grupos[grupoId]) {
         throw new Error(`El grupo ${grupoId} ya existe`);
     }
     if (!grupoId || grupoId.trim() === '') {
         throw new Error('El ID del grupo es obligatorio');
     }
-    grupos[grupoId] = {
+    
+    const nuevoGrupo = {
         nombre: config.nombre,
         codigo: config.codigo || grupoId.toUpperCase(),
         descripcion: config.descripcion || '',
@@ -60,206 +102,157 @@ export function crearGrupo(grupoId, config) {
         fechaCreacion: new Date().toISOString(),
         activo: true
     };
-    guardarGrupos(grupos);
-    return grupos[grupoId];
+    
+    grupos[grupoId] = nuevoGrupo;
+    await guardarGrupos(grupos);
+    return nuevoGrupo;
 }
 
-export function eliminarGrupo(grupoId) {
-    const grupos = getGrupos();
+export async function eliminarGrupo(grupoId) {
+    const grupos = await getGrupos();
     if (!grupos[grupoId]) {
         throw new Error(`El grupo ${grupoId} no existe`);
     }
     delete grupos[grupoId];
-    guardarGrupos(grupos);
+    await guardarGrupos(grupos);
+    await eliminarGrupoDeFirebase(grupoId);
 }
 
-// ============ AUTO-REGISTRO DE PARTICIPANTES ============
+// ============ PARTICIPANTES ============
 
-export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return { success: false, message: 'El grupo no existe' };
-    
-    const nombreNormalizado = nombre.trim();
-    if (!nombreNormalizado) {
-        return { success: false, message: 'El nombre es obligatorio' };
+export async function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
+    const resultado = await registrarParticipanteEnFirebase(grupoId, nombre, telefono);
+    if (resultado.success) {
+        // Actualizar caché local
+        const grupos = await getGrupos();
+        if (grupos[grupoId]) {
+            if (!grupos[grupoId].participantes.includes(nombre)) {
+                grupos[grupoId].participantes.push(nombre);
+                if (!grupos[grupoId].participantesInfo) grupos[grupoId].participantesInfo = {};
+                grupos[grupoId].participantesInfo[nombre] = {
+                    telefono: telefono,
+                    fechaRegistro: new Date().toISOString()
+                };
+                await guardarGrupos(grupos);
+            }
+        }
     }
-    
-    const existe = grupos[grupoId].participantes.some(
-        p => p.toLowerCase() === nombreNormalizado.toLowerCase()
-    );
-    
-    if (existe) {
-        return { success: false, message: 'Ya estás registrado en este grupo' };
-    }
-    
-    grupos[grupoId].participantes.push(nombreNormalizado);
-    
-    if (!grupos[grupoId].participantesInfo) {
-        grupos[grupoId].participantesInfo = {};
-    }
-    
-    grupos[grupoId].participantesInfo[nombreNormalizado] = {
-        telefono: telefono,
-        fechaRegistro: new Date().toISOString()
-    };
-    
-    guardarGrupos(grupos);
-    return { success: true, message: `¡Bienvenido ${nombreNormalizado}!` };
+    return resultado;
 }
 
-export function participanteRegistrado(grupoId, nombre) {
-    const grupo = getGrupo(grupoId);
+export async function participanteRegistrado(grupoId, nombre) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return false;
     return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
 }
 
-export function getParticipantesDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
+export async function getParticipantesDelGrupo(grupoId) {
+    const grupo = await getGrupo(grupoId);
     return grupo ? grupo.participantes : [];
 }
 
-export function getInfoParticipante(grupoId, nombre) {
-    const grupo = getGrupo(grupoId);
+export async function getInfoParticipante(grupoId, nombre) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return null;
     return grupo.participantesInfo?.[nombre] || { telefono: '', fechaRegistro: '' };
 }
 
-export function eliminarParticipanteDeGrupo(grupoId, nombre) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    const index = grupos[grupoId].participantes.findIndex(
-        p => p.toLowerCase() === nombre.toLowerCase()
-    );
-    
-    if (index !== -1) {
-        grupos[grupoId].participantes.splice(index, 1);
-        if (grupos[grupoId].participantesInfo?.[nombre]) {
-            delete grupos[grupoId].participantesInfo[nombre];
+export async function eliminarParticipanteDeGrupo(grupoId, nombre) {
+    const resultado = await eliminarParticipanteDeFirebase(grupoId, nombre);
+    if (resultado) {
+        const grupos = await getGrupos();
+        if (grupos[grupoId]) {
+            const index = grupos[grupoId].participantes.findIndex(p => p.toLowerCase() === nombre.toLowerCase());
+            if (index !== -1) {
+                grupos[grupoId].participantes.splice(index, 1);
+                if (grupos[grupoId].participantesInfo?.[nombre]) {
+                    delete grupos[grupoId].participantesInfo[nombre];
+                }
+                await guardarGrupos(grupos);
+            }
         }
-        if (grupos[grupoId].apuestas[nombre]) {
-            delete grupos[grupoId].apuestas[nombre];
-        }
-        guardarGrupos(grupos);
-        return true;
     }
-    return false;
-}
-
-// ============ LÍMITE DE APUESTAS EXTRA ============
-
-export function getLimiteApuestasParticipante(grupoId, participante) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return 1;
-    
-    if (!grupo.apuestasExtras) {
-        grupo.apuestasExtras = {};
-    }
-    
-    return grupo.apuestasExtras[participante] || 1;
-}
-
-export function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].apuestasExtras) {
-        grupos[grupoId].apuestasExtras = {};
-    }
-    
-    grupos[grupoId].apuestasExtras[participante] = limite;
-    guardarGrupos(grupos);
-    return true;
-}
-
-export function getApuestasExtrasDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return {};
-    return grupo.apuestasExtras || {};
+    return resultado;
 }
 
 // ============ APUESTAS ============
 
-export function agregarApuestaEnGrupo(grupoId, participante, partidoId, apuesta) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].apuestas[participante]) {
-        grupos[grupoId].apuestas[participante] = {};
+export async function agregarApuestaEnGrupo(grupoId, participante, partidoId, apuesta) {
+    const apuestaId = await agregarApuestaEnFirebase(grupoId, participante, partidoId, apuesta);
+    if (apuestaId) {
+        // Actualizar caché local
+        const grupos = await getGrupos();
+        if (grupos[grupoId]) {
+            if (!grupos[grupoId].apuestas) grupos[grupoId].apuestas = {};
+            if (!grupos[grupoId].apuestas[participante]) grupos[grupoId].apuestas[participante] = {};
+            if (!grupos[grupoId].apuestas[participante][partidoId]) grupos[grupoId].apuestas[participante][partidoId] = [];
+            
+            grupos[grupoId].apuestas[participante][partidoId].push({
+                id: apuestaId,
+                local: apuesta.local,
+                visitante: apuesta.visitante,
+                fecha: new Date().toISOString()
+            });
+            await guardarGrupos(grupos);
+        }
     }
-    
-    if (!grupos[grupoId].apuestas[participante][partidoId]) {
-        grupos[grupoId].apuestas[participante][partidoId] = [];
-    }
-    
-    const apuestaId = Date.now() + '-' + Math.random().toString(36).substr(2, 8);
-    
-    grupos[grupoId].apuestas[participante][partidoId].push({
-        id: apuestaId,
-        local: apuesta.local,
-        visitante: apuesta.visitante,
-        fecha: new Date().toISOString()
-    });
-    
-    guardarGrupos(grupos);
     return apuestaId;
 }
 
-export function getApuestasMultiplesDeParticipante(grupoId, participante) {
-    const grupo = getGrupo(grupoId);
+export async function getApuestasMultiplesDeParticipante(grupoId, participante) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo || !grupo.apuestas[participante]) return {};
     return grupo.apuestas[participante];
 }
 
-export function getApuestasDePartido(grupoId, participante, partidoId) {
-    const grupo = getGrupo(grupoId);
+export async function getApuestasDePartido(grupoId, participante, partidoId) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo || !grupo.apuestas[participante]) return [];
     return grupo.apuestas[participante][partidoId] || [];
 }
 
-export function eliminarApuesta(grupoId, participante, partidoId, apuestaId) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    const apuestasPartido = grupos[grupoId].apuestas[participante]?.[partidoId];
-    if (apuestasPartido && Array.isArray(apuestasPartido)) {
-        const index = apuestasPartido.findIndex(a => a.id === apuestaId);
-        if (index !== -1) {
-            apuestasPartido.splice(index, 1);
-            if (apuestasPartido.length === 0) {
-                delete grupos[grupoId].apuestas[participante][partidoId];
+export async function eliminarApuesta(grupoId, participante, partidoId, apuestaId) {
+    const resultado = await eliminarApuestaEnFirebase(grupoId, participante, partidoId, apuestaId);
+    if (resultado) {
+        const grupos = await getGrupos();
+        if (grupos[grupoId]?.apuestas?.[participante]?.[partidoId]) {
+            const index = grupos[grupoId].apuestas[participante][partidoId].findIndex(a => a.id === apuestaId);
+            if (index !== -1) {
+                grupos[grupoId].apuestas[participante][partidoId].splice(index, 1);
+                if (grupos[grupoId].apuestas[participante][partidoId].length === 0) {
+                    delete grupos[grupoId].apuestas[participante][partidoId];
+                }
+                await guardarGrupos(grupos);
             }
-            guardarGrupos(grupos);
-            return true;
         }
     }
-    return false;
+    return resultado;
 }
 
 // ============ RESULTADOS ============
 
-export function guardarResultadoEnGrupo(grupoId, partidoId, resultado) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].resultados) {
-        grupos[grupoId].resultados = {};
+export async function guardarResultadoEnGrupo(grupoId, partidoId, resultado) {
+    const exito = await guardarResultadoEnFirebase(grupoId, partidoId, resultado);
+    if (exito) {
+        const grupos = await getGrupos();
+        if (grupos[grupoId]) {
+            if (!grupos[grupoId].resultados) grupos[grupoId].resultados = {};
+            grupos[grupoId].resultados[partidoId] = resultado;
+            await guardarGrupos(grupos);
+        }
     }
-    
-    grupos[grupoId].resultados[partidoId] = resultado;
-    guardarGrupos(grupos);
-    return true;
+    return exito;
 }
 
-export function getResultadosDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
+export async function getResultadosDelGrupo(grupoId) {
+    const grupo = await getGrupo(grupoId);
     return grupo ? grupo.resultados || {} : {};
 }
 
-// ============ CÁLCULO DE PUNTOS Y RANKING ============
+// ============ CÁLCULO DE PUNTOS ============
 
-export function calcularPuntosMultiples(grupoId, participante) {
-    const grupo = getGrupo(grupoId);
+export async function calcularPuntosMultiples(grupoId, participante) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return 0;
     
     const apuestasPorPartido = grupo.apuestas[participante] || {};
@@ -289,65 +282,18 @@ export function calcularPuntosMultiples(grupoId, participante) {
     return puntos;
 }
 
-export function getRankingDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
+export async function getRankingDelGrupo(grupoId) {
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return [];
     
-    const ranking = grupo.participantes.map(participante => {
-        return {
+    const ranking = [];
+    for (const participante of grupo.participantes) {
+        ranking.push({
             nombre: participante,
-            puntos: calcularPuntosMultiples(grupoId, participante),
-            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
-            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
-        };
-    });
-    
-    ranking.sort((a, b) => b.puntos - a.puntos);
-    
-    return ranking.map((item, index) => ({
-        ...item,
-        posicion: index + 1
-    }));
-}
-
-export function getRankingDelGrupoPorDia(grupoId, fecha) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return [];
-    
-    const partidosDeFecha = todosLosPartidosGlobal.filter(p => p.fecha === fecha);
-    const partidosIds = partidosDeFecha.map(p => p.id);
-    
-    const ranking = grupo.participantes.map(participante => {
-        let puntos = 0;
-        const apuestasPorPartido = grupo.apuestas[participante] || {};
-        const resultados = grupo.resultados || {};
-        const reglas = grupo.reglas;
-        
-        for (const partidoId of partidosIds) {
-            const apuestas = apuestasPorPartido[partidoId];
-            const resultado = resultados[partidoId];
-            if (apuestas && Array.isArray(apuestas) && resultado) {
-                for (const apuesta of apuestas) {
-                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                        puntos += reglas.puntosExacto;
-                    }
-                    else if (
-                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                    ) {
-                        puntos += reglas.puntosGanador;
-                    }
-                }
-            }
-        }
-        
-        return {
-            nombre: participante,
-            puntos: puntos,
+            puntos: await calcularPuntosMultiples(grupoId, participante),
             telefono: grupo.participantesInfo?.[participante]?.telefono || ''
-        };
-    });
+        });
+    }
     
     ranking.sort((a, b) => b.puntos - a.puntos);
     
@@ -359,8 +305,38 @@ export function getRankingDelGrupoPorDia(grupoId, fecha) {
 
 // ============ REGLAS Y PREMIOS ============
 
-export function getPremiosDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
+export async function actualizarReglasDelGrupo(grupoId, nuevasReglas) {
+    const exito = await actualizarReglasEnFirebase(grupoId, nuevasReglas);
+    if (exito) {
+        const grupos = await getGrupos();
+        if (grupos[grupoId]) {
+            grupos[grupoId].reglas = {
+                ...grupos[grupoId].reglas,
+                ...nuevasReglas
+            };
+            await guardarGrupos(grupos);
+        }
+    }
+    return exito;
+}
+
+export async function actualizarPremiosDelGrupo(grupoId, nuevosPremios) {
+    const exito = await actualizarPremiosEnFirebase(grupoId, nuevosPremios);
+    if (exito) {
+        const grupos = await getGrupos();
+        if (grupos[grupoId]) {
+            grupos[grupoId].premios = {
+                ...grupos[grupoId].premios,
+                ...nuevosPremios
+            };
+            await guardarGrupos(grupos);
+        }
+    }
+    return exito;
+}
+
+export async function getPremiosDelGrupo(grupoId) {
+    const grupo = await getGrupo(grupoId);
     return grupo ? grupo.premios : { 
         cantidadGanadores: 3,
         primero: 50, 
@@ -369,42 +345,50 @@ export function getPremiosDelGrupo(grupoId) {
     };
 }
 
-export function actualizarPremiosDelGrupo(grupoId, nuevosPremios) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    grupos[grupoId].premios = {
-        ...grupos[grupoId].premios,
-        ...nuevosPremios
-    };
-    guardarGrupos(grupos);
-    return true;
-}
-
-export function actualizarReglasDelGrupo(grupoId, nuevasReglas) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    grupos[grupoId].reglas = {
-        ...grupos[grupoId].reglas,
-        ...nuevasReglas
-    };
-    guardarGrupos(grupos);
-    return true;
-}
-
-export function getReglasDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
+export async function getReglasDelGrupo(grupoId) {
+    const grupo = await getGrupo(grupoId);
     return grupo ? grupo.reglas : { puntosExacto: 3, puntosGanador: 1 };
 }
 
-// ============ GRUPO GENERAL (ESPECIAL) ============
+// ============ LÍMITE DE APUESTAS EXTRA ============
 
-export function obtenerGrupoGeneral() {
-    const grupos = getGrupos();
+export async function getLimiteApuestasParticipante(grupoId, participante) {
+    const grupo = await getGrupo(grupoId);
+    if (!grupo) return 1;
+    
+    if (!grupo.apuestasExtras) {
+        return 1;
+    }
+    
+    return grupo.apuestasExtras[participante] || 1;
+}
+
+export async function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
+    const grupos = await getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    if (!grupos[grupoId].apuestasExtras) {
+        grupos[grupoId].apuestasExtras = {};
+    }
+    
+    grupos[grupoId].apuestasExtras[participante] = limite;
+    await guardarGrupos(grupos);
+    return true;
+}
+
+export async function getApuestasExtrasDelGrupo(grupoId) {
+    const grupo = await getGrupo(grupoId);
+    if (!grupo) return {};
+    return grupo.apuestasExtras || {};
+}
+
+// ============ GRUPO GENERAL ============
+
+export async function obtenerGrupoGeneral() {
+    const grupos = await getGrupos();
     
     if (!grupos['general']) {
-        grupos['general'] = {
+        const nuevoGrupo = {
             nombre: "🏆 GRUPO GENERAL - POZO MAYOR 🏆",
             codigo: "GENERAL",
             descripcion: "Grupo principal con pozo mayor. ¡Participa y gana grandes premios!",
@@ -429,20 +413,22 @@ export function obtenerGrupoGeneral() {
             activo: true,
             esGrupoGeneral: true
         };
-        guardarGrupos(grupos);
+        grupos['general'] = nuevoGrupo;
+        await guardarGrupos(grupos);
         console.log('✅ Grupo General creado automáticamente con pozo mayor');
     }
     
     return grupos['general'];
 }
 
-export function unirseAlGrupoGeneral(nombre, telefono = '') {
-    const grupos = getGrupos();
+export async function unirseAlGrupoGeneral(nombre, telefono = '') {
+    const grupos = await getGrupos();
     let grupoGeneral = grupos['general'];
     
     if (!grupoGeneral) {
-        obtenerGrupoGeneral();
-        grupoGeneral = grupos['general'];
+        await obtenerGrupoGeneral();
+        const gruposActualizados = await getGrupos();
+        grupoGeneral = gruposActualizados['general'];
     }
     
     const nombreNormalizado = nombre.trim();
@@ -470,30 +456,6 @@ export function unirseAlGrupoGeneral(nombre, telefono = '') {
         esMiembroGeneral: true
     };
     
-    guardarGrupos(grupos);
+    await guardarGrupos(grupos);
     return { success: true, message: `🎉 ¡Bienvenido al GRUPO GENERAL! 🎉\nTienes premios mayores y puntos extra.` };
-}
-
-export function esGrupoGeneral(grupoId) {
-    const grupo = getGrupo(grupoId);
-    return grupo ? grupo.esGrupoGeneral === true : false;
-}
-
-export function getEstadisticasGrupoGeneral() {
-    const grupo = getGrupo('general');
-    if (!grupo) return null;
-    
-    const totalParticipantes = grupo.participantes.length;
-    const totalApuestas = Object.values(grupo.apuestas || {}).reduce((sum, p) => 
-        sum + Object.keys(p).length, 0);
-    
-    return {
-        totalParticipantes,
-        totalApuestas,
-        premioPrimero: grupo.premios.primero,
-        premioSegundo: grupo.premios.segundo,
-        premioTercero: grupo.premios.tercero,
-        puntosExacto: grupo.reglas.puntosExacto,
-        puntosGanador: grupo.reglas.puntosGanador
-    };
 }
