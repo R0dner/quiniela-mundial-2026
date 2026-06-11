@@ -518,6 +518,85 @@
             transform: translateY(-2px);
         }
 
+        /* ============ QR DE PAGO ============ */
+        .qr-pago-container {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 100, 0, 0.05));
+            border-radius: 20px;
+            padding: 25px;
+            margin: 30px 0 20px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            text-align: center;
+        }
+
+        .qr-pago-container h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .qr-pago-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-imagen {
+            text-align: center;
+        }
+
+        .qr-imagen img {
+            width: 150px;
+            height: 150px;
+            border-radius: 16px;
+            border: 2px solid #ffd700;
+            background: white;
+            padding: 5px;
+        }
+
+        .qr-imagen p {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .qr-info {
+            text-align: left;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .qr-info p {
+            margin: 8px 0;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .qr-info strong {
+            color: #ffd700;
+        }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .btn-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+        }
+
         /* Modal de verificación */
         .modal-verificacion {
             display: none;
@@ -694,22 +773,52 @@
             text-align: center;
         }
 
-        .modal-general-benefits ul {
-            list-style: none;
-            padding: 0;
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 10px;
         }
 
-        .modal-general-benefits li {
-            padding: 8px 0;
-            color: rgba(255, 255, 255, 0.9);
+        .benefit-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 12px 8px;
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 215, 0, 0.15);
         }
 
-        .modal-general-benefits li::before {
-            content: "⭐";
+        .benefit-icon {
+            font-size: 1.8rem;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .benefit-text {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .benefit-value {
+            font-size: 0.95rem;
+            font-weight: 800;
             color: #ffd700;
+            line-height: 1.2;
+        }
+
+        .benefit-desc {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .benefit-compare {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
         }
 
         .modal-general-body input {
@@ -797,335 +906,6 @@
             font-size: 1.2rem;
             font-weight: bold;
             margin-top: 20px;
-        }
-
-/* ============ NOTIFICACIONES CENTRALES ============ */
-.notificacion-central {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.8);
-    background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
-    border-radius: 16px;
-    padding: 20px 30px;
-    min-width: 280px;
-    max-width: 90%;
-    text-align: center;
-    z-index: 20001;
-    opacity: 0;
-    transition: all 0.3s ease;
-    border: 2px solid rgba(255, 215, 0, 0.3);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-}
-
-.notificacion-central.mostrar {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-.notificacion-central.success {
-    border-color: #4caf50;
-    background: linear-gradient(135deg, #0a2a1a, #0a0f1f);
-}
-
-.notificacion-central.error {
-    border-color: #f44336;
-    background: linear-gradient(135deg, #2a1a1a, #0a0f1f);
-}
-
-.notificacion-central.info {
-    border-color: #2196f3;
-}
-
-.notificacion-contenido {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
-
-.notificacion-icono {
-    font-size: 1.8rem;
-}
-
-.notificacion-mensaje {
-    font-size: 1rem;
-    color: white;
-    font-weight: 500;
-}
-
-.notificacion-central.success .notificacion-mensaje {
-    color: #4caf50;
-}
-
-.notificacion-central.error .notificacion-mensaje {
-    color: #f44336;
-}
-
-@media (max-width: 550px) {
-    .notificacion-central {
-        padding: 15px 20px;
-        min-width: 250px;
-    }
-    
-    .notificacion-icono {
-        font-size: 1.4rem;
-    }
-    
-    .notificacion-mensaje {
-        font-size: 0.85rem;
-    }
-}
-
-/* ============ NOTIFICACIONES CENTRALES ============ */
-        .notificacion-central {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
-            border-radius: 16px;
-            padding: 20px 30px;
-            min-width: 280px;
-            max-width: 90%;
-            text-align: center;
-            z-index: 20001;
-            opacity: 0;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            pointer-events: none;
-        }
-
-        .notificacion-central.mostrar {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .notificacion-central.success {
-            border-color: #4caf50;
-            background: linear-gradient(135deg, #0a2a1a, #0a0f1f);
-        }
-
-        .notificacion-central.error {
-            border-color: #f44336;
-            background: linear-gradient(135deg, #2a1a1a, #0a0f1f);
-        }
-
-        .notificacion-central.info {
-            border-color: #2196f3;
-        }
-
-        .notificacion-contenido {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .notificacion-icono {
-            font-size: 1.8rem;
-        }
-
-        .notificacion-mensaje {
-            font-size: 1rem;
-            color: white;
-            font-weight: 500;
-        }
-
-        .notificacion-central.success .notificacion-mensaje {
-            color: #4caf50;
-        }
-
-        .notificacion-central.error .notificacion-mensaje {
-            color: #f44336;
-        }
-
-        @media (max-width: 550px) {
-            .notificacion-central {
-                padding: 15px 20px;
-                min-width: 250px;
-            }
-            
-            .notificacion-icono {
-                font-size: 1.4rem;
-            }
-            
-            .notificacion-mensaje {
-                font-size: 0.85rem;
-            }
-        }
-
-        /* ============ MODAL DE APUESTAS - ESTILOS CORREGIDOS ============ */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(8px);
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
-            margin: 5% auto;
-            padding: 25px;
-            width: 90%;
-            max-width: 650px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content h2 {
-            color: #ffd700;
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-            padding-bottom: 12px;
-        }
-
-        .modal-content h3 {
-            color: #ffd700;
-            font-size: 1.2rem;
-            margin: 15px 0 10px;
-            text-align: center;
-        }
-
-        .modal-content h4 {
-            color: #ffd700;
-            font-size: 1rem;
-            margin: 15px 0 10px;
-            padding-left: 10px;
-            border-left: 3px solid #ffd700;
-        }
-
-        .modal-close {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #ffd700;
-            transition: all 0.3s;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        .modal-close:hover {
-            background: rgba(255, 215, 0, 0.2);
-            transform: scale(1.1);
-        }
-
-        /* Tarjetas de pronósticos en el modal */
-        .apuesta-resumen {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
-            padding: 12px 15px;
-            margin: 10px 0;
-            border: 1px solid rgba(255, 215, 0, 0.15);
-            transition: all 0.3s;
-        }
-
-        .apuesta-resumen:hover {
-            border-color: rgba(255, 215, 0, 0.4);
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .apuesta-resumen strong {
-            color: #ffd700;
-            font-size: 0.95rem;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .apuesta-resumen .pronostico {
-            color: white;
-            font-size: 0.9rem;
-            margin: 5px 0;
-        }
-
-        .apuesta-resumen .resultado {
-            color: #ffd700;
-            font-size: 0.85rem;
-            margin: 5px 0;
-        }
-
-        .apuesta-resumen .puntos {
-            font-weight: bold;
-            margin-top: 5px;
-            font-size: 0.85rem;
-        }
-
-        .puntos-exacto {
-            color: #4caf50;
-        }
-
-        .puntos-ganador {
-            color: #ffc107;
-        }
-
-        .puntos-error {
-            color: #f44336;
-        }
-
-        .total-puntos {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 100, 0, 0.1));
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            color: #ffd700;
-        }
-
-        /* Scrollbar personalizado para el modal */
-        .modal-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .modal-content::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb {
-            background: #ffd700;
-            border-radius: 3px;
-        }
-
-        /* Responsive para modal */
-        @media (max-width: 550px) {
-            .modal-content {
-                padding: 15px;
-                margin: 10% auto;
-                width: 95%;
-            }
-            
-            .modal-content h2 {
-                font-size: 1.2rem;
-            }
-            
-            .apuesta-resumen {
-                padding: 10px;
-            }
-            
-            .total-puntos {
-                font-size: 1rem;
-                padding: 12px;
-            }
         }
 
         /* Popup de Reglas */
@@ -1264,11 +1044,6 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
-        .grupo-general-destacado {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 100, 0, 0.1));
-            border: 1px solid #ffd700;
-        }
-
         .popup-rules-footer {
             display: flex;
             justify-content: space-between;
@@ -1377,6 +1152,58 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
+        /* Notificaciones centrales */
+        .notificacion-central {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
+            border-radius: 16px;
+            padding: 20px 30px;
+            min-width: 280px;
+            max-width: 90%;
+            text-align: center;
+            z-index: 20001;
+            opacity: 0;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .notificacion-central.mostrar {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .notificacion-central.success {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #0a2a1a, #0a0f1f);
+        }
+
+        .notificacion-central.error {
+            border-color: #f44336;
+            background: linear-gradient(135deg, #2a1a1a, #0a0f1f);
+        }
+
+        .notificacion-contenido {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .notificacion-icono {
+            font-size: 1.8rem;
+        }
+
+        .notificacion-mensaje {
+            font-size: 1rem;
+            color: white;
+            font-weight: 500;
+        }
+
         /* ============ RESPONSIVE ============ */
         @media (max-width: 768px) {
             .container {
@@ -1435,6 +1262,15 @@
             .popup-rules-content {
                 padding: 20px;
             }
+
+            .qr-pago-content {
+                flex-direction: column;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
         }
 
         @media (max-width: 550px) {
@@ -1477,6 +1313,15 @@
             .puntos-destacados {
                 flex-direction: column;
             }
+            
+            .benefit-item {
+                padding: 10px 12px;
+            }
+            
+            .benefit-icon {
+                font-size: 1.5rem;
+                min-width: 40px;
+            }
         }
 
         @media (max-width: 400px) {
@@ -1495,31 +1340,24 @@
             .match-teams {
                 font-size: 0.85rem;
             }
+            
+            .benefit-item {
+                flex-direction: column;
+                text-align: center;
+                padding: 12px;
+            }
+            
+            .benefit-icon {
+                font-size: 1.8rem;
+                min-width: auto;
+            }
+            
+            .benefit-text {
+                align-items: center;
+            }
         }
     </style>
 </head>
-<!-- Firebase SDK -->
-<script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-    import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-    
-    const firebaseConfig = {
-        apiKey: "AIzaSyDUvg4anoICh5_cXqcrp3D3ljid06COkkM",
-        authDomain: "quiniela-mundial-2026-b02eb.firebaseapp.com",
-        projectId: "quiniela-mundial-2026-b02eb",
-        storageBucket: "quiniela-mundial-2026-b02eb.firebasestorage.app",
-        messagingSenderId: "490180467242",
-        appId: "1:490180467242:web:84f19878a66605446e4153",
-        measurementId: "G-P0WF5N56DL"
-    };
-    
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    
-    window.db = db;
-    console.log('✅ Firebase conectado correctamente');
-</script>
-
 <body>
     <div class="container">
         <header class="worldcup-header">
@@ -1590,6 +1428,29 @@
 
             <div id="apuestas-container" class="apuestas-grid"></div>
             
+            <!-- QR DE PAGO - Aparece después de las apuestas -->
+            <div id="qr-pago" class="qr-pago-container" style="display: none;">
+                <h3>💰 COMPLETÁ TU INSCRIPCIÓN</h3>
+                <div class="qr-pago-content">
+                    <div class="qr-imagen">
+                        <img src="/assets/qr-pago.jpg" alt="QR para pago" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Transferencia%20Bancaria%20Quiniela%20Mundial%202026'">
+                        <p>Escanea el QR para pagar</p>
+                    </div>
+                    <div class="qr-info">
+                        <p><strong>📌 Monto por jornada:</strong> Bs. 5</p>
+                        <p><strong>📌 Banco:</strong> BCP </p>
+                        <p><strong>📌 cuenta de banco:</strong> 201-51269181-3-32 </p>
+                        <p><strong>📌 CI/CUIT:</strong> 6861250 LP </p>
+                        <button id="btn-enviar-comprobante" class="btn-whatsapp">
+                            📲 Enviar comprobante por WhatsApp
+                        </button>
+                    </div>
+                </div>
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 15px;">
+                    ⭐ Una vez confirmado tu pago, tus apuestas serán válidas para el ranking
+                </p>
+            </div>
+            
             <div class="actions">
                 <button id="ver-mis-apuestas" class="btn-secondary">📋 Ver Mis Pronósticos</button>
             </div>
@@ -1642,88 +1503,48 @@
                 <h3>GRUPO GENERAL</h3>
                 <p>POZO MAYOR - PREMIOS ESPECIALES</p>
             </div>
-            
-            <!-- Paso 1: Verificar si ya está registrado -->
-            <div id="general-paso-verificar" class="general-paso">
-                <div class="modal-general-benefits">
-                    <h4>✨ BENEFICIOS EXCLUSIVOS ✨</h4>
-                    <div class="benefits-grid">
-                        <div class="benefit-item">
-                            <div class="benefit-icon">🎯</div>
-                            <div class="benefit-text">
-                                <span class="benefit-value">5 PUNTOS</span>
-                                <span class="benefit-desc">por resultado exacto</span>
-                                <span class="benefit-compare">(vs 3 puntos normal)</span>
-                            </div>
+            <div class="modal-general-benefits">
+                <h4>✨ BENEFICIOS EXCLUSIVOS ✨</h4>
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🎯</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">5 PUNTOS</span>
+                            <span class="benefit-desc">por resultado exacto</span>
+                            <span class="benefit-compare">(vs 3 puntos normal)</span>
                         </div>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">🏅</div>
-                            <div class="benefit-text">
-                                <span class="benefit-value">2 PUNTOS</span>
-                                <span class="benefit-desc">por ganador correcto</span>
-                                <span class="benefit-compare">(vs 1 punto normal)</span>
-                            </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏅</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">2 PUNTOS</span>
+                            <span class="benefit-desc">por ganador correcto</span>
+                            <span class="benefit-compare">(vs 1 punto normal)</span>
                         </div>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">🏆</div>
-                            <div class="benefit-text">
-                                <span class="benefit-value">COMPETENCIA GENERAL</span>
-                                <span class="benefit-desc">Con todos los participantes</span>
-                            </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏆</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">COMPETENCIA GENERAL</span>
+                            <span class="benefit-desc">Con todos los participantes</span>
                         </div>
-                        <div class="benefit-item">
-                            <div class="benefit-icon">⭐</div>
-                            <div class="benefit-text">
-                                <span class="benefit-value">RANKING ESPECIAL</span>
-                                <span class="benefit-desc">Premios mayores exclusivos</span>
-                            </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">⭐</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">RANKING ESPECIAL</span>
+                            <span class="benefit-desc">Premios mayores exclusivos</span>
                         </div>
                     </div>
                 </div>
-                <div class="modal-general-body">
-                    <label>🔐 ¿Ya tienes cuenta en el Grupo General?</label>
-                    <div class="general-buttons-verificar">
-                        <button id="general-btn-si" class="btn-confirmar-general">✅ SÍ, YA ESTOY REGISTRADO</button>
-                        <button id="general-btn-no" class="btn-cancelar-general">📝 NO, QUIERO REGISTRARME</button>
-                    </div>
-                </div>
             </div>
-            
-            <!-- Paso 2: Ingresar nombre si ya está registrado -->
-            <div id="general-paso-ingresar" class="general-paso" style="display: none;">
-                <div class="modal-general-benefits">
-                    <h4>🔐 INGRESA TUS DATOS</h4>
-                    <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; text-align: center;">Si ya estás registrado, ingresa tu nombre exacto</p>
-                </div>
-                <div class="modal-general-body">
-                    <input type="text" id="general-nombre-ingresar" placeholder="Tu nombre registrado" autocomplete="off">
-                    <div id="general-error-ingresar" class="mensaje-error-modal" style="display: none;"></div>
-                </div>
-                <div class="modal-general-buttons">
-                    <button id="general-btn-ingresar" class="btn-confirmar-general">🎯 INGRESAR</button>
-                    <button id="general-btn-volver" class="btn-cancelar-general">◀ VOLVER</button>
-                </div>
+            <div class="modal-general-body">
+                <input type="text" id="modal-general-nombre" placeholder="Tu nombre" autocomplete="off">
+                <input type="tel" id="modal-general-telefono" placeholder="Teléfono (opcional)">
             </div>
-            
-            <!-- Paso 3: Registro para nuevos usuarios -->
-            <div id="general-paso-registro" class="general-paso" style="display: none;">
-                <div class="modal-general-benefits">
-                    <h4>📝 REGISTRO NUEVO PARTICIPANTE</h4>
-                    <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; text-align: center;">Completa tus datos para unirte al Grupo General</p>
-                </div>
-                <div class="modal-general-body">
-                    <input type="text" id="general-nombre-registro" placeholder="Tu nombre completo" autocomplete="off">
-                    <input type="tel" id="general-telefono-registro" placeholder="Teléfono (opcional)">
-                    <div id="general-error-registro" class="mensaje-error-modal" style="display: none;"></div>
-                </div>
-                <div class="modal-general-buttons">
-                    <button id="general-btn-registrar" class="btn-confirmar-general">🎉 REGISTRARME</button>
-                    <button id="general-btn-volver2" class="btn-cancelar-general">◀ VOLVER</button>
-                </div>
-            </div>
-            
-            <div class="modal-general-footer">
-                <button id="general-cancelar" class="btn-cancelar-general" style="width: 100%; margin-top: 10px;">❌ CERRAR</button>
+            <div class="modal-general-buttons">
+                <button id="btn-confirmar-general" class="btn-confirmar-general">🎉 UNIRME AHORA</button>
+                <button id="btn-cancelar-general" class="btn-cancelar-general">❌ AHORA NO</button>
             </div>
         </div>
     </div>
@@ -1756,14 +1577,6 @@
                 </div>
 
                 <div class="rules-section">
-                    <h3>📊 INSCRIPCION </h3>
-                    <ul class="rules-highlight">
-                        <li>🎯 La Apuesta es por partido </li>
-                        <li>🏅 Ejemplo si hay 2 partidos y la entrada es 5bs el total seria 10 bs por la jornada del dia </li>
-                    </ul>
-                </div>
-
-                <div class="rules-section">
                     <h3>📊 GRUPO GENERAL - POZO MAYOR</h3>
                     <ul class="rules-highlight">
                         <li>🎯 5 PUNTOS por resultado exacto</li>
@@ -1778,22 +1591,17 @@
                         <li>👑 El <strong>20% del pozo total</strong> es para el ORGANIZADOR</li>
                         <li>🏆 El <strong>80% restante del pozo</strong> se reparte entre los GANADORES</li>
                         <li>📅 Los premios se reparten al FINALIZAR CADA JORNADA de partidos</li>
-                        <li>⭐ Cada GRUPO tiene su propia configuración de ganadores:</li>
-                        <ul style="margin-left: 25px; margin-top: 5px;">
-                            <li>🥇 Grupos con <strong>1 ganador</strong>: 100% del pozo del grupo para el 1er puesto</li>
-                            <li>🥇🥈 Grupos con <strong>2 ganadores</strong>: 60% para 1ro / 40% para 2do</li>
-                            <li>🥇🥈🥉 Grupos con <strong>3 ganadores</strong>: 50% para 1ro / 30% para 2do / 20% para 3ro</li>
-                        </ul>
+                        <li>⭐ Cada GRUPO tiene su propia configuración de ganadores</li>
                     </ul>
                 </div>
 
                 <div class="rules-section">
                     <h3>👥 MÚLTIPLES GRUPOS</h3>
                     <ul>
-                        <li>Podés participar en TODOS los grupos que quieras</li>
+                        <li>Puedes participar en TODOS los grupos que quieras</li>
                         <li>Cada grupo tiene su propio ranking y premios</li>
                         <li>Tu puntuación es independiente por cada grupo</li>
-                        <li>Podés cambiar de grupo cuando quieras</li>
+                        <li>Puedes cambiar de grupo cuando quieras</li>
                     </ul>
                 </div>
 
@@ -1803,17 +1611,7 @@
                         <li>Solo se puede apostar el DÍA del partido</li>
                         <li>Las apuestas se cierran a la HORA de inicio del partido</li>
                         <li>Los partidos de días pasados quedan bloqueados</li>
-                        <li>Podés hacer múltiples pronósticos por partido (según tu límite)</li>
-                    </ul>
-                </div>
-
-                <div class="rules-section">
-                    <h3>📌 RESUMEN DE PREMIOS</h3>
-                    <ul>
-                        <li>💰 Pozo TOTAL = Suma de todas las inscripciones</li>
-                        <li>👑 20% → Organizador</li>
-                        <li>🏆 80% → GANADORES (según configuración de cada grupo)</li>
-                        <li>📅 Pago de premios: AL FINALIZAR CADA JORNADA</li>
+                        <li>Puedes hacer múltiples pronósticos por partido (según tu límite)</li>
                     </ul>
                 </div>
             </div>
