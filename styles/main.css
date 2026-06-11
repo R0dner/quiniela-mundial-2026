@@ -1218,6 +1218,107 @@ body {
     margin-top: 20px;
 }
 
+/* ============ BENEFICIOS GRUPO GENERAL - RESPONSIVE ============ */
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.benefit-item {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 12px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s;
+    border: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.benefit-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 215, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.benefit-icon {
+    font-size: 1.8rem;
+    min-width: 45px;
+    text-align: center;
+}
+
+.benefit-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.benefit-value {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffd700;
+    line-height: 1.2;
+}
+
+.benefit-desc {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.benefit-compare {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+}
+
+/* Responsive para móviles */
+@media (max-width: 550px) {
+    .benefits-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .benefit-item {
+        padding: 10px 12px;
+    }
+    
+    .benefit-icon {
+        font-size: 1.5rem;
+        min-width: 40px;
+    }
+    
+    .benefit-value {
+        font-size: 0.85rem;
+    }
+    
+    .benefit-desc {
+        font-size: 0.65rem;
+    }
+    
+    .benefit-compare {
+        font-size: 0.55rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .benefit-item {
+        flex-direction: column;
+        text-align: center;
+        padding: 12px;
+    }
+    
+    .benefit-icon {
+        font-size: 1.8rem;
+        min-width: auto;
+    }
+    
+    .benefit-text {
+        align-items: center;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 16px;
