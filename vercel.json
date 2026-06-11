@@ -12,11 +12,19 @@
     {
       "src": "styles/**/*.css",
       "use": "@vercel/static"
+    },
+    {
+      "src": "assets/**/*",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/",
+      "dest": "/home.html"
+    },
+    {
+      "src": "/apuestas",
       "dest": "/index.html"
     },
     {
