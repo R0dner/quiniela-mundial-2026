@@ -1158,6 +1158,12 @@ function mostrarQR() {
         qrDiv.style.display = 'block';
         qrMostrado = true;
         
+        // Guardar en localStorage que ya se mostró el QR
+        localStorage.setItem('quiniela_qr_mostrado', 'true');
+        
+        // Configurar el modal para agrandar QR
+        configurarModalQR();
+        
         // Scroll suave al QR
         setTimeout(() => {
             qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1178,6 +1184,58 @@ function configurarBotonWhatsApp() {
     }
 }
 
+// ============ MODAL PARA AGRANDAR QR ============
+
+function configurarModalQR() {
+    const modalQr = document.getElementById('modal-qr');
+    const closeBtn = document.querySelector('.modal-qr-close');
+    const qrImg = document.querySelector('.qr-imagen img');
+    
+    if (!modalQr) return;
+    
+    // Cerrar modal al hacer clic en la X
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modalQr.style.display = 'none';
+        });
+    }
+    
+    // Cerrar modal al hacer clic fuera
+    modalQr.addEventListener('click', (e) => {
+        if (e.target === modalQr) {
+            modalQr.style.display = 'none';
+        }
+    });
+    
+    // Agrandar QR al hacer clic en la imagen pequeña
+    if (qrImg) {
+        qrImg.style.cursor = 'pointer';
+        qrImg.addEventListener('click', () => {
+            const modalImg = document.getElementById('modal-qr-img');
+            if (modalImg) {
+                modalImg.src = qrImg.src;
+                modalQr.style.display = 'flex';
+            }
+        });
+    }
+    
+    // También para el QR dentro del QR container
+    const qrImgContainer = document.querySelector('#qr-pago .qr-imagen img');
+    if (qrImgContainer && qrImgContainer !== qrImg) {
+        qrImgContainer.style.cursor = 'pointer';
+        qrImgContainer.addEventListener('click', () => {
+            const modalImg = document.getElementById('modal-qr-img');
+            if (modalImg) {
+                modalImg.src = qrImgContainer.src;
+                modalQr.style.display = 'flex';
+            }
+        });
+    }
+}
+
+// Llamar a esta función dentro de iniciarPanelApuestas() o donde se muestre el QR
+// Agrega esta línea al final de iniciarPanelApuestas():
+// configurarModalQR();
 // Modificar la función cargarPartidos para mostrar QR después de la primera apuesta
 // En la función handleAgregarClick (dentro de agregarApuestaHandler), después del éxito, agregar:
 // mostrarQR();
