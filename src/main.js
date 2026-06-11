@@ -33,6 +33,7 @@ let currentGrupoId = '';
 let currentGrupoNombre = '';
 let currentParticipante = '';
 let currentFecha = '';
+let qrMostrado = false;
 
 // Elementos DOM
 const gruposLista = document.getElementById('grupos-lista');
@@ -125,10 +126,51 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
     }, 3000);
 }
 
+// ============ MOSTRAR QR DESPUÉS DE LA PRIMERA APUESTA ============
+
+function mostrarQR() {
+    const qrDiv = document.getElementById('qr-pago');
+    if (qrDiv && !qrMostrado) {
+        qrDiv.style.display = 'block';
+        qrMostrado = true;
+        
+        // Guardar en localStorage que ya se mostró el QR
+        localStorage.setItem('quiniela_qr_mostrado', 'true');
+        
+        // Scroll suave al QR
+        setTimeout(() => {
+            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
+    }
+}
+
+function verificarQRMostrado() {
+    const qrMostradoStorage = localStorage.getItem('quiniela_qr_mostrado');
+    if (qrMostradoStorage === 'true') {
+        qrMostrado = true;
+        const qrDiv = document.getElementById('qr-pago');
+        if (qrDiv) {
+            qrDiv.style.display = 'block';
+        }
+    }
+}
+
+function configurarBotonWhatsApp() {
+    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
+    if (btnWhatsApp) {
+        btnWhatsApp.addEventListener('click', () => {
+            const nombre = currentParticipante || 'Participante';
+            const grupo = currentGrupoNombre || 'Grupo';
+            const mensaje = `Hola%2C%20deseo%20inscribirme%20en%20la%20quiniela%20del%20Mundial%202026.%0A%0A📌%20Mi%20nombre%20es%3A%20${encodeURIComponent(nombre)}%0A📌%20Grupo%3A%20${encodeURIComponent(grupo)}%0A📌%20Total%20a%20pagar%3A%20Bs.%205%0A%0AAdjunto%20mi%20comprobante%20de%20pago.`;
+            window.open(`https://wa.me/59174277508?text=${mensaje}`, '_blank');
+        });
+    }
+}
+
 // ============ MANEJADOR GLOBAL PARA AGREGAR APUESTAS ============
 
 let ultimoClick = 0;
-const TIEMPO_ESPERA = 1000; // 1 segundo de espera entre clicks
+const TIEMPO_ESPERA = 1000;
 
 window.agregarApuestaHandler = async function(partidoId, btnElement) {
     // Evitar múltiples clicks rápidos
@@ -191,17 +233,13 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         localInput.value = '';
         visitanteInput.value = '';
         await cargarPartidos(currentFecha);
-    } else {
-        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
-        btnElement.disabled = false;
-        btnElement.textContent = textoOriginal;
-    }
-       if (apuestaId) {
-        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
-        localInput.value = '';
-        visitanteInput.value = '';
-        await cargarPartidos(currentFecha);
-        mostrarQR(); // <-- AGREGAR ESTA LÍNEA PARA MOSTRAR EL QR
+        
+        // Mostrar QR después de la primera apuesta
+        const todasApuestas = await getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
+        const totalPronosticos = Object.values(todasApuestas).reduce((sum, arr) => sum + (arr ? arr.length : 0), 0);
+        if (totalPronosticos === 1) {
+            mostrarQR();
+        }
     } else {
         mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
         btnElement.disabled = false;
@@ -236,6 +274,7 @@ async function init() {
     configurarEventListeners();
     await verificarSesionGuardada();
     mostrarPopupReglas();
+    configurarBotonWhatsApp();
 }
 
 async function verificarSesionGuardada() {
@@ -435,6 +474,7 @@ async function ingresarAlGrupoGeneral() {
         cerrarModalGeneral();
         iniciarPanelApuestas();
         mostrarNotificacion(`🎉 Bienvenido de vuelta ${nombre}!`, 'success');
+        verificarQRMostrado();
     } else {
         if (errorDiv) {
             errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en el Grupo General. Verifica o regístrate.`;
@@ -493,6 +533,7 @@ async function registrarEnGrupoGeneral() {
         cerrarModalGeneral();
         iniciarPanelApuestas();
         mostrarNotificacion(`🎉 ${resultado.message}`, 'success');
+        verificarQRMostrado();
     } else {
         if (errorDiv) {
             errorDiv.textContent = `❌ ${resultado?.message || 'Error al registrar'}`;
@@ -564,6 +605,7 @@ async function verificarYAEstoyRegistrado() {
         cerrarModalVerificacion();
         iniciarPanelApuestas();
         mostrarNotificacion(`🎉 Bienvenido de vuelta ${nombre}!`, 'success');
+        verificarQRMostrado();
     } else {
         errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en "${grupoNombre}". Verifica que esté escrito correctamente o regístrate.`;
         errorDiv.style.display = 'block';
@@ -618,6 +660,7 @@ async function registrarNuevoParticipante() {
         setTimeout(() => {
             iniciarPanelApuestas();
             mostrarNotificacion(`🎉 ${resultado.message}`, 'success');
+            verificarQRMostrado();
         }, 1000);
     } else {
         registroMensaje.innerHTML = `<div class="mensaje-error">❌ ${resultado.message}</div>`;
@@ -635,6 +678,7 @@ function iniciarPanelApuestas() {
     
     cargarSelectorDias();
     configurarSelectorDias();
+    verificarQRMostrado();
 }
 
 function cargarSelectorDias() {
@@ -690,7 +734,7 @@ function actualizarEstadoDia(fecha) {
     if (esPasado) {
         estadoDia.innerHTML = '<span class="badge-pasado">🔒 DÍA FINALIZADO - Solo consulta</span>';
     } else if (esHoy) {
-        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Puedes apostar</span>';
+        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Podés apostar</span>';
     } else {
         estadoDia.innerHTML = '<span class="badge-futuro">⏳ DÍA FUTURO - Apuestas disponibles el día del partido</span>';
     }
@@ -719,13 +763,13 @@ async function cargarPartidos(fecha) {
             } else if (!esHoy) {
                 mensajeBloqueo = '⏳ Apuestas solo el día del partido';
                 botonDisabled = true;
-            } else if (alcanzoLimite) {
-                mensajeBloqueo = `🔒 Límite alcanzado (${limiteParticipante}/${limiteParticipante})`;
-                botonDisabled = true;
             } else {
                 mensajeBloqueo = '⏰ Apuestas cerradas';
                 botonDisabled = true;
             }
+        } else if (alcanzoLimite) {
+            mensajeBloqueo = `🔒 Límite alcanzado (${limiteParticipante}/${limiteParticipante})`;
+            botonDisabled = true;
         }
         
         return `
@@ -772,7 +816,7 @@ async function cargarApuestasExistentes(fecha) {
     for (const partido of partidos) {
         let apuestasPartido = todasApuestas[partido.id] || [];
         
-        // Eliminar duplicados en los datos (por si acaso)
+        // Eliminar duplicados en los datos
         const unicas = [];
         const claves = new Set();
         for (const apuesta of apuestasPartido) {
@@ -787,7 +831,7 @@ async function cargarApuestasExistentes(fecha) {
         const container = document.getElementById(`apuestas-lista-${partido.id}`);
         const readonlyContainer = document.getElementById(`readonly-${partido.id}`);
         
-        // Actualizar límite mostrado
+        // Actualizar límite mostrado y estado del botón
         const limiteSpan = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .limite-apuestas`);
         const agregarBtn = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .btn-agregar-apuesta`);
         
@@ -795,7 +839,6 @@ async function cargarApuestasExistentes(fecha) {
             const usados = apuestasPartido.length;
             limiteSpan.innerHTML = `📊 Usados: ${usados}/${limiteParticipante} pronósticos`;
             
-            // Si ya se alcanzó el límite, deshabilitar el botón de agregar
             if (agregarBtn) {
                 if (usados >= limiteParticipante) {
                     agregarBtn.disabled = true;
@@ -844,6 +887,8 @@ function cambiarDeGrupo() {
     currentGrupoId = '';
     currentGrupoNombre = '';
     currentParticipante = '';
+    qrMostrado = false;
+    localStorage.removeItem('quiniela_qr_mostrado');
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
@@ -1167,55 +1212,6 @@ function configurarEventListeners() {
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
-// ============ MOSTRAR QR DESPUÉS DE APOSTAR ============
 
-// ============ MOSTRAR QR DESPUÉS DE LA PRIMERA APUESTA ============
-
-let qrMostrado = false;
-
-function mostrarQR() {
-    const qrDiv = document.getElementById('qr-pago');
-    if (qrDiv && !qrMostrado) {
-        qrDiv.style.display = 'block';
-        qrMostrado = true;
-        
-        // Guardar en localStorage que ya se mostró el QR
-        localStorage.setItem('quiniela_qr_mostrado', 'true');
-        
-        // Scroll suave al QR
-        setTimeout(() => {
-            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 500);
-    }
-}
-
-// Verificar si ya se mostró el QR antes
-function verificarQRMostrado() {
-    const qrMostradoStorage = localStorage.getItem('quiniela_qr_mostrado');
-    if (qrMostradoStorage === 'true') {
-        qrMostrado = true;
-        const qrDiv = document.getElementById('qr-pago');
-        if (qrDiv) {
-            qrDiv.style.display = 'block';
-        }
-    }
-}
-
-// Configurar el botón de WhatsApp
-function configurarBotonWhatsApp() {
-    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
-    if (btnWhatsApp) {
-        btnWhatsApp.addEventListener('click', () => {
-            const nombre = currentParticipante || 'Participante';
-            const grupo = currentGrupoNombre || 'Grupo';
-            const mensaje = `Hola%2C%20deseo%20inscribirme%20en%20la%20quiniela%20del%20Mundial%202026.%0A%0A📌%20Mi%20nombre%20es%3A%20${encodeURIComponent(nombre)}%0A📌%20Grupo%3A%20${encodeURIComponent(grupo)}%0A📌%20Total%20a%20pagar%3A%20Bs.%205%0A%0AAdjunto%20mi%20comprobante%20de%20pago.`;
-            window.open(`https://wa.me/59174277508?text=${mensaje}`, '_blank');
-        });
-    }
-}
-
-// Modificar la función cargarPartidos para mostrar QR después de la primera apuesta
-// En la función handleAgregarClick (dentro de agregarApuestaHandler), después del éxito, agregar:
-// mostrarQR();
 // Iniciar
 init();
