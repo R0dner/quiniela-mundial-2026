@@ -1073,5 +1073,4 @@ function configurarEventListeners() {
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
 
-// Iniciar
 init();
