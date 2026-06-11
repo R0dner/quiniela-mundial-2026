@@ -36,6 +36,10 @@
       "dest": "/ranking.html"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
