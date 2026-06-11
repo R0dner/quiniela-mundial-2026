@@ -74,27 +74,6 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .editor-reglas {
-            background: rgba(0,0,0,0.3);
-            border-radius: 20px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        .editor-reglas textarea {
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            border: none;
-            font-family: monospace;
-            font-size: 14px;
-            background: #1a1a2e;
-            color: white;
-            margin: 10px 0;
-        }
-        .editor-reglas textarea:focus {
-            outline: 2px solid #ffd700;
-        }
-        
         .admin-tabs {
             display: flex;
             gap: 10px;
@@ -178,6 +157,8 @@
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
             margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .participante-info {
             display: flex;
@@ -293,6 +274,14 @@
             border-radius: 6px;
             cursor: pointer;
         }
+        .btn-secondary {
+            background: rgba(255,215,0,0.15);
+            border: 1px solid rgba(255,215,0,0.3);
+            color: #ffd700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
         .tabla-limites {
             width: 100%;
             border-collapse: collapse;
@@ -346,7 +335,7 @@
                     <h1>👑 Panel de Administración</h1>
                     <button id="logout-btn" class="logout-btn">🚪 Cerrar Sesión</button>
                 </div>
-                <p>Gestión de Grupos, Participantes, Resultados y Reglas</p>
+                <p>Gestión de Grupos, Participantes, Resultados, Reglas y Premios</p>
             </header>
 
             <!-- TABS DE NAVEGACIÓN -->
@@ -373,7 +362,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: PARTICIPANTES POR GRUPO (solo visualización y eliminación) -->
+            <!-- TAB 2: PARTICIPANTES POR GRUPO -->
             <div id="tab-participantes" class="tab-content">
                 <div class="admin-section">
                     <h2>👥 Gestión de Participantes por Grupo</h2>
@@ -423,6 +412,7 @@
 
             <!-- TAB 4: REGLAS Y PREMIOS -->
             <div id="tab-reglas" class="tab-content">
+                <!-- Reglas de puntuación -->
                 <div class="admin-section">
                     <h2>⚙️ Reglas por Grupo (Puntuación)</h2>
                     <div class="grupo-selector">
@@ -444,9 +434,16 @@
                     </div>
                 </div>
 
+                <!-- Premios -->
                 <div class="admin-section">
                     <h2>🏆 Configuración de Premios</h2>
-                    <div id="premios-panel" style="display: none;">
+                    <div class="grupo-selector">
+                        <label>Seleccionar Grupo:</label>
+                        <select id="grupo-premios-select">
+                            <option value="">-- Seleccionar grupo --</option>
+                        </select>
+                    </div>
+                    <div id="premios-panel" style="display: none; margin-top: 20px;">
                         <div class="form-group">
                             <label>📊 Cantidad de ganadores por ranking:</label>
                             <select id="cantidad-ganadores" class="form-input">
@@ -454,6 +451,10 @@
                                 <option value="2">2 ganadores (primero y segundo)</option>
                                 <option value="3">3 ganadores (podio completo)</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🥇 Porcentaje 1er Puesto:</label>
+                            <input type="number" id="premio-primero" class="form-input" min="0" max="100" value="50">
                         </div>
                         <div class="form-group" id="segundo-puesto-group">
                             <label>🥈 Porcentaje 2do Puesto:</label>
@@ -472,7 +473,7 @@
             <div id="tab-apuestas-extra" class="tab-content">
                 <div class="admin-section">
                     <h2>🎲 Apuestas Extra por Participante</h2>
-                    <p class="reglas-info">Aquí puedes aumentar el límite de pronósticos para participantes que paguen extra.</p>
+                    <p>Aquí puedes aumentar el límite de pronósticos para participantes que paguen extra.</p>
                     
                     <div class="grupo-selector">
                         <label>Seleccionar Grupo:</label>
@@ -554,49 +555,6 @@
         document.getElementById('admin-password')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') verificarAcceso();
         });
-        
-        function cargarReglasEnEditor() {
-            const reglasGuardadas = localStorage.getItem('quiniela_reglas');
-            const editor = document.getElementById('reglas-editor');
-            if (editor) {
-                if (reglasGuardadas) {
-                    editor.value = reglasGuardadas;
-                } else {
-                    editor.value = `<p><strong>📌 SISTEMA DE PUNTUACIÓN:</strong></p>
-<p>• <strong>3 puntos</strong> - Resultado exacto (ambos marcadores correctos)</p>
-<p>• <strong>1 punto</strong> - Ganador correcto o empate acertado</p>
-<p>• <strong>0 puntos</strong> - Resultado incorrecto</p>
-
-<p><strong>⏰ FECHAS Y APUESTAS:</strong></p>
-<p>• Solo se puede apostar el DÍA del partido</p>
-<p>• Las apuestas se cierran a la HORA de inicio de cada partido</p>
-<p>• Los partidos de días pasados quedan bloqueados</p>
-
-<p><strong>💰 PREMIOS:</strong></p>
-<p>• 1er Puesto: 50% del pozo acumulado</p>
-<p>• 2do Puesto: 30% del pozo acumulado</p>
-<p>• 3er Puesto: 20% del pozo acumulado</p>
-
-<p><strong>⚽ ¡BUENA SUERTE A TODOS! ⚽</strong></p>`;
-                }
-            }
-        }
-        
-        function guardarReglasAdmin() {
-            const editor = document.getElementById('reglas-editor');
-            if (editor) {
-                localStorage.setItem('quiniela_reglas', editor.value);
-                const msgDiv = document.getElementById('reglas-mensaje');
-                if (msgDiv) {
-                    msgDiv.textContent = '✅ Reglas guardadas correctamente';
-                    msgDiv.className = 'mensaje success';
-                    setTimeout(() => {
-                        msgDiv.textContent = '';
-                        msgDiv.className = 'mensaje';
-                    }, 3000);
-                }
-            }
-        }
         
         function setupTabs() {
             const tabs = document.querySelectorAll('.tab-btn');

@@ -22,7 +22,7 @@ let todosLosPartidosData = todosLosPartidos;
 let currentGrupoId = '';
 
 function init() {
-    console.log('Admin inicializado - Gestión completa de grupos');
+    console.log('Admin inicializado');
     cargarGruposEnSelectores();
     cargarListaGrupos();
     actualizarEstadisticas();
@@ -37,7 +37,7 @@ function setupEventListeners() {
         crearGrupoBtn.addEventListener('click', crearNuevoGrupo);
     }
     
-    // === PARTICIPANTES POR GRUPO (solo visualización y eliminación) ===
+    // === PARTICIPANTES POR GRUPO ===
     const grupoParticipantesSelect = document.getElementById('grupo-participantes-select');
     if (grupoParticipantesSelect) {
         grupoParticipantesSelect.addEventListener('change', (e) => {
@@ -86,7 +86,6 @@ function setupEventListeners() {
             const grupoId = e.target.value;
             if (grupoId) {
                 cargarReglasDelGrupoEnPanel(grupoId);
-                cargarPremiosDelGrupoEnPanel(grupoId);
                 document.getElementById('reglas-panel').style.display = 'block';
             } else {
                 document.getElementById('reglas-panel').style.display = 'none';
@@ -94,12 +93,25 @@ function setupEventListeners() {
         });
     }
     
-    const guardarReglasGrupoBtn = document.getElementById('guardar-reglas-grupo-btn');
-    if (guardarReglasGrupoBtn) {
-        guardarReglasGrupoBtn.addEventListener('click', () => guardarReglasDelGrupo());
+    const guardarReglasBtn = document.getElementById('guardar-reglas-grupo-btn');
+    if (guardarReglasBtn) {
+        guardarReglasBtn.addEventListener('click', guardarReglasDelGrupo);
     }
     
-    // === PREMIOS ===
+    // === PREMIOS POR GRUPO ===
+    const grupoPremiosSelect = document.getElementById('grupo-premios-select');
+    if (grupoPremiosSelect) {
+        grupoPremiosSelect.addEventListener('change', (e) => {
+            const grupoId = e.target.value;
+            if (grupoId) {
+                cargarPremiosDelGrupoEnPanel(grupoId);
+                document.getElementById('premios-panel').style.display = 'block';
+            } else {
+                document.getElementById('premios-panel').style.display = 'none';
+            }
+        });
+    }
+    
     const guardarPremiosBtn = document.getElementById('guardar-premios-btn');
     if (guardarPremiosBtn) {
         guardarPremiosBtn.addEventListener('click', guardarPremiosDelGrupo);
@@ -121,6 +133,7 @@ function cargarGruposEnSelectores() {
         'grupo-participantes-select',
         'grupo-resultados-select',
         'grupo-reglas-select',
+        'grupo-premios-select',
         'grupo-apuestasextras-select'
     ];
     
@@ -215,7 +228,7 @@ function crearNuevoGrupo() {
     }
 }
 
-// ============ PARTICIPANTES POR GRUPO (solo visualización y eliminación) ============
+// ============ PARTICIPANTES POR GRUPO ============
 
 function cargarParticipantesDelGrupoEnPanel(grupoId) {
     const participantes = getParticipantesDelGrupo(grupoId);
@@ -253,81 +266,6 @@ function cargarParticipantesDelGrupoEnPanel(grupoId) {
                 cargarParticipantesDelGrupoEnPanel(currentGrupoId);
                 cargarListaGrupos();
                 actualizarEstadisticas();
-            }
-        });
-    });
-}
-
-// ============ APUESTAS EXTRA ============
-
-function cargarSelectoresApuestasExtra() {
-    const grupoSelect = document.getElementById('grupo-apuestasextras-select');
-    if (grupoSelect) {
-        grupoSelect.addEventListener('change', (e) => {
-            const grupoId = e.target.value;
-            if (grupoId) {
-                cargarApuestasExtraEnPanel(grupoId);
-                document.getElementById('apuestasextras-panel').style.display = 'block';
-            } else {
-                document.getElementById('apuestasextras-panel').style.display = 'none';
-            }
-        });
-    }
-}
-
-function cargarApuestasExtraEnPanel(grupoId) {
-    const participantes = getParticipantesDelGrupo(grupoId);
-    const apuestasExtras = getApuestasExtrasDelGrupo(grupoId);
-    const container = document.getElementById('lista-apuestasextras');
-    
-    if (participantes.length === 0) {
-        container.innerHTML = '<p class="empty">No hay participantes en este grupo</p>';
-        return;
-    }
-    
-    let html = '<table class="tabla-limites"><thead><tr><th>Participante</th><th>Límite actual</th><th>Nuevo límite</th><th>Acción</th></tr></thead><tbody>';
-    
-    participantes.forEach(participante => {
-        const limiteActual = apuestasExtras[participante] || 1;
-        const participanteId = participante.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '');
-        html += `
-            <tr>
-                <td><strong>${participante}</strong></td>
-                <td><span class="limite-actual" id="limite-${participanteId}">${limiteActual}</span> pronóstico(s)</td>
-                <td>
-                    <select id="select-${participanteId}" class="form-input" style="width: 140px;">
-                        <option value="1" ${limiteActual === 1 ? 'selected' : ''}>1 pronóstico (normal)</option>
-                        <option value="2" ${limiteActual === 2 ? 'selected' : ''}>2 pronósticos</option>
-                        <option value="3" ${limiteActual === 3 ? 'selected' : ''}>3 pronósticos</option>
-                        <option value="4" ${limiteActual === 4 ? 'selected' : ''}>4 pronósticos</option>
-                        <option value="5" ${limiteActual === 5 ? 'selected' : ''}>5 pronósticos</option>
-                        <option value="10" ${limiteActual === 10 ? 'selected' : ''}>10 pronósticos</option>
-                        <option value="20" ${limiteActual === 20 ? 'selected' : ''}>20 pronósticos</option>
-                    </select>
-                </td>
-                <td>
-                    <button class="btn-actualizar-limite" data-participante="${participante}" data-participante-id="${participanteId}">💾 Actualizar</button>
-                </td>
-            </tr>
-        `;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-    
-    document.querySelectorAll('.btn-actualizar-limite').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const participante = btn.dataset.participante;
-            const participanteId = btn.dataset.participanteId;
-            const select = document.getElementById(`select-${participanteId}`);
-            const nuevoLimite = parseInt(select.value);
-            const resultado = actualizarLimiteApuestasParticipante(grupoId, participante, nuevoLimite);
-            
-            if (resultado) {
-                const limiteSpan = document.getElementById(`limite-${participanteId}`);
-                if (limiteSpan) limiteSpan.textContent = nuevoLimite;
-                mostrarMensaje(`✅ Límite de ${participante} actualizado a ${nuevoLimite} pronóstico(s)`, 'success');
-            } else {
-                mostrarMensaje(`❌ Error al actualizar límite de ${participante}`, 'error');
             }
         });
     });
@@ -414,7 +352,7 @@ function guardarResultadosDelGrupo(grupoId) {
     actualizarEstadisticas();
 }
 
-// ============ REGLAS Y PREMIOS ============
+// ============ REGLAS ============
 
 function cargarReglasDelGrupoEnPanel(grupoId) {
     const reglas = getReglasDelGrupo(grupoId);
@@ -437,9 +375,11 @@ function guardarReglasDelGrupo() {
     };
     
     actualizarReglasDelGrupo(grupoId, nuevasReglas);
-    mostrarMensaje(`✅ Reglas actualizadas para el grupo`, 'success');
+    mostrarMensaje(`✅ Reglas actualizadas para el grupo ${grupoId}`, 'success');
     cargarListaGrupos();
 }
+
+// ============ PREMIOS ============
 
 function cargarPremiosDelGrupoEnPanel(grupoId) {
     const premios = getPremiosDelGrupo(grupoId);
@@ -449,12 +389,14 @@ function cargarPremiosDelGrupoEnPanel(grupoId) {
     document.getElementById('premio-tercero').value = premios.tercero || 20;
     
     const cantidad = premios.cantidadGanadores || 3;
-    document.getElementById('segundo-puesto-group').style.display = cantidad >= 2 ? 'block' : 'none';
-    document.getElementById('tercer-puesto-group').style.display = cantidad >= 3 ? 'block' : 'none';
+    const segundoGroup = document.getElementById('segundo-puesto-group');
+    const tercerGroup = document.getElementById('tercer-puesto-group');
+    if (segundoGroup) segundoGroup.style.display = cantidad >= 2 ? 'block' : 'none';
+    if (tercerGroup) tercerGroup.style.display = cantidad >= 3 ? 'block' : 'none';
 }
 
 function guardarPremiosDelGrupo() {
-    const grupoId = document.getElementById('grupo-reglas-select').value;
+    const grupoId = document.getElementById('grupo-premios-select').value;
     if (!grupoId) {
         mostrarMensaje('Seleccioná un grupo', 'error');
         return;
@@ -469,8 +411,83 @@ function guardarPremiosDelGrupo() {
     };
     
     actualizarPremiosDelGrupo(grupoId, nuevosPremios);
-    mostrarMensaje(`✅ Premios actualizados para el grupo`, 'success');
+    mostrarMensaje(`✅ Premios actualizados para el grupo ${grupoId}`, 'success');
     cargarListaGrupos();
+}
+
+// ============ APUESTAS EXTRA ============
+
+function cargarSelectoresApuestasExtra() {
+    const grupoSelect = document.getElementById('grupo-apuestasextras-select');
+    if (grupoSelect) {
+        grupoSelect.addEventListener('change', (e) => {
+            const grupoId = e.target.value;
+            if (grupoId) {
+                cargarApuestasExtraEnPanel(grupoId);
+                document.getElementById('apuestasextras-panel').style.display = 'block';
+            } else {
+                document.getElementById('apuestasextras-panel').style.display = 'none';
+            }
+        });
+    }
+}
+
+function cargarApuestasExtraEnPanel(grupoId) {
+    const participantes = getParticipantesDelGrupo(grupoId);
+    const apuestasExtras = getApuestasExtrasDelGrupo(grupoId);
+    const container = document.getElementById('lista-apuestasextras');
+    
+    if (participantes.length === 0) {
+        container.innerHTML = '<p class="empty">No hay participantes en este grupo</p>';
+        return;
+    }
+    
+    let html = '<table class="tabla-limites"><thead><td><th>Participante</th><th>Límite actual</th><th>Nuevo límite</th><th>Acción</th></tr></thead><tbody>';
+    
+    participantes.forEach(participante => {
+        const limiteActual = apuestasExtras[participante] || 1;
+        const participanteId = participante.replace(/\s/g, '').replace(/[^a-zA-Z0-9]/g, '');
+        html += `
+            <tr>
+                <td><strong>${participante}</strong></td>
+                <td><span class="limite-actual" id="limite-${participanteId}">${limiteActual}</span> pronóstico(s)</td>
+                <td>
+                    <select id="select-${participanteId}" class="form-input" style="width: 140px;">
+                        <option value="1" ${limiteActual === 1 ? 'selected' : ''}>1 pronóstico (normal)</option>
+                        <option value="2" ${limiteActual === 2 ? 'selected' : ''}>2 pronósticos</option>
+                        <option value="3" ${limiteActual === 3 ? 'selected' : ''}>3 pronósticos</option>
+                        <option value="4" ${limiteActual === 4 ? 'selected' : ''}>4 pronósticos</option>
+                        <option value="5" ${limiteActual === 5 ? 'selected' : ''}>5 pronósticos</option>
+                        <option value="10" ${limiteActual === 10 ? 'selected' : ''}>10 pronósticos</option>
+                        <option value="20" ${limiteActual === 20 ? 'selected' : ''}>20 pronósticos</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn-actualizar-limite" data-participante="${participante}" data-participante-id="${participanteId}">💾 Actualizar</button>
+                </td>
+            </tr>
+        `;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    
+    document.querySelectorAll('.btn-actualizar-limite').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const participante = btn.dataset.participante;
+            const participanteId = btn.dataset.participanteId;
+            const select = document.getElementById(`select-${participanteId}`);
+            const nuevoLimite = parseInt(select.value);
+            const resultado = actualizarLimiteApuestasParticipante(grupoId, participante, nuevoLimite);
+            
+            if (resultado) {
+                const limiteSpan = document.getElementById(`limite-${participanteId}`);
+                if (limiteSpan) limiteSpan.textContent = nuevoLimite;
+                mostrarMensaje(`✅ Límite de ${participante} actualizado a ${nuevoLimite} pronóstico(s)`, 'success');
+            } else {
+                mostrarMensaje(`❌ Error al actualizar límite de ${participante}`, 'error');
+            }
+        });
+    });
 }
 
 // ============ ESTADÍSTICAS ============
