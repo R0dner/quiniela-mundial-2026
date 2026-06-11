@@ -127,9 +127,23 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
 
 // ============ MANEJADOR GLOBAL PARA AGREGAR APUESTAS ============
 
+let ultimoClick = 0;
+const TIEMPO_ESPERA = 1000; // 1 segundo de espera entre clicks
+
 window.agregarApuestaHandler = async function(partidoId, btnElement) {
-    // Evitar ejecución múltiple
-    if (btnElement.disabled) return;
+    // Evitar múltiples clicks rápidos
+    const ahora = Date.now();
+    if (ahora - ultimoClick < TIEMPO_ESPERA) {
+        console.log('⚠️ Click demasiado rápido, ignorando...');
+        return;
+    }
+    ultimoClick = ahora;
+    
+    // Evitar si el botón ya está deshabilitado
+    if (btnElement.disabled) {
+        console.log('⚠️ Botón ya deshabilitado, ignorando...');
+        return;
+    }
     
     const card = btnElement.closest('.apuesta-card');
     if (!card) return;
@@ -153,6 +167,13 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
     const limite = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
     const apuestasActuales = await getApuestasDePartido(currentGrupoId, currentParticipante, partidoId);
     
+    // Verificar si ya existe el mismo marcador
+    const yaExiste = apuestasActuales.some(a => a.local === local && a.visitante === visitante);
+    if (yaExiste) {
+        mostrarNotificacion(`❌ Ya tienes el pronóstico ${local}-${visitante} para este partido`, 'error');
+        return;
+    }
+    
     if (apuestasActuales.length >= limite) {
         mostrarNotificacion(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
         return;
@@ -166,12 +187,23 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
     const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
     
     if (apuestaId) {
-        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado (${apuestasActuales.length + 1}/${limite})`, 'success');
+        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
         localInput.value = '';
         visitanteInput.value = '';
         await cargarPartidos(currentFecha);
     } else {
-        mostrarNotificacion('❌ Error al agregar pronóstico', 'error');
+        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
+        btnElement.disabled = false;
+        btnElement.textContent = textoOriginal;
+    }
+       if (apuestaId) {
+        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
+        localInput.value = '';
+        visitanteInput.value = '';
+        await cargarPartidos(currentFecha);
+        mostrarQR(); // <-- AGREGAR ESTA LÍNEA PARA MOSTRAR EL QR
+    } else {
+        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
         btnElement.disabled = false;
         btnElement.textContent = textoOriginal;
     }
@@ -658,7 +690,7 @@ function actualizarEstadoDia(fecha) {
     if (esPasado) {
         estadoDia.innerHTML = '<span class="badge-pasado">🔒 DÍA FINALIZADO - Solo consulta</span>';
     } else if (esHoy) {
-        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Podés apostar</span>';
+        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Puedes apostar</span>';
     } else {
         estadoDia.innerHTML = '<span class="badge-futuro">⏳ DÍA FUTURO - Apuestas disponibles el día del partido</span>';
     }
@@ -719,14 +751,41 @@ async function cargarApuestasExistentes(fecha) {
     const limiteParticipante = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
     
     for (const partido of partidos) {
-        const apuestasPartido = todasApuestas[partido.id] || [];
+        let apuestasPartido = todasApuestas[partido.id] || [];
+        
+        // Eliminar duplicados en los datos (por si acaso)
+        const unicas = [];
+        const claves = new Set();
+        for (const apuesta of apuestasPartido) {
+            const clave = `${apuesta.local}-${apuesta.visitante}`;
+            if (!claves.has(clave)) {
+                claves.add(clave);
+                unicas.push(apuesta);
+            }
+        }
+        apuestasPartido = unicas;
+        
         const container = document.getElementById(`apuestas-lista-${partido.id}`);
         const readonlyContainer = document.getElementById(`readonly-${partido.id}`);
         
         // Actualizar límite mostrado
         const limiteSpan = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .limite-apuestas`);
+        const agregarBtn = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .btn-agregar-apuesta`);
+        
         if (limiteSpan && puedeApostar) {
-            limiteSpan.innerHTML = `📊 Usados: ${apuestasPartido.length}/${limiteParticipante} pronósticos`;
+            const usados = apuestasPartido.length;
+            limiteSpan.innerHTML = `📊 Usados: ${usados}/${limiteParticipante} pronósticos`;
+            
+            // Si ya se alcanzó el límite, deshabilitar el botón de agregar
+            if (agregarBtn) {
+                if (usados >= limiteParticipante) {
+                    agregarBtn.disabled = true;
+                    agregarBtn.textContent = '🔒 Límite alcanzado';
+                } else {
+                    agregarBtn.disabled = false;
+                    agregarBtn.textContent = '➕ Agregar';
+                }
+            }
         }
         
         if (container) {
@@ -744,7 +803,7 @@ async function cargarApuestasExistentes(fecha) {
                                  (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)) clase = 'acierto-ganador';
                         else clase = 'acierto-error';
                     }
-                    html += `<div class="apuesta-item ${clase}">
+                    html += `<div class="apuesta-item ${clase}" data-apuesta-id="${apuesta.id}">
                         <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
                         ${puedeApostar ? `<button class="btn-eliminar-apuesta" onclick="eliminarApuestaHandler(${partido.id}, '${apuesta.id}', this)">🗑️</button>` : ''}
                     </div>`;
@@ -1089,6 +1148,38 @@ function configurarEventListeners() {
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
+// ============ MOSTRAR QR DESPUÉS DE APOSTAR ============
 
+let qrMostrado = false;
+
+function mostrarQR() {
+    const qrDiv = document.getElementById('qr-pago');
+    if (qrDiv && !qrMostrado) {
+        qrDiv.style.display = 'block';
+        qrMostrado = true;
+        
+        // Scroll suave al QR
+        setTimeout(() => {
+            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
+    }
+}
+
+// Configurar el botón de WhatsApp
+function configurarBotonWhatsApp() {
+    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
+    if (btnWhatsApp) {
+        btnWhatsApp.addEventListener('click', () => {
+            const nombre = currentParticipante || 'Participante';
+            const grupo = currentGrupoNombre || 'Grupo';
+            const mensaje = `Hola%2C%20deseo%20inscribirme%20en%20la%20quiniela%20del%20Mundial%202026.%0A%0A📌%20Mi%20nombre%20es%3A%20${encodeURIComponent(nombre)}%0A📌%20Grupo%3A%20${encodeURIComponent(grupo)}%0A📌%20Total%20a%20pagar%3A%20Bs.%205%0A%0AAdjunto%20mi%20comprobante%20de%20pago.`;
+            window.open(`https://wa.me/59174277508?text=${mensaje}`, '_blank');
+        });
+    }
+}
+
+// Modificar la función cargarPartidos para mostrar QR después de la primera apuesta
+// En la función handleAgregarClick (dentro de agregarApuestaHandler), después del éxito, agregar:
+// mostrarQR();
 // Iniciar
 init();
