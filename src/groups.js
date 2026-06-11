@@ -256,7 +256,7 @@ export function getResultadosDelGrupo(grupoId) {
     return grupo ? grupo.resultados || {} : {};
 }
 
-// ============ CÁLCULO DE PUNTOS ============
+// ============ CÁLCULO DE PUNTOS Y RANKING ============
 
 export function calcularPuntosMultiples(grupoId, participante) {
     const grupo = getGrupo(grupoId);
@@ -289,6 +289,7 @@ export function calcularPuntosMultiples(grupoId, participante) {
     return puntos;
 }
 
+// Ranking acumulado (todos los partidos)
 export function getRankingDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     if (!grupo) return [];
@@ -299,6 +300,55 @@ export function getRankingDelGrupo(grupoId) {
             puntos: calcularPuntosMultiples(grupoId, participante),
             telefono: grupo.participantesInfo?.[participante]?.telefono || '',
             fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
+        };
+    });
+    
+    ranking.sort((a, b) => b.puntos - a.puntos);
+    
+    return ranking.map((item, index) => ({
+        ...item,
+        posicion: index + 1
+    }));
+}
+
+// Ranking por día específico
+export function getRankingDelGrupoPorDia(grupoId, fecha) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return [];
+    
+    // Filtrar partidos de esa fecha
+    const partidosDeFecha = todosLosPartidosGlobal.filter(p => p.fecha === fecha);
+    const partidosIds = partidosDeFecha.map(p => p.id);
+    
+    const ranking = grupo.participantes.map(participante => {
+        let puntos = 0;
+        const apuestasPorPartido = grupo.apuestas[participante] || {};
+        const resultados = grupo.resultados || {};
+        const reglas = grupo.reglas;
+        
+        for (const partidoId of partidosIds) {
+            const apuestas = apuestasPorPartido[partidoId];
+            const resultado = resultados[partidoId];
+            if (apuestas && Array.isArray(apuestas) && resultado) {
+                for (const apuesta of apuestas) {
+                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                        puntos += reglas.puntosExacto;
+                    }
+                    else if (
+                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                    ) {
+                        puntos += reglas.puntosGanador;
+                    }
+                }
+            }
+        }
+        
+        return {
+            nombre: participante,
+            puntos: puntos,
+            telefono: grupo.participantesInfo?.[participante]?.telefono || ''
         };
     });
     
