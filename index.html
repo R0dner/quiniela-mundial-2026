@@ -1291,48 +1291,88 @@
                 <h3>GRUPO GENERAL</h3>
                 <p>POZO MAYOR - PREMIOS ESPECIALES</p>
             </div>
-            <div class="modal-general-benefits">
-                <h4>✨ BENEFICIOS EXCLUSIVOS ✨</h4>
-                <div class="benefits-grid">
-                    <div class="benefit-item">
-                        <div class="benefit-icon">🎯</div>
-                        <div class="benefit-text">
-                            <span class="benefit-value">5 PUNTOS</span>
-                            <span class="benefit-desc">por resultado exacto</span>
-                            <span class="benefit-compare">(vs 3 puntos normal)</span>
+            
+            <!-- Paso 1: Verificar si ya está registrado -->
+            <div id="general-paso-verificar" class="general-paso">
+                <div class="modal-general-benefits">
+                    <h4>✨ BENEFICIOS EXCLUSIVOS ✨</h4>
+                    <div class="benefits-grid">
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🎯</div>
+                            <div class="benefit-text">
+                                <span class="benefit-value">5 PUNTOS</span>
+                                <span class="benefit-desc">por resultado exacto</span>
+                                <span class="benefit-compare">(vs 3 puntos normal)</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="benefit-item">
-                        <div class="benefit-icon">🏅</div>
-                        <div class="benefit-text">
-                            <span class="benefit-value">2 PUNTOS</span>
-                            <span class="benefit-desc">por ganador correcto</span>
-                            <span class="benefit-compare">(vs 1 punto normal)</span>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🏅</div>
+                            <div class="benefit-text">
+                                <span class="benefit-value">2 PUNTOS</span>
+                                <span class="benefit-desc">por ganador correcto</span>
+                                <span class="benefit-compare">(vs 1 punto normal)</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="benefit-item">
-                        <div class="benefit-icon">🏆</div>
-                        <div class="benefit-text">
-                            <span class="benefit-value">COMPETENCIA GENERAL</span>
-                            <span class="benefit-desc">Con todos los participantes</span>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🏆</div>
+                            <div class="benefit-text">
+                                <span class="benefit-value">COMPETENCIA GENERAL</span>
+                                <span class="benefit-desc">Con todos los participantes</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="benefit-item">
-                        <div class="benefit-icon">⭐</div>
-                        <div class="benefit-text">
-                            <span class="benefit-value">RANKING ESPECIAL</span>
-                            <span class="benefit-desc">Premios mayores exclusivos</span>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">⭐</div>
+                            <div class="benefit-text">
+                                <span class="benefit-value">RANKING ESPECIAL</span>
+                                <span class="benefit-desc">Premios mayores exclusivos</span>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="modal-general-body">
+                    <label>🔐 ¿Ya tienes cuenta en el Grupo General?</label>
+                    <div class="general-buttons-verificar">
+                        <button id="general-btn-si" class="btn-confirmar-general">✅ SÍ, YA ESTOY REGISTRADO</button>
+                        <button id="general-btn-no" class="btn-cancelar-general">📝 NO, QUIERO REGISTRARME</button>
+                    </div>
+                </div>
             </div>
-            <div class="modal-general-body">
-                <input type="text" id="modal-general-nombre" placeholder="Tu nombre" autocomplete="off">
-                <input type="tel" id="modal-general-telefono" placeholder="Teléfono (opcional)">
+            
+            <!-- Paso 2: Ingresar nombre si ya está registrado -->
+            <div id="general-paso-ingresar" class="general-paso" style="display: none;">
+                <div class="modal-general-benefits">
+                    <h4>🔐 INGRESA TUS DATOS</h4>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; text-align: center;">Si ya estás registrado, ingresa tu nombre exacto</p>
+                </div>
+                <div class="modal-general-body">
+                    <input type="text" id="general-nombre-ingresar" placeholder="Tu nombre registrado" autocomplete="off">
+                    <div id="general-error-ingresar" class="mensaje-error-modal" style="display: none;"></div>
+                </div>
+                <div class="modal-general-buttons">
+                    <button id="general-btn-ingresar" class="btn-confirmar-general">🎯 INGRESAR</button>
+                    <button id="general-btn-volver" class="btn-cancelar-general">◀ VOLVER</button>
+                </div>
             </div>
-            <div class="modal-general-buttons">
-                <button id="btn-confirmar-general" class="btn-confirmar-general">🎉 UNIRME AHORA</button>
-                <button id="btn-cancelar-general" class="btn-cancelar-general">❌ AHORA NO</button>
+            
+            <!-- Paso 3: Registro para nuevos usuarios -->
+            <div id="general-paso-registro" class="general-paso" style="display: none;">
+                <div class="modal-general-benefits">
+                    <h4>📝 REGISTRO NUEVO PARTICIPANTE</h4>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; text-align: center;">Completa tus datos para unirte al Grupo General</p>
+                </div>
+                <div class="modal-general-body">
+                    <input type="text" id="general-nombre-registro" placeholder="Tu nombre completo" autocomplete="off">
+                    <input type="tel" id="general-telefono-registro" placeholder="Teléfono (opcional)">
+                    <div id="general-error-registro" class="mensaje-error-modal" style="display: none;"></div>
+                </div>
+                <div class="modal-general-buttons">
+                    <button id="general-btn-registrar" class="btn-confirmar-general">🎉 REGISTRARME</button>
+                    <button id="general-btn-volver2" class="btn-cancelar-general">◀ VOLVER</button>
+                </div>
+            </div>
+            
+            <div class="modal-general-footer">
+                <button id="general-cancelar" class="btn-cancelar-general" style="width: 100%; margin-top: 10px;">❌ CERRAR</button>
             </div>
         </div>
     </div>

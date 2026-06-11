@@ -53,7 +53,6 @@ const verApuestasBtn = document.getElementById('ver-mis-apuestas');
 // ============ POPUP DE REGLAS ============
 
 function mostrarPopupReglas() {
-    // Verificar si el usuario ya eligió no mostrar más
     const noMostrar = localStorage.getItem('quiniela_no_mostrar_reglas');
     if (noMostrar === 'true') {
         return;
@@ -63,7 +62,6 @@ function mostrarPopupReglas() {
     if (popup) {
         popup.style.display = 'flex';
         
-        // Evento para cerrar
         const cerrarBtn = document.getElementById('cerrar-rules-btn');
         const noMostrarCheck = document.getElementById('no-mostrar-rules');
         
@@ -74,7 +72,6 @@ function mostrarPopupReglas() {
             }
         };
         
-        // Remover eventos anteriores para evitar duplicados
         const newCerrarBtn = cerrarBtn.cloneNode(true);
         if (cerrarBtn && cerrarBtn.parentNode) {
             cerrarBtn.parentNode.replaceChild(newCerrarBtn, cerrarBtn);
@@ -84,14 +81,12 @@ function mostrarPopupReglas() {
             newCerrarBtn.addEventListener('click', cerrarPopup);
         }
         
-        // Cerrar al hacer clic fuera
         popup.addEventListener('click', (e) => {
             if (e.target === popup) {
                 cerrarPopup();
             }
         });
         
-        // Cerrar con Escape
         const handleEsc = (e) => {
             if (e.key === 'Escape') {
                 cerrarPopup();
@@ -193,15 +188,33 @@ function mostrarBannerGrupoGeneral() {
     }
 }
 
+// ============ MODAL GRUPO GENERAL (CON VERIFICACIÓN) ============
+
 function mostrarModalGrupoGeneral() {
     const modal = document.getElementById('modal-general');
-    const nombreInput = document.getElementById('modal-general-nombre');
-    const telefonoInput = document.getElementById('modal-general-telefono');
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
     
-    nombreInput.value = '';
-    telefonoInput.value = '';
+    // Limpiar campos y errores
+    const nombreIngresar = document.getElementById('general-nombre-ingresar');
+    const nombreRegistro = document.getElementById('general-nombre-registro');
+    const telefonoRegistro = document.getElementById('general-telefono-registro');
+    const errorIngresar = document.getElementById('general-error-ingresar');
+    const errorRegistro = document.getElementById('general-error-registro');
+    
+    if (nombreIngresar) nombreIngresar.value = '';
+    if (nombreRegistro) nombreRegistro.value = '';
+    if (telefonoRegistro) telefonoRegistro.value = '';
+    if (errorIngresar) errorIngresar.style.display = 'none';
+    if (errorRegistro) errorRegistro.style.display = 'none';
+    
+    // Mostrar solo el paso de verificación inicial
+    if (pasoVerificar) pasoVerificar.style.display = 'block';
+    if (pasoIngresar) pasoIngresar.style.display = 'none';
+    if (pasoRegistro) pasoRegistro.style.display = 'none';
+    
     modal.style.display = 'flex';
-    setTimeout(() => nombreInput.focus(), 100);
 }
 
 function cerrarModalGeneral() {
@@ -209,29 +222,153 @@ function cerrarModalGeneral() {
     modal.style.display = 'none';
 }
 
-async function unirseAGrupoGeneral() {
-    const nombre = document.getElementById('modal-general-nombre').value.trim();
-    const telefono = document.getElementById('modal-general-telefono').value.trim();
+function mostrarPasoIngresar() {
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    const nombreInput = document.getElementById('general-nombre-ingresar');
+    const errorDiv = document.getElementById('general-error-ingresar');
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'none';
+    if (pasoIngresar) pasoIngresar.style.display = 'block';
+    if (pasoRegistro) pasoRegistro.style.display = 'none';
+    if (errorDiv) errorDiv.style.display = 'none';
+    if (nombreInput) nombreInput.focus();
+}
+
+function mostrarPasoRegistro() {
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    const nombreInput = document.getElementById('general-nombre-registro');
+    const errorDiv = document.getElementById('general-error-registro');
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'none';
+    if (pasoIngresar) pasoIngresar.style.display = 'none';
+    if (pasoRegistro) pasoRegistro.style.display = 'block';
+    if (errorDiv) errorDiv.style.display = 'none';
+    if (nombreInput) nombreInput.focus();
+}
+
+function volverAlVerificar() {
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    const errorIngresar = document.getElementById('general-error-ingresar');
+    const errorRegistro = document.getElementById('general-error-registro');
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'block';
+    if (pasoIngresar) pasoIngresar.style.display = 'none';
+    if (pasoRegistro) pasoRegistro.style.display = 'none';
+    if (errorIngresar) errorIngresar.style.display = 'none';
+    if (errorRegistro) errorRegistro.style.display = 'none';
+}
+
+async function ingresarAlGrupoGeneral() {
+    const nombre = document.getElementById('general-nombre-ingresar').value.trim();
+    const errorDiv = document.getElementById('general-error-ingresar');
     
     if (!nombre) {
-        alert('❌ Por favor, ingresa tu nombre');
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Por favor, ingresa tu nombre';
+            errorDiv.style.display = 'block';
+        }
         return;
     }
     
-    const resultado = unirseAlGrupoGeneral(nombre, telefono);
+    const grupos = getGrupos();
+    const grupoGeneral = grupos['general'];
     
-    if (resultado.success) {
-        alert(resultado.message + '\n\n🎉 ¡Ya puedes apostar en el Grupo General! 🎉');
-        cerrarModalGeneral();
-        
-        const grupoGeneral = obtenerGrupoGeneral();
-        if (grupoGeneral) {
-            handleGrupoSeleccionado('general', grupoGeneral.nombre);
+    if (!grupoGeneral) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Error: Grupo General no disponible';
+            errorDiv.style.display = 'block';
         }
+        return;
+    }
+    
+    const existe = grupoGeneral.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+    
+    if (existe) {
+        currentGrupoId = 'general';
+        currentGrupoNombre = grupoGeneral.nombre;
+        currentParticipante = nombre;
+        
+        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
+            participante: nombre,
+            grupoId: 'general',
+            timestamp: Date.now()
+        }));
+        
+        cerrarModalGeneral();
+        iniciarPanelApuestas();
     } else {
-        alert('❌ ' + resultado.message);
+        if (errorDiv) {
+            errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en el Grupo General. Verifica o regístrate.`;
+            errorDiv.style.display = 'block';
+        }
     }
 }
+
+async function registrarEnGrupoGeneral() {
+    const nombre = document.getElementById('general-nombre-registro').value.trim();
+    const telefono = document.getElementById('general-telefono-registro').value.trim();
+    const errorDiv = document.getElementById('general-error-registro');
+    
+    if (!nombre) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ El nombre es obligatorio';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const grupos = getGrupos();
+    const grupoGeneral = grupos['general'];
+    
+    if (!grupoGeneral) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Error: Grupo General no disponible';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const existe = grupoGeneral.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+    
+    if (existe) {
+        if (errorDiv) {
+            errorDiv.textContent = `❌ El nombre "${nombre}" ya está registrado. Usa la opción "Ya estoy registrado".`;
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const resultado = registrarParticipanteEnGrupo('general', nombre, telefono);
+    
+    if (resultado.success) {
+        currentGrupoId = 'general';
+        currentGrupoNombre = grupoGeneral.nombre;
+        currentParticipante = nombre;
+        
+        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
+            participante: nombre,
+            grupoId: 'general',
+            timestamp: Date.now()
+        }));
+        
+        cerrarModalGeneral();
+        iniciarPanelApuestas();
+        mostrarMensaje(`🎉 ${resultado.message}`, 'success');
+    } else {
+        if (errorDiv) {
+            errorDiv.textContent = `❌ ${resultado.message}`;
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+// ============ SELECCIÓN DE GRUPOS NORMALES ============
 
 function handleGrupoSeleccionado(grupoId, grupoNombre) {
     currentGrupoId = grupoId;
@@ -248,12 +385,7 @@ function handleGrupoSeleccionado(grupoId, grupoNombre) {
     const errorDiv = document.getElementById('modal-error-mensaje');
     
     modalGrupoNombre.textContent = `🏆 ${grupoNombre}`;
-    
-    if (grupoId === 'general') {
-        modalGrupoInfo.innerHTML = `⭐ GRUPO ESPECIAL ⭐<br>📊 ${totalParticipantes} participantes registrados<br>🎯 5 pts exacto / 2 pts ganador<br>💰 Premios: 60% / 25% / 15%`;
-    } else {
-        modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
-    }
+    modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
     
     nombreInput.value = '';
     errorDiv.style.display = 'none';
@@ -647,6 +779,7 @@ function configurarEventListeners() {
     if (cambiarGrupoBtn) cambiarGrupoBtn.addEventListener('click', cambiarDeGrupo);
     if (verApuestasBtn) verApuestasBtn.addEventListener('click', mostrarMisApuestas);
     
+    // Modal de verificación
     const btnVerificar = document.getElementById('btn-verificar');
     const btnRegistrarNuevo = document.getElementById('btn-registrar-nuevo');
     const btnCancelar = document.getElementById('btn-cancelar-modal');
@@ -669,12 +802,24 @@ function configurarEventListeners() {
         });
     }
     
-    const btnConfirmarGeneral = document.getElementById('btn-confirmar-general');
-    const btnCancelarGeneral = document.getElementById('btn-cancelar-general');
+    // Modal General
+    const btnSi = document.getElementById('general-btn-si');
+    const btnNo = document.getElementById('general-btn-no');
+    const btnIngresar = document.getElementById('general-btn-ingresar');
+    const btnRegistrar = document.getElementById('general-btn-registrar');
+    const btnVolver = document.getElementById('general-btn-volver');
+    const btnVolver2 = document.getElementById('general-btn-volver2');
+    const btnCancelarGeneral = document.getElementById('general-cancelar');
     const modalGeneral = document.getElementById('modal-general');
-    const generalNombreInput = document.getElementById('modal-general-nombre');
+    const generalNombreIngresar = document.getElementById('general-nombre-ingresar');
+    const generalNombreRegistro = document.getElementById('general-nombre-registro');
     
-    if (btnConfirmarGeneral) btnConfirmarGeneral.addEventListener('click', unirseAGrupoGeneral);
+    if (btnSi) btnSi.addEventListener('click', mostrarPasoIngresar);
+    if (btnNo) btnNo.addEventListener('click', mostrarPasoRegistro);
+    if (btnIngresar) btnIngresar.addEventListener('click', ingresarAlGrupoGeneral);
+    if (btnRegistrar) btnRegistrar.addEventListener('click', registrarEnGrupoGeneral);
+    if (btnVolver) btnVolver.addEventListener('click', volverAlVerificar);
+    if (btnVolver2) btnVolver2.addEventListener('click', volverAlVerificar);
     if (btnCancelarGeneral) btnCancelarGeneral.addEventListener('click', cerrarModalGeneral);
     
     if (modalGeneral) {
@@ -683,12 +828,19 @@ function configurarEventListeners() {
         });
     }
     
-    if (generalNombreInput) {
-        generalNombreInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') unirseAGrupoGeneral();
+    if (generalNombreIngresar) {
+        generalNombreIngresar.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') ingresarAlGrupoGeneral();
         });
     }
     
+    if (generalNombreRegistro) {
+        generalNombreRegistro.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') registrarEnGrupoGeneral();
+        });
+    }
+    
+    // Modal de apuestas
     const modal = document.getElementById('modal-apuestas');
     const closeBtn = document.querySelector('.modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');

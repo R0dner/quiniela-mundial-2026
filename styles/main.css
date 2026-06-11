@@ -1572,6 +1572,39 @@ body {
     }
 }
 
+/* Pasos del modal general */
+.general-paso {
+    transition: all 0.3s ease;
+}
+
+.general-buttons-verificar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.general-buttons-verificar button {
+    flex: 1;
+    min-width: 140px;
+}
+
+.modal-general-footer {
+    margin-top: 10px;
+}
+
+/* Responsive */
+@media (max-width: 550px) {
+    .general-buttons-verificar {
+        flex-direction: column;
+    }
+    
+    .general-buttons-verificar button {
+        width: 100%;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 16px;
