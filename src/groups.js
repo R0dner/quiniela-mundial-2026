@@ -1,515 +1,402 @@
-// src/main.js - Con selección de grupos y auto-registro
-import { 
-    getPartidosPorDia, 
-    getDiasCalendario, 
-    formatearFecha, 
-    conBandera, 
-    isPartidoPasado, 
-    getFaseNombre,
-    getDiaActualLocal,
-    puedeApostarPartido,
-    hayPartidosDisponiblesParaApostar,
-    todosLosPartidos
-} from './data.js';
-import { 
-    getGrupos, 
-    registrarParticipanteEnGrupo,
-    participanteRegistrado,
-    getInfoParticipante,
-    agregarApuestaEnGrupo,
-    getApuestasMultiplesDeParticipante,
-    getResultadosDelGrupo,
-    eliminarApuesta,
-    getApuestasDePartido,
-    getLimiteApuestasParticipante,
-    getReglasDelGrupo
-} from './groups.js';
+// src/groups.js - Sistema de grupos SIN CONTRASEÑAS (auto-registro de usuarios)
 
-let currentGrupoId = '';
-let currentGrupoNombre = '';
-let currentParticipante = '';
-let currentFecha = '';
+const GRUPOS_INICIALES = {};
 
-// Elementos del DOM
-const gruposLista = document.getElementById('grupos-lista');
-const registroPanel = document.getElementById('registro-panel');
-const apuestasPanel = document.getElementById('apuestas-panel');
-const seleccionGruposDiv = document.getElementById('seleccion-grupos');
-const grupoSeleccionadoNombre = document.getElementById('grupo-seleccionado-nombre');
-const registroNombre = document.getElementById('registro-nombre');
-const registroTelefono = document.getElementById('registro-telefono');
-const registrarBtn = document.getElementById('registrar-btn');
-const registroMensaje = document.getElementById('registro-mensaje');
-const cambiarGrupoBtn = document.getElementById('cambiar-grupo-btn');
-const participanteNombreDisplay = document.getElementById('participante-nombre-display');
-const participanteGrupoDisplay = document.getElementById('participante-grupo-display');
-const diaSelect = document.getElementById('dia-select');
-const estadoDia = document.getElementById('estado-dia');
-const apuestasContainer = document.getElementById('apuestas-container');
-const verApuestasBtn = document.getElementById('ver-mis-apuestas');
+let todosLosPartidosGlobal = [];
 
-function init() {
-    cargarGrupos();
-    setupEventListeners();
-    verificarSesion();
+export function setPartidosGlobal(partidos) {
+    todosLosPartidosGlobal = partidos;
 }
 
-function verificarSesion() {
-    const sesionGuardada = sessionStorage.getItem('quiniela_sesion_actual');
-    if (sesionGuardada) {
-        const sesion = JSON.parse(sesionGuardada);
-        const grupos = getGrupos();
-        if (grupos[sesion.grupoId]) {
-            currentGrupoId = sesion.grupoId;
-            currentGrupoNombre = grupos[sesion.grupoId].nombre;
-            currentParticipante = sesion.participante;
-            iniciarSesionParticipante();
-        }
+// ============ GRUPOS ============
+
+export function getGrupos() {
+    const gruposGuardados = localStorage.getItem('quiniela_grupos');
+    if (gruposGuardados) {
+        return JSON.parse(gruposGuardados);
     }
+    return { ...GRUPOS_INICIALES };
 }
 
-function cargarGrupos() {
+export function guardarGrupos(grupos) {
+    localStorage.setItem('quiniela_grupos', JSON.stringify(grupos));
+    window.dispatchEvent(new Event('grupos-actualizados'));
+}
+
+export function getGrupo(grupoId) {
     const grupos = getGrupos();
-    const gruposKeys = Object.keys(grupos);
-    
-    if (gruposKeys.length === 0) {
-        gruposLista.innerHTML = '<div class="loading">⚠️ No hay grupos disponibles. Contactá al administrador.</div>';
-        return;
-    }
-    
-    let html = '';
-    for (const [id, grupo] of Object.entries(grupos)) {
-        html += `
-            <div class="grupo-card-selector" data-grupo-id="${id}" data-grupo-nombre="${grupo.nombre}">
-                <div class="grupo-nombre">🏆 ${grupo.nombre}</div>
-                <div class="grupo-descripcion">${grupo.descripcion || 'Participa en este grupo'}</div>
-                <div class="grupo-descripcion" style="font-size:0.7rem; margin-top:8px;">👥 ${grupo.participantes.length} participantes</div>
-            </div>
-        `;
-    }
-    gruposLista.innerHTML = html;
-    
-    document.querySelectorAll('.grupo-card-selector').forEach(card => {
-        card.addEventListener('click', () => {
-            const grupoId = card.dataset.grupoId;
-            const grupoNombre = card.dataset.grupoNombre;
-            manejarSeleccionGrupo(grupoId, grupoNombre);
-        });
-    });
+    return grupos[grupoId];
 }
 
-function manejarSeleccionGrupo(grupoId, grupoNombre) {
-    currentGrupoId = grupoId;
-    currentGrupoNombre = grupoNombre;
+export function crearGrupo(grupoId, config) {
+    const grupos = getGrupos();
+    if (grupos[grupoId]) {
+        throw new Error(`El grupo ${grupoId} ya existe`);
+    }
+    if (!grupoId || grupoId.trim() === '') {
+        throw new Error('El ID del grupo es obligatorio');
+    }
+    grupos[grupoId] = {
+        nombre: config.nombre,
+        codigo: config.codigo || grupoId.toUpperCase(),
+        descripcion: config.descripcion || '',
+        reglas: {
+            puntosExacto: config.reglas?.puntosExacto || 3,
+            puntosGanador: config.reglas?.puntosGanador || 1,
+            permiteModificar: true,
+            cierreAutomatico: true
+        },
+        premios: config.premios || {
+            cantidadGanadores: 3,
+            primero: 50,
+            segundo: 30,
+            tercero: 20
+        },
+        participantes: [],
+        participantesInfo: {},
+        apuestas: {},
+        resultados: {},
+        apuestasExtras: {},
+        fechaCreacion: new Date().toISOString(),
+        activo: true
+    };
+    guardarGrupos(grupos);
+    return grupos[grupoId];
+}
+
+export function eliminarGrupo(grupoId) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) {
+        throw new Error(`El grupo ${grupoId} no existe`);
+    }
+    delete grupos[grupoId];
+    guardarGrupos(grupos);
+}
+
+// ============ AUTO-REGISTRO DE PARTICIPANTES ============
+
+export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return { success: false, message: 'El grupo no existe' };
     
-    // Preguntar si ya está registrado
-    const respuesta = prompt(`¿Ya estás registrado en el grupo "${grupoNombre}"?\n\n- Si ya estás registrado, ingresa tu nombre exacto.\n- Si es tu primera vez, escribe "nuevo" o deja vacío.`);
+    const nombreNormalizado = nombre.trim();
+    if (!nombreNormalizado) {
+        return { success: false, message: 'El nombre es obligatorio' };
+    }
     
-    if (respuesta && respuesta.toLowerCase() !== 'nuevo' && respuesta.trim() !== '') {
-        // Verificar si el nombre existe en el grupo
-        const existe = participanteRegistrado(grupoId, respuesta);
-        if (existe) {
-            currentParticipante = respuesta;
-            sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
-                participante: respuesta,
-                grupoId: grupoId,
-                timestamp: Date.now()
-            }));
-            iniciarSesionParticipante();
-            return;
-        } else {
-            alert(`❌ El nombre "${respuesta}" no está registrado en este grupo. Por favor, regístrate.`);
+    const existe = grupos[grupoId].participantes.some(
+        p => p.toLowerCase() === nombreNormalizado.toLowerCase()
+    );
+    
+    if (existe) {
+        return { success: false, message: 'Ya estás registrado en este grupo' };
+    }
+    
+    grupos[grupoId].participantes.push(nombreNormalizado);
+    
+    if (!grupos[grupoId].participantesInfo) {
+        grupos[grupoId].participantesInfo = {};
+    }
+    
+    grupos[grupoId].participantesInfo[nombreNormalizado] = {
+        telefono: telefono,
+        fechaRegistro: new Date().toISOString()
+    };
+    
+    guardarGrupos(grupos);
+    return { success: true, message: `¡Bienvenido ${nombreNormalizado}!` };
+}
+
+export function participanteRegistrado(grupoId, nombre) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return false;
+    return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+}
+
+export function getParticipantesDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    return grupo ? grupo.participantes : [];
+}
+
+export function getInfoParticipante(grupoId, nombre) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return null;
+    return grupo.participantesInfo?.[nombre] || { telefono: '', fechaRegistro: '' };
+}
+
+export function eliminarParticipanteDeGrupo(grupoId, nombre) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    const index = grupos[grupoId].participantes.findIndex(
+        p => p.toLowerCase() === nombre.toLowerCase()
+    );
+    
+    if (index !== -1) {
+        grupos[grupoId].participantes.splice(index, 1);
+        if (grupos[grupoId].participantesInfo?.[nombre]) {
+            delete grupos[grupoId].participantesInfo[nombre];
         }
-    }
-    
-    // Si no está registrado o eligió "nuevo", mostrar formulario de registro
-    mostrarFormularioRegistro(grupoId, grupoNombre);
-}
-
-function mostrarFormularioRegistro(grupoId, grupoNombre) {
-    currentParticipante = '';
-    registroPanel.style.display = 'block';
-    apuestasPanel.style.display = 'none';
-    seleccionGruposDiv.style.display = 'block';
-    grupoSeleccionadoNombre.innerHTML = `🏆 ${grupoNombre}`;
-    registroMensaje.innerHTML = '';
-    registroNombre.value = '';
-    registroTelefono.value = '';
-    
-    registroPanel.scrollIntoView({ behavior: 'smooth' });
-}
-
-async function registrarParticipante() {
-    const nombre = registroNombre.value.trim();
-    const telefono = registroTelefono.value.trim();
-    
-    if (!nombre) {
-        registroMensaje.innerHTML = '<div class="mensaje-error">❌ El nombre es obligatorio</div>';
-        return;
-    }
-    
-    const resultado = registrarParticipanteEnGrupo(currentGrupoId, nombre, telefono);
-    
-    if (resultado.success) {
-        registroMensaje.innerHTML = `<div class="mensaje-exito">✅ ${resultado.message}</div>`;
-        currentParticipante = nombre;
-        
-        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
-            participante: nombre,
-            grupoId: currentGrupoId,
-            timestamp: Date.now()
-        }));
-        
-        setTimeout(() => {
-            iniciarSesionParticipante();
-        }, 1000);
-    } else {
-        registroMensaje.innerHTML = `<div class="mensaje-error">❌ ${resultado.message}</div>`;
-    }
-}
-
-function iniciarSesionParticipante() {
-    registroPanel.style.display = 'none';
-    apuestasPanel.style.display = 'block';
-    seleccionGruposDiv.style.display = 'none';
-    
-    participanteNombreDisplay.textContent = currentParticipante;
-    participanteGrupoDisplay.textContent = `Grupo: ${currentGrupoNombre}`;
-    
-    cargarDias();
-    cargarEventosCalendario();
-}
-
-function cargarDias() {
-    const dias = getDiasCalendario();
-    
-    if (dias.length === 0) {
-        diaSelect.innerHTML = '<option>No hay partidos cargados</option>';
-        return;
-    }
-    
-    let options = '<option value="">📅 Seleccioná un día...</option>';
-    dias.forEach(dia => {
-        const fechaFormateada = formatearFecha(dia);
-        const esPasado = isPartidoPasado(dia);
-        const esHoy = !esPasado && (dia === getDiaActualLocal());
-        let icono = '';
-        if (esPasado) icono = '🔒 ';
-        else if (esHoy) icono = '✅ ';
-        else icono = '⏳ ';
-        options += `<option value="${dia}">${icono}${fechaFormateada}</option>`;
-    });
-    diaSelect.innerHTML = options;
-    
-    const hoy = getDiaActualLocal();
-    if (dias.includes(hoy)) {
-        diaSelect.value = hoy;
-        currentFecha = hoy;
-        cargarPartidosDelDia(hoy);
-        actualizarEstadoDia(hoy);
-    } else if (dias[0]) {
-        diaSelect.value = dias[0];
-        currentFecha = dias[0];
-        cargarPartidosDelDia(dias[0]);
-        actualizarEstadoDia(dias[0]);
-    }
-}
-
-function cargarEventosCalendario() {
-    diaSelect.addEventListener('change', (e) => {
-        currentFecha = e.target.value;
-        if (currentFecha) {
-            cargarPartidosDelDia(currentFecha);
-            actualizarEstadoDia(currentFecha);
+        if (grupos[grupoId].apuestas[nombre]) {
+            delete grupos[grupoId].apuestas[nombre];
         }
-    });
-}
-
-function actualizarEstadoDia(fecha) {
-    const esPasado = isPartidoPasado(fecha);
-    const esHoy = !esPasado && (fecha === getDiaActualLocal());
-    
-    if (esPasado) {
-        estadoDia.innerHTML = '<span class="badge-pasado">🔒 DÍA FINALIZADO - Solo consulta</span>';
-    } else if (esHoy) {
-        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Podés apostar</span>';
-    } else {
-        estadoDia.innerHTML = '<span class="badge-futuro">⏳ DÍA FUTURO - Apuestas disponibles el día del partido</span>';
+        guardarGrupos(grupos);
+        return true;
     }
+    return false;
 }
 
-function cargarPartidosDelDia(fecha) {
-    const partidos = getPartidosPorDia(fecha);
-    const esPasado = isPartidoPasado(fecha);
-    const esHoy = !esPasado && (fecha === getDiaActualLocal());
+// ============ LÍMITE DE APUESTAS EXTRA ============
+
+export function getLimiteApuestasParticipante(grupoId, participante) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return 1;
     
-    apuestasContainer.innerHTML = partidos.map(partido => {
-        const puedeApostar = esHoy && puedeApostarPartido(partido.fecha, partido.hora);
-        const limiteParticipante = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-        const apuestasActuales = getApuestasDePartido(currentGrupoId, currentParticipante, partido.id).length;
-        
-        let mensajeBloqueo = '';
-        if (!puedeApostar) {
-            if (esPasado) mensajeBloqueo = '🔒 Partido finalizado';
-            else if (!esHoy) mensajeBloqueo = '⏳ Apuestas solo el día del partido';
-            else mensajeBloqueo = '⏰ Apuestas cerradas';
-        }
-        
-        return `
-            <div class="apuesta-card ${!puedeApostar ? 'bloqueado' : ''}" data-id="${partido.id}">
-                <div class="match-info">
-                    <div class="match-teams">${conBandera(partido.local)} vs ${conBandera(partido.visitante)}</div>
-                    <div class="match-date">
-                        🕐 ${partido.hora} | ${getFaseNombre(partido.fase)}
-                        ${!puedeApostar ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
-                    </div>
-                </div>
-                
-                <div id="apuestas-lista-${partido.id}" class="apuestas-lista"></div>
-                
-                ${puedeApostar ? `
-                    <div class="nueva-apuesta-form">
-                        <div class="score-inputs">
-                            <input type="number" class="score-local" placeholder="Local" min="0" max="20">
-                            <span class="vs">-</span>
-                            <input type="number" class="score-visitante" placeholder="Visitante" min="0" max="20">
-                            <button class="btn-agregar-apuesta" data-id="${partido.id}">➕ Agregar</button>
-                        </div>
-                        <div class="limite-apuestas">📊 Usados: ${apuestasActuales}/${limiteParticipante}</div>
-                    </div>
-                ` : `
-                    <div class="score-readonly" id="readonly-${partido.id}"></div>
-                `}
-            </div>
-        `;
-    }).join('');
+    if (!grupo.apuestasExtras) {
+        grupo.apuestasExtras = {};
+    }
     
-    cargarApuestasExistentes(fecha);
-    setupAgregarApuestas();
+    return grupo.apuestasExtras[participante] || 1;
 }
 
-function cargarApuestasExistentes(fecha) {
-    const todasApuestas = getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
-    const partidos = getPartidosPorDia(fecha);
-    const resultados = getResultadosDelGrupo(currentGrupoId);
-    const esHoy = !isPartidoPasado(fecha) && (fecha === getDiaActualLocal());
-    const puedeApostar = esHoy;
+export function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
     
-    partidos.forEach(partido => {
-        const apuestasPartido = todasApuestas[partido.id] || [];
-        const container = document.getElementById(`apuestas-lista-${partido.id}`);
-        const readonlyContainer = document.getElementById(`readonly-${partido.id}`);
-        
-        if (container) {
+    if (!grupos[grupoId].apuestasExtras) {
+        grupos[grupoId].apuestasExtras = {};
+    }
+    
+    grupos[grupoId].apuestasExtras[participante] = limite;
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function getApuestasExtrasDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return {};
+    return grupo.apuestasExtras || {};
+}
+
+// ============ APUESTAS ============
+
+export function agregarApuestaEnGrupo(grupoId, participante, partidoId, apuesta) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    if (!grupos[grupoId].apuestas[participante]) {
+        grupos[grupoId].apuestas[participante] = {};
+    }
+    
+    if (!grupos[grupoId].apuestas[participante][partidoId]) {
+        grupos[grupoId].apuestas[participante][partidoId] = [];
+    }
+    
+    const apuestaId = Date.now() + '-' + Math.random().toString(36).substr(2, 8);
+    
+    grupos[grupoId].apuestas[participante][partidoId].push({
+        id: apuestaId,
+        local: apuesta.local,
+        visitante: apuesta.visitante,
+        fecha: new Date().toISOString()
+    });
+    
+    guardarGrupos(grupos);
+    return apuestaId;
+}
+
+export function getApuestasMultiplesDeParticipante(grupoId, participante) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo || !grupo.apuestas[participante]) return {};
+    return grupo.apuestas[participante];
+}
+
+export function getApuestasDePartido(grupoId, participante, partidoId) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo || !grupo.apuestas[participante]) return [];
+    return grupo.apuestas[participante][partidoId] || [];
+}
+
+export function eliminarApuesta(grupoId, participante, partidoId, apuestaId) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    const apuestasPartido = grupos[grupoId].apuestas[participante]?.[partidoId];
+    if (apuestasPartido && Array.isArray(apuestasPartido)) {
+        const index = apuestasPartido.findIndex(a => a.id === apuestaId);
+        if (index !== -1) {
+            apuestasPartido.splice(index, 1);
             if (apuestasPartido.length === 0) {
-                container.innerHTML = '<div class="no-apuestas">📭 Sin pronósticos</div>';
-            } else {
-                let html = '<div class="apuestas-multiples">';
-                apuestasPartido.forEach((apuesta, idx) => {
-                    const resultado = resultados[partido.id];
-                    let claseAcierto = '';
-                    if (resultado) {
-                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                            claseAcierto = 'acierto-exacto';
-                        } else if (
-                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                        ) {
-                            claseAcierto = 'acierto-ganador';
-                        } else {
-                            claseAcierto = 'acierto-error';
-                        }
-                    }
-                    html += `
-                        <div class="apuesta-item ${claseAcierto}">
-                            <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
-                            ${puedeApostar ? `<button class="btn-eliminar-apuesta" data-partido="${partido.id}" data-apuesta="${apuesta.id}">🗑️</button>` : ''}
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
+                delete grupos[grupoId].apuestas[participante][partidoId];
+            }
+            guardarGrupos(grupos);
+            return true;
+        }
+    }
+    return false;
+}
+
+// ============ RESULTADOS ============
+
+export function guardarResultadoEnGrupo(grupoId, partidoId, resultado) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    if (!grupos[grupoId].resultados) {
+        grupos[grupoId].resultados = {};
+    }
+    
+    grupos[grupoId].resultados[partidoId] = resultado;
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function getResultadosDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    return grupo ? grupo.resultados || {} : {};
+}
+
+// ============ CÁLCULO DE PUNTOS Y RANKING ============
+
+export function calcularPuntosMultiples(grupoId, participante) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return 0;
+    
+    const apuestasPorPartido = grupo.apuestas[participante] || {};
+    const resultados = grupo.resultados || {};
+    const reglas = grupo.reglas;
+    
+    let puntos = 0;
+    
+    for (const [partidoId, apuestas] of Object.entries(apuestasPorPartido)) {
+        const resultado = resultados[partidoId];
+        if (resultado && Array.isArray(apuestas)) {
+            for (const apuesta of apuestas) {
+                if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                    puntos += reglas.puntosExacto;
+                }
+                else if (
+                    (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                    (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                    (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                ) {
+                    puntos += reglas.puntosGanador;
+                }
             }
         }
-        
-        if (readonlyContainer && !puedeApostar && resultados[partido.id]) {
-            readonlyContainer.innerHTML = `<div class="resultado-oficial">🏆 Resultado oficial: ${resultados[partido.id].local} - ${resultados[partido.id].visitante}</div>`;
-        } else if (readonlyContainer && !puedeApostar && apuestasPartido.length > 0) {
-            let html = '<div class="apuestas-multiples">';
-            apuestasPartido.forEach((apuesta, idx) => {
-                html += `<div class="apuesta-item">Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</div>`;
-            });
-            html += '</div>';
-            readonlyContainer.innerHTML = html;
-        }
+    }
+    
+    return puntos;
+}
+
+// Ranking acumulado (todos los partidos)
+export function getRankingDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return [];
+    
+    const ranking = grupo.participantes.map(participante => {
+        return {
+            nombre: participante,
+            puntos: calcularPuntosMultiples(grupoId, participante),
+            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
+            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
+        };
     });
     
-    document.querySelectorAll('.btn-eliminar-apuesta').forEach(btn => {
-        btn.removeEventListener('click', handleEliminarApuesta);
-        btn.addEventListener('click', handleEliminarApuesta);
-    });
+    ranking.sort((a, b) => b.puntos - a.puntos);
+    
+    return ranking.map((item, index) => ({
+        ...item,
+        posicion: index + 1
+    }));
 }
 
-function handleEliminarApuesta(e) {
-    const btn = e.currentTarget;
-    const partidoId = parseInt(btn.dataset.partido);
-    const apuestaId = btn.dataset.apuesta;
-    eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
-    cargarPartidosDelDia(currentFecha);
-    mostrarMensaje('Pronóstico eliminado', 'success');
-}
-
-function setupAgregarApuestas() {
-    document.querySelectorAll('.btn-agregar-apuesta').forEach(btn => {
-        btn.removeEventListener('click', handleAgregarApuesta);
-        btn.addEventListener('click', handleAgregarApuesta);
-    });
-}
-
-function handleAgregarApuesta(e) {
-    const btn = e.currentTarget;
-    const partidoId = parseInt(btn.dataset.id);
-    const card = btn.closest('.apuesta-card');
-    const localInput = card.querySelector('.score-local');
-    const visitanteInput = card.querySelector('.score-visitante');
+// Ranking por día específico
+export function getRankingDelGrupoPorDia(grupoId, fecha) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return [];
     
-    const local = parseInt(localInput.value);
-    const visitante = parseInt(visitanteInput.value);
+    // Filtrar partidos de esa fecha
+    const partidosDeFecha = todosLosPartidosGlobal.filter(p => p.fecha === fecha);
+    const partidosIds = partidosDeFecha.map(p => p.id);
     
-    if (isNaN(local) || isNaN(visitante)) {
-        mostrarMensaje('Ingresá un marcador válido', 'error');
-        return;
-    }
-    
-    if (local < 0 || local > 20 || visitante < 0 || visitante > 20) {
-        mostrarMensaje('Usá números entre 0 y 20', 'error');
-        return;
-    }
-    
-    const partido = todosLosPartidos.find(p => p.id === partidoId);
-    if (partido && !puedeApostarPartido(partido.fecha, partido.hora)) {
-        mostrarMensaje('⏰ Ya no se puede apostar a este partido', 'error');
-        return;
-    }
-    
-    const limite = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-    const actuales = getApuestasDePartido(currentGrupoId, currentParticipante, partidoId).length;
-    
-    if (actuales >= limite) {
-        mostrarMensaje(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
-        return;
-    }
-    
-    agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
-    mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado (${actuales + 1}/${limite})`, 'success');
-    localInput.value = '';
-    visitanteInput.value = '';
-    cargarPartidosDelDia(currentFecha);
-}
-
-function mostrarMensaje(msg, tipo) {
-    const mensajeDiv = document.getElementById('mensaje');
-    mensajeDiv.textContent = msg;
-    mensajeDiv.className = `mensaje ${tipo}`;
-    setTimeout(() => {
-        mensajeDiv.textContent = '';
-        mensajeDiv.className = 'mensaje';
-    }, 3000);
-}
-
-function cambiarGrupo() {
-    sessionStorage.removeItem('quiniela_sesion_actual');
-    currentGrupoId = '';
-    currentGrupoNombre = '';
-    currentParticipante = '';
-    
-    registroPanel.style.display = 'none';
-    apuestasPanel.style.display = 'none';
-    seleccionGruposDiv.style.display = 'block';
-    
-    cargarGrupos();
-}
-
-function verMisApuestas() {
-    const todasApuestas = getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
-    const resultados = getResultadosDelGrupo(currentGrupoId);
-    const modalBody = document.getElementById('modal-body');
-    const modal = document.getElementById('modal-apuestas');
-    const reglas = getReglasDelGrupo(currentGrupoId);
-    
-    if (Object.keys(todasApuestas).length === 0) {
-        modalBody.innerHTML = '<p style="text-align:center;">📭 No has realizado ningún pronóstico</p>';
-        modal.style.display = 'block';
-        return;
-    }
-    
-    let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
-    let totalPuntos = 0;
-    
-    const apuestasArray = [];
-    for (const [partidoId, apuestas] of Object.entries(todasApuestas)) {
-        const partido = todosLosPartidos.find(p => p.id === parseInt(partidoId));
-        if (partido && apuestas.length > 0) {
-            apuestas.forEach(apuesta => {
-                apuestasArray.push({
-                    ...apuesta,
-                    partido,
-                    resultado: resultados[partidoId]
-                });
-            });
-        }
-    }
-    apuestasArray.sort((a, b) => a.partido.fecha.localeCompare(b.partido.fecha));
-    
-    let currentFechaHtml = '';
-    apuestasArray.forEach(ap => {
-        if (currentFechaHtml !== ap.partido.fecha) {
-            currentFechaHtml = ap.partido.fecha;
-            html += `<h4>📅 ${formatearFecha(ap.partido.fecha)} - ${ap.partido.local} vs ${ap.partido.visitante}</h4>`;
-        }
-        
+    const ranking = grupo.participantes.map(participante => {
         let puntos = 0;
-        let acierto = '';
-        if (ap.resultado) {
-            if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
-                puntos = reglas.puntosExacto;
-                acierto = '✅ EXACTO';
-            } else if (
-                (ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
-                (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
-                (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)
-            ) {
-                puntos = reglas.puntosGanador;
-                acierto = '🎯 GANADOR';
-            } else {
-                acierto = '❌ ERROR';
+        const apuestasPorPartido = grupo.apuestas[participante] || {};
+        const resultados = grupo.resultados || {};
+        const reglas = grupo.reglas;
+        
+        for (const partidoId of partidosIds) {
+            const apuestas = apuestasPorPartido[partidoId];
+            const resultado = resultados[partidoId];
+            if (apuestas && Array.isArray(apuestas) && resultado) {
+                for (const apuesta of apuestas) {
+                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                        puntos += reglas.puntosExacto;
+                    }
+                    else if (
+                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                    ) {
+                        puntos += reglas.puntosGanador;
+                    }
+                }
             }
-            totalPuntos += puntos;
         }
         
-        html += `<div class="apuesta-resumen">
-            Pronóstico: ${ap.local} - ${ap.visitante}
-            ${ap.resultado ? `<br>Resultado: ${ap.resultado.local} - ${ap.resultado.visitante}<br>${acierto} ${puntos > 0 ? `(+${puntos})` : ''}` : '<br>⏳ Resultado pendiente'}
-        </div>`;
+        return {
+            nombre: participante,
+            puntos: puntos,
+            telefono: grupo.participantesInfo?.[participante]?.telefono || ''
+        };
     });
     
-    html += `<div class="total-puntos">🏆 TOTAL DE PUNTOS: ${totalPuntos}</div>`;
-    modalBody.innerHTML = html;
-    modal.style.display = 'block';
-}
-
-function setupEventListeners() {
-    registrarBtn.addEventListener('click', registrarParticipante);
-    cambiarGrupoBtn.addEventListener('click', cambiarGrupo);
-    verApuestasBtn.addEventListener('click', verMisApuestas);
+    ranking.sort((a, b) => b.puntos - a.puntos);
     
-    const modal = document.getElementById('modal-apuestas');
-    const closeBtn = document.querySelector('.modal-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => modal.style.display = 'none');
-    }
-    window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+    return ranking.map((item, index) => ({
+        ...item,
+        posicion: index + 1
+    }));
 }
 
-init();
+// ============ REGLAS Y PREMIOS ============
+
+export function getPremiosDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    return grupo ? grupo.premios : { 
+        cantidadGanadores: 3,
+        primero: 50, 
+        segundo: 30, 
+        tercero: 20 
+    };
+}
+
+export function actualizarPremiosDelGrupo(grupoId, nuevosPremios) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    grupos[grupoId].premios = {
+        ...grupos[grupoId].premios,
+        ...nuevosPremios
+    };
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function actualizarReglasDelGrupo(grupoId, nuevasReglas) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    grupos[grupoId].reglas = {
+        ...grupos[grupoId].reglas,
+        ...nuevasReglas
+    };
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function getReglasDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    return grupo ? grupo.reglas : { puntosExacto: 3, puntosGanador: 1 };
+}

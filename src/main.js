@@ -93,16 +93,41 @@ function cargarGrupos() {
         card.addEventListener('click', () => {
             const grupoId = card.dataset.grupoId;
             const grupoNombre = card.dataset.grupoNombre;
-            seleccionarGrupo(grupoId, grupoNombre);
+            manejarSeleccionGrupo(grupoId, grupoNombre);
         });
     });
 }
 
-function seleccionarGrupo(grupoId, grupoNombre) {
+function manejarSeleccionGrupo(grupoId, grupoNombre) {
     currentGrupoId = grupoId;
     currentGrupoNombre = grupoNombre;
-    currentParticipante = '';
     
+    // Preguntar si ya está registrado
+    const respuesta = prompt(`¿Ya estás registrado en el grupo "${grupoNombre}"?\n\n- Si ya estás registrado, ingresa tu nombre exacto.\n- Si es tu primera vez, escribe "nuevo" o deja vacío.`);
+    
+    if (respuesta && respuesta.toLowerCase() !== 'nuevo' && respuesta.trim() !== '') {
+        // Verificar si el nombre existe en el grupo
+        const existe = participanteRegistrado(grupoId, respuesta);
+        if (existe) {
+            currentParticipante = respuesta;
+            sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
+                participante: respuesta,
+                grupoId: grupoId,
+                timestamp: Date.now()
+            }));
+            iniciarSesionParticipante();
+            return;
+        } else {
+            alert(`❌ El nombre "${respuesta}" no está registrado en este grupo. Por favor, regístrate.`);
+        }
+    }
+    
+    // Si no está registrado o eligió "nuevo", mostrar formulario de registro
+    mostrarFormularioRegistro(grupoId, grupoNombre);
+}
+
+function mostrarFormularioRegistro(grupoId, grupoNombre) {
+    currentParticipante = '';
     registroPanel.style.display = 'block';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
@@ -481,54 +506,10 @@ function setupEventListeners() {
     
     const modal = document.getElementById('modal-apuestas');
     const closeBtn = document.querySelector('.modal-close');
-    closeBtn?.addEventListener('click', () => modal.style.display = 'none');
-    window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-}
-
-// Agregar esta función
-function verificarRegistroEnGrupo(grupoId, nombre) {
-    const grupos = getGrupos();
-    const grupo = grupos[grupoId];
-    if (!grupo) return false;
-    return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
-}
-
-// Modificar seleccionarGrupo para que primero pregunte si ya está registrado
-function seleccionarGrupo(grupoId, grupoNombre) {
-    currentGrupoId = grupoId;
-    currentGrupoNombre = grupoNombre;
-    
-    // Preguntar si ya está registrado
-    const yaRegistrado = prompt(`¿Ya estás registrado en el grupo "${grupoNombre}"?\n\nSi ya estás registrado, ingresa tu nombre.\nSi es tu primera vez, ingresa "nuevo".`);
-    
-    if (yaRegistrado && yaRegistrado.toLowerCase() !== 'nuevo') {
-        // Verificar si el nombre existe en el grupo
-        const existe = verificarRegistroEnGrupo(grupoId, yaRegistrado);
-        if (existe) {
-            currentParticipante = yaRegistrado;
-            sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
-                participante: yaRegistrado,
-                grupoId: grupoId,
-                timestamp: Date.now()
-            }));
-            iniciarSesionParticipante();
-            return;
-        } else {
-            alert(`El nombre "${yaRegistrado}" no está registrado en este grupo. Por favor, regístrate.`);
-        }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.style.display = 'none');
     }
-    
-    // Si no está registrado o eligió "nuevo", mostrar formulario de registro
-    currentParticipante = '';
-    registroPanel.style.display = 'block';
-    apuestasPanel.style.display = 'none';
-    seleccionGruposDiv.style.display = 'block';
-    grupoSeleccionadoNombre.innerHTML = `🏆 ${grupoNombre}`;
-    registroMensaje.innerHTML = '';
-    registroNombre.value = '';
-    registroTelefono.value = '';
-    
-    registroPanel.scrollIntoView({ behavior: 'smooth' });
+    window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
 
 init();
