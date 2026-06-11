@@ -1,4 +1,4 @@
-// src/groups.js - Con soporte para Firebase
+// src/groups.js - Sistema de grupos con Firebase (SIN CONTRASEÑAS)
 import { 
     guardarGrupoEnFirebase, 
     obtenerGrupoDeFirebase, 
@@ -18,6 +18,7 @@ import {
 let todosLosPartidosGlobal = [];
 let gruposCache = {};
 let sincronizando = false;
+let guardandoApuesta = false; // Variable para controlar duplicados
 
 export function setPartidosGlobal(partidos) {
     todosLosPartidosGlobal = partidos;
@@ -25,15 +26,14 @@ export function setPartidosGlobal(partidos) {
 
 // ============ GRUPOS ============
 
-// src/groups.js - Reemplazar la función getGrupos
-
 export async function getGrupos() {
+    if (Object.keys(gruposCache).length > 0) {
+        return gruposCache;
+    }
+    
     try {
-        // Intentar cargar desde Firebase primero
         const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
-        
         if (Object.keys(gruposFirebase).length > 0) {
-            // Si hay datos en Firebase, usarlos y actualizar localStorage
             gruposCache = gruposFirebase;
             localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
             console.log('✅ Grupos cargados desde Firebase:', Object.keys(gruposFirebase).length);
@@ -43,7 +43,6 @@ export async function getGrupos() {
         console.error('Error cargando desde Firebase:', error);
     }
     
-    // Fallback: cargar desde localStorage
     const gruposGuardados = localStorage.getItem('quiniela_grupos');
     if (gruposGuardados) {
         gruposCache = JSON.parse(gruposGuardados);
@@ -51,7 +50,6 @@ export async function getGrupos() {
         return gruposCache;
     }
     
-    console.log('⚠️ No hay grupos disponibles');
     return {};
 }
 
@@ -60,7 +58,6 @@ export async function guardarGrupos(grupos) {
     localStorage.setItem('quiniela_grupos', JSON.stringify(grupos));
     window.dispatchEvent(new Event('grupos-actualizados'));
     
-    // Sincronizar con Firebase en segundo plano
     if (!sincronizando) {
         sincronizando = true;
         for (const [id, data] of Object.entries(grupos)) {
@@ -129,7 +126,6 @@ export async function eliminarGrupo(grupoId) {
 export async function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
     const resultado = await registrarParticipanteEnFirebase(grupoId, nombre, telefono);
     if (resultado.success) {
-        // Actualizar caché local
         const grupos = await getGrupos();
         if (grupos[grupoId]) {
             if (!grupos[grupoId].participantes.includes(nombre)) {
@@ -181,28 +177,58 @@ export async function eliminarParticipanteDeGrupo(grupoId, nombre) {
     return resultado;
 }
 
-// ============ APUESTAS ============
+// ============ APUESTAS (CON CONTROL DE DUPLICADOS) ============
 
 export async function agregarApuestaEnGrupo(grupoId, participante, partidoId, apuesta) {
-    const apuestaId = await agregarApuestaEnFirebase(grupoId, participante, partidoId, apuesta);
-    if (apuestaId) {
-        // Actualizar caché local
-        const grupos = await getGrupos();
-        if (grupos[grupoId]) {
-            if (!grupos[grupoId].apuestas) grupos[grupoId].apuestas = {};
-            if (!grupos[grupoId].apuestas[participante]) grupos[grupoId].apuestas[participante] = {};
-            if (!grupos[grupoId].apuestas[participante][partidoId]) grupos[grupoId].apuestas[participante][partidoId] = [];
-            
-            grupos[grupoId].apuestas[participante][partidoId].push({
-                id: apuestaId,
-                local: apuesta.local,
-                visitante: apuesta.visitante,
-                fecha: new Date().toISOString()
-            });
-            await guardarGrupos(grupos);
-        }
+    // Evitar llamadas simultáneas
+    if (guardandoApuesta) {
+        console.log('⚠️ Ya hay una apuesta guardándose, ignorando...');
+        return false;
     }
-    return apuestaId;
+    
+    guardandoApuesta = true;
+    
+    try {
+        const grupos = await getGrupos();
+        if (!grupos[grupoId]) return false;
+        
+        // Verificar si ya existe exactamente la misma apuesta para este partido
+        const apuestasExistentes = grupos[grupoId].apuestas?.[participante]?.[partidoId] || [];
+        const apuestaExistente = apuestasExistentes.find(a => 
+            a.local === apuesta.local && a.visitante === apuesta.visitante
+        );
+        
+        if (apuestaExistente) {
+            console.log('⚠️ Esta apuesta ya existe, no se duplicará');
+            guardandoApuesta = false;
+            return false;
+        }
+        
+        if (!grupos[grupoId].apuestas[participante]) {
+            grupos[grupoId].apuestas[participante] = {};
+        }
+        
+        if (!grupos[grupoId].apuestas[participante][partidoId]) {
+            grupos[grupoId].apuestas[participante][partidoId] = [];
+        }
+        
+        const apuestaId = Date.now() + '-' + Math.random().toString(36).substr(2, 8);
+        
+        grupos[grupoId].apuestas[participante][partidoId].push({
+            id: apuestaId,
+            local: apuesta.local,
+            visitante: apuesta.visitante,
+            fecha: new Date().toISOString()
+        });
+        
+        await guardarGrupos(grupos);
+        guardandoApuesta = false;
+        return apuestaId;
+    } catch (error) {
+        console.error('Error al agregar apuesta:', error);
+        guardandoApuesta = false;
+        return false;
+    }
 }
 
 export async function getApuestasMultiplesDeParticipante(grupoId, participante) {
