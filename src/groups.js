@@ -1,4 +1,4 @@
-// src/groups.js - Sistema de grupos con contraseñas y LÍMITES POR PARTICIPANTE
+// src/groups.js - Sistema de grupos con auto-registro de usuarios
 
 const GRUPOS_INICIALES = {};
 
@@ -7,6 +7,8 @@ let todosLosPartidosGlobal = [];
 export function setPartidosGlobal(partidos) {
     todosLosPartidosGlobal = partidos;
 }
+
+// ============ GRUPOS ============
 
 export function getGrupos() {
     const gruposGuardados = localStorage.getItem('quiniela_grupos');
@@ -24,11 +26,6 @@ export function guardarGrupos(grupos) {
 export function getGrupo(grupoId) {
     const grupos = getGrupos();
     return grupos[grupoId];
-}
-
-export function grupoExiste(grupoId) {
-    const grupos = getGrupos();
-    return grupos.hasOwnProperty(grupoId);
 }
 
 export function crearGrupo(grupoId, config) {
@@ -59,22 +56,15 @@ export function crearGrupo(grupoId, config) {
             segundo: 30,
             tercero: 20
         },
-        participantes: [],
-        participantesTelefonos: {},
+        participantes: [], // Se llenará con auto-registro
+        participantesInfo: {}, // Información de cada participante
         apuestas: {},
         resultados: {},
-        apuestasExtras: {},
         fechaCreacion: new Date().toISOString(),
         activo: true
     };
     guardarGrupos(grupos);
     return grupos[grupoId];
-}
-
-export function validarContrasenaGrupo(grupoId, contrasena) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return false;
-    return grupo.contrasena === contrasena;
 }
 
 export function eliminarGrupo(grupoId) {
@@ -94,123 +84,65 @@ export function actualizarContrasenaGrupo(grupoId, nuevaContrasena) {
     return true;
 }
 
-// ============ PARTICIPANTES POR GRUPO ============
+// ============ AUTO-REGISTRO DE PARTICIPANTES ============
 
+// Registrar un participante en un grupo (auto-registro)
+export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return { success: false, message: 'El grupo no existe' };
+    
+    const nombreNormalizado = nombre.trim();
+    if (!nombreNormalizado) {
+        return { success: false, message: 'El nombre es obligatorio' };
+    }
+    
+    // Verificar si ya existe
+    const existe = grupos[grupoId].participantes.some(
+        p => p.toLowerCase() === nombreNormalizado.toLowerCase()
+    );
+    
+    if (existe) {
+        return { success: false, message: 'Ya estás registrado en este grupo' };
+    }
+    
+    // Registrar nuevo participante
+    grupos[grupoId].participantes.push(nombreNormalizado);
+    
+    if (!grupos[grupoId].participantesInfo) {
+        grupos[grupoId].participantesInfo = {};
+    }
+    
+    grupos[grupoId].participantesInfo[nombreNormalizado] = {
+        telefono: telefono,
+        fechaRegistro: new Date().toISOString()
+    };
+    
+    guardarGrupos(grupos);
+    return { success: true, message: `¡Bienvenido ${nombreNormalizado}! Ya puedes apostar` };
+}
+
+// Obtener participantes de un grupo
 export function getParticipantesDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     return grupo ? grupo.participantes : [];
 }
 
-export function getTelefonoParticipante(grupoId, nombre) {
+// Obtener información de un participante
+export function getInfoParticipante(grupoId, nombre) {
     const grupo = getGrupo(grupoId);
-    if (!grupo) return '';
-    return grupo.participantesTelefonos?.[nombre] || '';
+    if (!grupo) return null;
+    return grupo.participantesInfo?.[nombre] || { telefono: '', fechaRegistro: '' };
 }
 
-export function agregarParticipanteAGrupo(grupoId, nombre, telefono = '') {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    const nombreNormalizado = nombre.trim();
-    const existe = grupos[grupoId].participantes.some(
-        p => p.toLowerCase() === nombreNormalizado.toLowerCase()
-    );
-    
-    if (!existe) {
-        grupos[grupoId].participantes.push(nombreNormalizado);
-        if (!grupos[grupoId].participantesTelefonos) {
-            grupos[grupoId].participantesTelefonos = {};
-        }
-        grupos[grupoId].participantesTelefonos[nombreNormalizado] = telefono;
-        guardarGrupos(grupos);
-        return true;
-    }
-    return false;
-}
-
-export function actualizarTelefonoParticipante(grupoId, nombre, telefono) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].participantesTelefonos) {
-        grupos[grupoId].participantesTelefonos = {};
-    }
-    
-    grupos[grupoId].participantesTelefonos[nombre.trim()] = telefono;
-    guardarGrupos(grupos);
-    return true;
-}
-
-export function eliminarParticipanteDeGrupo(grupoId, nombre) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    const index = grupos[grupoId].participantes.findIndex(
-        p => p.toLowerCase() === nombre.toLowerCase()
-    );
-    
-    if (index !== -1) {
-        grupos[grupoId].participantes.splice(index, 1);
-        if (grupos[grupoId].participantesTelefonos?.[nombre]) {
-            delete grupos[grupoId].participantesTelefonos[nombre];
-        }
-        if (grupos[grupoId].apuestas[nombre]) {
-            delete grupos[grupoId].apuestas[nombre];
-        }
-        if (grupos[grupoId].apuestasExtras?.[nombre]) {
-            delete grupos[grupoId].apuestasExtras[nombre];
-        }
-        guardarGrupos(grupos);
-        return true;
-    }
-    return false;
-}
-
-// ============ LÍMITE DE APUESTAS POR PARTICIPANTE ============
-
-// Obtener límite de apuestas por participante (1 = normal, más = con apuestas extra)
-export function getLimiteApuestasParticipante(grupoId, participante) {
+// Verificar si un participante está registrado
+export function participanteRegistrado(grupoId, nombre) {
     const grupo = getGrupo(grupoId);
-    if (!grupo) return 1;
-    
-    if (!grupo.apuestasExtras) {
-        grupo.apuestasExtras = {};
-    }
-    
-    return grupo.apuestasExtras[participante] || 1;
+    if (!grupo) return false;
+    return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
 }
 
-// Actualizar límite de apuestas para un participante (admin)
-export function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].apuestasExtras) {
-        grupos[grupoId].apuestasExtras = {};
-    }
-    
-    grupos[grupoId].apuestasExtras[participante] = limite;
-    guardarGrupos(grupos);
-    return true;
-}
+// ============ APUESTAS ============
 
-// Verificar si un participante puede agregar más apuestas
-export function puedeAgregarApuesta(grupoId, participante, partidoId) {
-    const limite = getLimiteApuestasParticipante(grupoId, participante);
-    const apuestasActuales = getApuestasDePartido(grupoId, participante, partidoId);
-    return apuestasActuales.length < limite;
-}
-
-// Obtener información de apuestas extra de todos los participantes
-export function getApuestasExtrasDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return {};
-    return grupo.apuestasExtras || {};
-}
-
-// ============ MÚLTIPLES APUESTAS ============
-
-// Agregar una nueva apuesta
 export function agregarApuestaEnGrupo(grupoId, participante, partidoId, apuesta) {
     const grupos = getGrupos();
     if (!grupos[grupoId]) return false;
@@ -267,6 +199,58 @@ export function eliminarApuesta(grupoId, participante, partidoId, apuestaId) {
     return false;
 }
 
+// ============ LÍMITE DE APUESTAS ============
+
+export function getLimiteApuestasParticipante(grupoId, participante) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return 1;
+    
+    if (!grupo.apuestasExtras) {
+        grupo.apuestasExtras = {};
+    }
+    
+    return grupo.apuestasExtras[participante] || 1;
+}
+
+export function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    if (!grupos[grupoId].apuestasExtras) {
+        grupos[grupoId].apuestasExtras = {};
+    }
+    
+    grupos[grupoId].apuestasExtras[participante] = limite;
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function getApuestasExtrasDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return {};
+    return grupo.apuestasExtras || {};
+}
+
+// ============ RESULTADOS ============
+
+export function guardarResultadoEnGrupo(grupoId, partidoId, resultado) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    if (!grupos[grupoId].resultados) {
+        grupos[grupoId].resultados = {};
+    }
+    
+    grupos[grupoId].resultados[partidoId] = resultado;
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function getResultadosDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    return grupo ? grupo.resultados || {} : {};
+}
+
 // ============ CÁLCULO DE PUNTOS ============
 
 export function calcularPuntosMultiples(grupoId, participante) {
@@ -297,44 +281,10 @@ export function calcularPuntosMultiples(grupoId, participante) {
         }
     }
     
-    return puntos;
+    return pontos;
 }
 
-export function calcularPuntosMultiplesPorDia(grupoId, participante, fecha) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return 0;
-    
-    const apuestasPorPartido = grupo.apuestas[participante] || {};
-    const resultados = grupo.resultados || {};
-    const reglas = grupo.reglas;
-    
-    let puntos = 0;
-    
-    for (const [partidoId, apuestas] of Object.entries(apuestasPorPartido)) {
-        const partido = todosLosPartidosGlobal?.find(p => p.id === parseInt(partidoId));
-        if (partido && partido.fecha === fecha) {
-            const resultado = resultados[partidoId];
-            if (resultado && Array.isArray(apuestas)) {
-                for (const apuesta of apuestas) {
-                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                        puntos += reglas.puntosExacto;
-                    }
-                    else if (
-                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                    ) {
-                        puntos += reglas.puntosGanador;
-                    }
-                }
-            }
-        }
-    }
-    
-    return puntos;
-}
-
-export function getRankingMultiple(grupoId) {
+export function getRankingDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     if (!grupo) return [];
     
@@ -342,8 +292,8 @@ export function getRankingMultiple(grupoId) {
         return {
             nombre: participante,
             puntos: calcularPuntosMultiples(grupoId, participante),
-            telefono: grupo.participantesTelefonos?.[participante] || '',
-            limiteApuestas: getLimiteApuestasParticipante(grupoId, participante)
+            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
+            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
         };
     });
     
@@ -355,55 +305,7 @@ export function getRankingMultiple(grupoId) {
     }));
 }
 
-export function getRankingMultiplePorDia(grupoId, fecha) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return [];
-    
-    const ranking = grupo.participantes.map(participante => {
-        return {
-            nombre: participante,
-            puntos: calcularPuntosMultiplesPorDia(grupoId, participante, fecha),
-            telefono: grupo.participantesTelefonos?.[participante] || ''
-        };
-    });
-    
-    ranking.sort((a, b) => b.puntos - a.puntos);
-    
-    return ranking.map((item, index) => ({
-        ...item,
-        posicion: index + 1
-    }));
-}
-
-export function getRankingDelGrupo(grupoId) {
-    return getRankingMultiple(grupoId);
-}
-
-export function getRankingDelGrupoPorDia(grupoId, fecha) {
-    return getRankingMultiplePorDia(grupoId, fecha);
-}
-
-// ============ RESULTADOS POR GRUPO ============
-
-export function guardarResultadoEnGrupo(grupoId, partidoId, resultado) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].resultados) {
-        grupos[grupoId].resultados = {};
-    }
-    
-    grupos[grupoId].resultados[partidoId] = resultado;
-    guardarGrupos(grupos);
-    return true;
-}
-
-export function getResultadosDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
-    return grupo ? grupo.resultados || {} : {};
-}
-
-// ============ PREMIOS ============
+// ============ REGLAS Y PREMIOS ============
 
 export function getPremiosDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
@@ -427,8 +329,6 @@ export function actualizarPremiosDelGrupo(grupoId, nuevosPremios) {
     return true;
 }
 
-// ============ REGLAS ============
-
 export function actualizarReglasDelGrupo(grupoId, nuevasReglas) {
     const grupos = getGrupos();
     if (!grupos[grupoId]) return false;
@@ -448,44 +348,8 @@ export function getReglasDelGrupo(grupoId) {
 
 // ============ VALIDACIONES ============
 
-export function participantePerteneceAlGrupo(grupoId, nombre) {
+export function validarContrasenaGrupo(grupoId, contrasena) {
     const grupo = getGrupo(grupoId);
     if (!grupo) return false;
-    return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
-}
-
-export function getGruposDelParticipante(nombre) {
-    const grupos = getGrupos();
-    const gruposDelParticipante = [];
-    
-    for (const [groupId, grupo] of Object.entries(grupos)) {
-        if (grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase())) {
-            gruposDelParticipante.push({
-                id: groupId,
-                nombre: grupo.nombre,
-                codigo: grupo.codigo
-            });
-        }
-    }
-    
-    return gruposDelParticipante;
-}
-
-export function exportarGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return null;
-    return JSON.stringify(grupo, null, 2);
-}
-
-export function importarGrupo(grupoId, dataJson) {
-    try {
-        const grupoData = JSON.parse(dataJson);
-        const grupos = getGrupos();
-        grupos[grupoId] = grupoData;
-        guardarGrupos(grupos);
-        return true;
-    } catch (error) {
-        console.error('Error al importar grupo:', error);
-        return false;
-    }
+    return grupo.contrasena === contrasena;
 }
