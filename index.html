@@ -799,6 +799,212 @@
             margin-top: 20px;
         }
 
+        /* Popup de Reglas */
+        .popup-rules {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 20000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .popup-rules-content {
+            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 550px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .popup-rules-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .popup-rules-header .rules-icon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        .popup-rules-header h2 {
+            color: #ffd700;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .popup-rules-header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .popup-rules-body {
+            margin-bottom: 25px;
+        }
+
+        .rules-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .rules-section h3 {
+            color: #ffd700;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rules-section ul {
+            list-style: none;
+            padding-left: 5px;
+        }
+
+        .rules-section li {
+            padding: 8px 0;
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .rules-section li:last-child {
+            border-bottom: none;
+        }
+
+        .rules-section li::before {
+            content: "⚽";
+            color: #ffd700;
+            font-size: 0.9rem;
+        }
+
+        .rules-highlight {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 100, 0, 0.08));
+            border-left: 3px solid #ffd700;
+        }
+
+        .rules-highlight li::before {
+            content: "🏆";
+        }
+
+        .puntos-destacados {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .punto-card {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .punto-card .punto-valor {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffd700;
+            display: block;
+        }
+
+        .punto-card .punto-desc {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .grupo-general-destacado {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 100, 0, 0.1));
+            border: 1px solid #ffd700;
+        }
+
+        .popup-rules-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .checkbox-no-mostrar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-no-mostrar input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #ffd700;
+        }
+
+        .checkbox-no-mostrar span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .btn-cerrar-rules {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #0a1e3c;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cerrar-rules:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Scrollbar personalizado */
+        .popup-rules-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .popup-rules-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .popup-rules-content::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 3px;
+        }
+
         /* Admin links */
         .admin-links {
             text-align: center;
@@ -896,6 +1102,10 @@
                 font-size: 0.75rem;
                 padding: 5px 12px;
             }
+
+            .popup-rules-content {
+                padding: 20px;
+            }
         }
 
         @media (max-width: 550px) {
@@ -933,6 +1143,10 @@
                 order: 4;
                 width: 100%;
                 text-align: center;
+            }
+
+            .puntos-destacados {
+                flex-direction: column;
             }
         }
 
@@ -1094,6 +1308,83 @@
             <div class="modal-general-buttons">
                 <button id="btn-confirmar-general" class="btn-confirmar-general">🎉 UNIRME AHORA</button>
                 <button id="btn-cancelar-general" class="btn-cancelar-general">❌ AHORA NO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup de Reglas Generales -->
+    <div id="popup-rules" class="popup-rules">
+        <div class="popup-rules-content">
+            <div class="popup-rules-header">
+                <div class="rules-icon">📜⚽</div>
+                <h2>REGLAS DE LA QUINIELA</h2>
+                <p>Mundial 2026 - México • Estados Unidos • Canadá</p>
+            </div>
+            <div class="popup-rules-body">
+                <div class="rules-section">
+                    <h3>🎯 SISTEMA DE PUNTUACIÓN</h3>
+                    <div class="puntos-destacados">
+                        <div class="punto-card">
+                            <span class="punto-valor">3 PTS</span>
+                            <span class="punto-desc">Resultado EXACTO</span>
+                        </div>
+                        <div class="punto-card">
+                            <span class="punto-valor">1 PT</span>
+                            <span class="punto-desc">Ganador correcto</span>
+                        </div>
+                        <div class="punto-card">
+                            <span class="punto-valor">0 PTS</span>
+                            <span class="punto-desc">Resultado incorrecto</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rules-section">
+                    <h3>📊 GRUPO GENERAL - POZO MAYOR</h3>
+                    <ul class="rules-highlight">
+                        <li>🎯 5 PUNTOS por resultado exacto</li>
+                        <li>🏅 2 PUNTOS por ganador correcto</li>
+                        <li>💰 60% del pozo para el 1er puesto</li>
+                        <li>🏆 25% para el 2do puesto | 15% para el 3er puesto</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>👥 MÚLTIPLES GRUPOS</h3>
+                    <ul>
+                        <li>Podés participar en TODOS los grupos que quieras</li>
+                        <li>Cada grupo tiene su propio ranking y premios</li>
+                        <li>Tu puntuación es independiente por cada grupo</li>
+                        <li>Podés cambiar de grupo cuando quieras</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>⏰ FECHAS Y APUESTAS</h3>
+                    <ul>
+                        <li>Solo se puede apostar el DÍA del partido</li>
+                        <li>Las apuestas se cierran a la HORA de inicio del partido</li>
+                        <li>Los partidos de días pasados quedan bloqueados</li>
+                        <li>Podés hacer múltiples pronósticos por partido (según tu límite)</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>💰 PREMIOS POR GRUPO</h3>
+                    <ul>
+                        <li>🥇 1er Puesto: Porcentaje del pozo según grupo</li>
+                        <li>🥈 2do Puesto: Porcentaje del pozo según grupo</li>
+                        <li>🥉 3er Puesto: Porcentaje del pozo según grupo</li>
+                        <li>📌 El pozo se calcula según participantes que pagan</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="popup-rules-footer">
+                <label class="checkbox-no-mostrar">
+                    <input type="checkbox" id="no-mostrar-rules">
+                    <span>No volver a mostrar</span>
+                </label>
+                <button id="cerrar-rules-btn" class="btn-cerrar-rules">¡ENTENDIDO! 🎉</button>
             </div>
         </div>
     </div>

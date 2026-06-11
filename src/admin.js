@@ -18,6 +18,54 @@ import {
 } from './groups.js';
 import { todosLosPartidos, conBandera, getFaseNombre } from './data.js';
 
+// ============ POPUP DE REGLAS ============
+
+function mostrarPopupReglas() {
+    // Verificar si el usuario ya eligió no mostrar más
+    const noMostrar = localStorage.getItem('quiniela_no_mostrar_reglas');
+    if (noMostrar === 'true') {
+        return;
+    }
+    
+    const popup = document.getElementById('popup-rules');
+    if (popup) {
+        popup.style.display = 'flex';
+        
+        // Evento para cerrar
+        const cerrarBtn = document.getElementById('cerrar-rules-btn');
+        const noMostrarCheck = document.getElementById('no-mostrar-rules');
+        
+        const cerrarPopup = () => {
+            popup.style.display = 'none';
+            if (noMostrarCheck && noMostrarCheck.checked) {
+                localStorage.setItem('quiniela_no_mostrar_reglas', 'true');
+            }
+        };
+        
+        // Remover eventos anteriores para evitar duplicados
+        const newCerrarBtn = cerrarBtn.cloneNode(true);
+        cerrarBtn.parentNode.replaceChild(newCerrarBtn, cerrarBtn);
+        
+        newCerrarBtn.addEventListener('click', cerrarPopup);
+        
+        // Cerrar al hacer clic fuera
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                cerrarPopup();
+            }
+        });
+        
+        // Cerrar con Escape
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                cerrarPopup();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+    }
+}
+
 let todosLosPartidosData = todosLosPartidos;
 let currentGrupoId = '';
 
