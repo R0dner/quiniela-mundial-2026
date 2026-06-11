@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Quiniela Mundial 2026</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        #admin-auth {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1e3c, #1a3a6c);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 400px;
+            animation: fadeIn 0.5s ease;
+        }
+        .auth-box h2 {
+            color: #0a1e3c;
+            margin-bottom: 10px;
+        }
+        .auth-box p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .auth-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+        .auth-box button {
+            background: #e3102b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+        }
+        .auth-error {
+            color: #e3102b;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .logout-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        .header-admin {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .editor-reglas {
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .editor-reglas textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-family: monospace;
+            font-size: 14px;
+            background: #1a1a2e;
+            color: white;
+            margin: 10px 0;
+        }
+        .editor-reglas textarea:focus {
+            outline: 2px solid var(--fifa-gold);
+        }
+        
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 30px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: rgba(255,215,0,0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .grupo-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+        }
+        .grupo-selector label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffd700;
+            font-weight: 500;
+        }
+        .grupo-selector select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 8px;
+            color: white;
+        }
+        .grupos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            margin-bottom: 30px;
+        }
+        .grupo-card {
+            background: rgba(0,0,0,0.4);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+        .grupo-card h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        .grupo-card p {
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+        .grupo-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .btn-cambiar-contrasena {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+        .btn-cambiar-contrasena:hover {
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .participante-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .form-row input {
+            flex: 1;
+            min-width: 150px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: rgba(255,255,255,0.8);
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 8px;
+            color: white;
+        }
+        .empty {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255,255,255,0.5);
+        }
+        .modal-editar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .modal-editar-content {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 20px;
+            min-width: 350px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        .modal-editar-content h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+        .modal-editar-content label {
+            display: block;
+            margin: 15px 0 5px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .modal-editar-content input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            color: white;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .admin-section {
+            background: rgba(10, 20, 40, 0.5);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .admin-section h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .admin-section h3 {
+            margin: 20px 0 10px;
+            color: rgba(255,255,255,0.9);
+        }
+        .resultados-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .resultado-card {
+            padding: 12px;
+        }
+        .resultados-filtro {
+            margin-bottom: 15px;
+        }
+        .resultados-filtro select {
+            padding: 8px 15px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 8px;
+            color: white;
+        }
+        .stat-card {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+        .admin-links {
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 20px;
+        }
+        .admin-links a {
+            color: #ffd700;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-auth">
+        <div class="auth-box">
+            <h2>🔒 Área de Administración</h2>
+            <p>Acceso restringido al staff de la quiniela</p>
+            <input type="password" id="admin-password" placeholder="Contraseña de administrador" autocomplete="off">
+            <button id="verify-admin">Ingresar al Panel</button>
+            <div id="auth-error" class="auth-error"></div>
+            <p style="margin-top: 20px; font-size: 0.8rem; color: #999;">🔐 Solo personal autorizado</p>
+        </div>
+    </div>
+
+    <div id="admin-content" style="display: none;">
+        <div class="container">
+            <header class="worldcup-header">
+                <div class="header-admin">
+                    <h1>👑 Panel de Administración</h1>
+                    <button id="logout-btn" class="logout-btn">🚪 Cerrar Sesión</button>
+                </div>
+                <p>Gestión de Grupos, Participantes y Resultados Oficiales</p>
+            </header>
+
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="grupos">🏆 Grupos</button>
+                <button class="tab-btn" data-tab="participantes">👥 Participantes</button>
+                <button class="tab-btn" data-tab="resultados">⚽ Resultados</button>
+                <button class="tab-btn" data-tab="reglas-generales">📜 Reglas</button>
+            </div>
+
+            <!-- TAB 1: GRUPOS -->
+            <div id="tab-grupos" class="tab-content active">
+                <div class="admin-section">
+                    <h2>📋 Lista de Grupos</h2>
+                    <div id="lista-grupos" class="grupos-grid"></div>
+                    
+                    <h3>➕ Crear Nuevo Grupo</h3>
+                    <div class="form-row">
+                        <input type="text" id="nuevo-grupo-id" placeholder="ID (ej: amigos, familia, trabajo)" class="form-input">
+                        <input type="text" id="nuevo-grupo-nombre" placeholder="Nombre visible (ej: Grupo de Amigos)" class="form-input">
+                        <input type="password" id="nuevo-grupo-contrasena" placeholder="Contraseña del grupo" class="form-input">
+                        <button id="crear-grupo-btn" class="btn-primary">Crear Grupo</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PARTICIPANTES POR GRUPO (SIN PAGO) -->
+            <div id="tab-participantes" class="tab-content">
+                <div class="admin-section">
+                    <h2>👥 Gestión de Participantes por Grupo</h2>
+                    
+                    <div class="grupo-selector">
+                        <label>Seleccionar Grupo:</label>
+                        <select id="grupo-participantes-select">
+                            <option value="">-- Seleccionar grupo --</option>
+                        </select>
+                    </div>
+
+                    <div id="participantes-panel" style="display: none;">
+                        <h3>📋 Participantes Actuales</h3>
+                        <div id="lista-participantes-grupo" class="lista-participantes"></div>
+                        
+                        <h3>➕ Agregar Participante</h3>
+                        <div class="form-row">
+                            <input type="text" id="nuevo-participante-grupo" placeholder="Nombre del participante" class="form-input" style="flex: 2;">
+                            <input type="tel" id="telefono-participante-grupo" placeholder="Teléfono (opcional)" class="form-input" style="flex: 1;">
+                            <button id="agregar-participante-grupo-btn" class="btn-primary">Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: RESULTADOS POR GRUPO -->
+            <div id="tab-resultados" class="tab-content">
+                <div class="admin-section">
+                    <h2>⚽ Cargar Resultados Oficiales por Grupo</h2>
+                    
+                    <div class="grupo-selector">
+                        <label>Seleccionar Grupo:</label>
+                        <select id="grupo-resultados-select">
+                            <option value="">-- Seleccionar grupo --</option>
+                        </select>
+                    </div>
+
+                    <div id="resultados-panel" style="display: none;">
+                        <div class="resultados-filtro">
+                            <select id="filtro-fase-resultados">
+                                <option value="all">Todas las fases</option>
+                                <option value="grupos">Fase de Grupos</option>
+                                <option value="octavos">Octavos</option>
+                                <option value="cuartos">Cuartos</option>
+                                <option value="semis">Semifinales</option>
+                                <option value="finales">Finales</option>
+                            </select>
+                        </div>
+                        <div id="resultados-container" class="resultados-grid"></div>
+                        <button id="guardar-resultados-grupo" class="btn-primary">💾 Guardar Resultados</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REGLAS GENERALES -->
+            <div id="tab-reglas-generales" class="tab-content">
+                <div class="admin-section editor-reglas">
+                    <h2>📜 Editar Reglas de la Quiniela</h2>
+                    <p class="reglas-info">Las reglas se mostrarán en el popup de la página principal. Edita el HTML directamente:</p>
+                    <textarea id="reglas-editor" rows="12" style="width:100%;"></textarea>
+                    <button id="guardar-reglas-admin" class="btn-primary" style="margin-top:10px;">💾 Guardar Reglas</button>
+                    <div id="reglas-mensaje" class="mensaje" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="admin-section">
+                    <h2>⚙️ Reglas por Grupo (Puntuación)</h2>
+                    <div class="grupo-selector">
+                        <label>Seleccionar Grupo:</label>
+                        <select id="grupo-reglas-select">
+                            <option value="">-- Seleccionar grupo --</option>
+                        </select>
+                    </div>
+                    <div id="reglas-panel" style="display: none; margin-top: 20px;">
+                        <div class="admin-section" style="margin-top: 20px;">
+                            <h3>🏆 Configuración de Premios</h3>
+                            <div class="form-group">
+                                <label>📊 Cantidad de ganadores por ranking:</label>
+                                <select id="cantidad-ganadores" class="form-input">
+                                    <option value="1">1 ganador (solo primer puesto)</option>
+                                    <option value="2">2 ganadores (primero y segundo)</option>
+                                    <option value="3">3 ganadores (podio completo)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>🥇 Porcentaje 1er Puesto:</label>
+                                <input type="number" id="premio-primero" class="form-input" min="0" max="100" value="50">
+                            </div>
+                            <div class="form-group" id="segundo-puesto-group">
+                                <label>🥈 Porcentaje 2do Puesto:</label>
+                                <input type="number" id="premio-segundo" class="form-input" min="0" max="100" value="30">
+                            </div>
+                            <div class="form-group" id="tercer-puesto-group">
+                                <label>🥉 Porcentaje 3er Puesto:</label>
+                                <input type="number" id="premio-tercero" class="form-input" min="0" max="100" value="20">
+                            </div>
+                            <button id="guardar-premios-btn" class="btn-primary">💾 Guardar Premios del Grupo</button>
+                        </div>
+                        <div class="form-group">
+                            <label>⭐ Puntos por resultado exacto:</label>
+                            <input type="number" id="puntos-exacto" class="form-input" min="1" max="10" value="3">
+                        </div>
+                        <div class="form-group">
+                            <label>🎯 Puntos por ganador correcto:</label>
+                            <input type="number" id="puntos-ganador" class="form-input" min="1" max="5" value="1">
+                        </div>
+                        <button id="guardar-reglas-grupo-btn" class="btn-primary">💾 Guardar Reglas del Grupo</button>
+                        <button id="cambiar-contrasena-grupo-btn" class="btn-secondary" style="margin-top: 15px; background: rgba(255,215,0,0.15); color: #ffd700;">🔑 Cambiar Contraseña del Grupo</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: APUESTAS EXTRA -->
+            <div id="tab-apuestas-extra" class="tab-content">
+                <div class="admin-section">
+                    <h2>🎲 Apuestas Extra por Participante</h2>
+                    <p class="reglas-info">Aquí puedes aumentar el límite de pronósticos para participantes que paguen extra.</p>
+                    
+                    <div class="grupo-selector">
+                        <label>Seleccionar Grupo:</label>
+                        <select id="grupo-apuestasextras-select">
+                            <option value="">-- Seleccionar grupo --</option>
+                        </select>
+                    </div>
+
+                    <div id="apuestasextras-panel" style="display: none;">
+                        <h3>📋 Participantes y sus límites de pronósticos</h3>
+                        <div id="lista-apuestasextras" class="apuestasextras-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>📊 Estadísticas Generales</h2>
+                <div id="estadisticas" class="estadisticas">
+                    <div class="stat-card">🏆 Grupos activos: <span id="total-grupos">0</span></div>
+                    <div class="stat-card">👥 Total participantes: <span id="total-participantes">0</span></div>
+                    <div class="stat-card">📝 Apuestas registradas: <span id="total-apuestas">0</span></div>
+                </div>
+            </div>
+
+            <div class="admin-links">
+                <a href="home.html">🏠 Volver a Inicio</a>
+                <a href="index.html">📅 Ir a Apuestas</a>
+                <a href="ranking.html">🏆 Ver Ranking</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = '**********';
+        
+        function verificarAcceso() {
+            const password = document.getElementById('admin-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('admin-auth').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+                if (typeof initAdminApp === 'function') {
+                    initAdminApp();
+                }
+                sessionStorage.setItem('admin_auth', 'true');
+                sessionStorage.setItem('admin_auth_time', Date.now());
+            } else if (password) {
+                errorDiv.textContent = '❌ Contraseña incorrecta. Acceso denegado.';
+            }
+        }
+        
+        function cerrarSesion() {
+            sessionStorage.removeItem('admin_auth');
+            sessionStorage.removeItem('admin_auth_time');
+            document.getElementById('admin-content').style.display = 'none';
+            document.getElementById('admin-auth').style.display = 'flex';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('auth-error').textContent = '';
+        }
+        
+        function verificarSesion() {
+            const auth = sessionStorage.getItem('admin_auth');
+            const authTime = sessionStorage.getItem('admin_auth_time');
+            if (auth === 'true' && authTime && (Date.now() - parseInt(authTime)) < 1800000) {
+                document.getElementById('admin-auth').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+                if (typeof initAdminApp === 'function') {
+                    initAdminApp();
+                }
+            } else {
+                cerrarSesion();
+            }
+        }
+        
+        document.getElementById('verify-admin')?.addEventListener('click', verificarAcceso);
+        document.getElementById('admin-password')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verificarAcceso();
+        });
+        
+        function cargarReglasEnEditor() {
+            const reglasGuardadas = localStorage.getItem('quiniela_reglas');
+            const editor = document.getElementById('reglas-editor');
+            if (editor) {
+                if (reglasGuardadas) {
+                    editor.value = reglasGuardadas;
+                } else {
+                    editor.value = `<p><strong>📌 SISTEMA DE PUNTUACIÓN:</strong></p>
+<p>• <strong>3 puntos</strong> - Resultado exacto (ambos marcadores correctos)</p>
+<p>• <strong>1 punto</strong> - Ganador correcto o empate acertado</p>
+<p>• <strong>0 puntos</strong> - Resultado incorrecto</p>
+
+<p><strong>⏰ FECHAS Y APUESTAS:</strong></p>
+<p>• Solo se puede apostar el DÍA del partido</p>
+<p>• Las apuestas se cierran a la HORA de inicio de cada partido</p>
+<p>• Los partidos de días pasados quedan bloqueados</p>
+
+<p><strong>💰 PREMIOS:</strong></p>
+<p>• 1er Puesto: 50% del pozo acumulado</p>
+<p>• 2do Puesto: 30% del pozo acumulado</p>
+<p>• 3er Puesto: 20% del pozo acumulado</p>
+
+<p><strong>⚽ ¡BUENA SUERTE A TODOS! ⚽</strong></p>`;
+                }
+            }
+        }
+        
+        function guardarReglasAdmin() {
+            const editor = document.getElementById('reglas-editor');
+            if (editor) {
+                localStorage.setItem('quiniela_reglas', editor.value);
+                const msgDiv = document.getElementById('reglas-mensaje');
+                if (msgDiv) {
+                    msgDiv.textContent = '✅ Reglas guardadas correctamente';
+                    msgDiv.className = 'mensaje success';
+                    setTimeout(() => {
+                        msgDiv.textContent = '';
+                        msgDiv.className = 'mensaje';
+                    }, 3000);
+                }
+            }
+        }
+        
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.dataset.tab;
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`tab-${tabId}`).classList.add('active');
+                });
+            });
+        }
+        
+        window.initAdminApp = function() {
+            import('./src/admin.js').then(module => {
+                console.log('✅ Panel admin cargado correctamente');
+                cargarReglasEnEditor();
+                setupTabs();
+                document.getElementById('guardar-reglas-admin')?.addEventListener('click', guardarReglasAdmin);
+            }).catch(err => {
+                console.error('Error cargando admin:', err);
+            });
+        };
+        
+        verificarSesion();
+        
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'logout-btn') {
+                cerrarSesion();
+            }
+        });
+    </script>
+</body>
+</html>

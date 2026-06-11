@@ -1,0 +1,1242 @@
+/* Mundial 2026 Theme - FIFA Colors */
+:root {
+    --fifa-blue: #0a1e3c;
+    --fifa-red: #e3102b;
+    --fifa-gold: #ffd700;
+    --fifa-white: #ffffff;
+    --fifa-gray: #f0f0f0;
+    --fifa-dark-gray: #333333;
+    --gradient-bg: linear-gradient(135deg, var(--fifa-blue) 0%, #1a3a6c 100%);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+    background: var(--gradient-bg);
+    min-height: 100vh;
+    color: var(--fifa-white);
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(2px);
+    border-radius: 32px;
+    padding: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.worldcup-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid var(--fifa-gold);
+}
+
+.worldcup-header .logo img {
+    height: 80px;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+}
+
+.worldcup-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--fifa-white) 0%, var(--fifa-gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.subtitle {
+    color: var(--fifa-gold);
+    font-size: 1.1rem;
+}
+
+.mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.mode-btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.2);
+    color: var(--fifa-white);
+}
+
+.mode-btn.active {
+    background: var(--fifa-red);
+    box-shadow: 0 0 15px rgba(227,16,43,0.5);
+    transform: scale(1.05);
+}
+
+.jornada-panel {
+    background: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+.jornada-panel label {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.jornada-panel select {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--fifa-white);
+    font-weight: 500;
+    min-width: 250px;
+}
+
+.jornada-info {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9rem;
+    background: rgba(255,215,0,0.2);
+    padding: 8px 16px;
+    border-radius: 50px;
+}
+
+.participant-panel {
+    margin-bottom: 30px;
+}
+
+.participant-panel input {
+    width: 100%;
+    max-width: 400px;
+    padding: 14px 20px;
+    border-radius: 50px;
+    border: none;
+    font-size: 1rem;
+    background: var(--fifa-white);
+    color: var(--fifa-blue);
+    font-weight: 500;
+}
+
+.apuestas-grid, .resultados-grid {
+    display: grid;
+    gap: 16px;
+    margin: 30px 0;
+}
+
+.apuesta-card {
+    background: var(--fifa-white);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    color: var(--fifa-blue);
+}
+
+.apuesta-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.match-info {
+    flex: 2;
+    min-width: 250px;
+}
+
+.match-teams {
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.match-date {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.match-phase {
+    display: inline-block;
+    background: var(--fifa-gold);
+    color: var(--fifa-blue);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 6px;
+}
+
+.score-inputs {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.score-inputs input {
+    width: 70px;
+    padding: 10px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    transition: border-color 0.2s;
+}
+
+.score-inputs input:focus {
+    outline: none;
+    border-color: var(--fifa-red);
+}
+
+.vs {
+    font-weight: 800;
+    color: var(--fifa-red);
+}
+
+.btn-primary, .btn-secondary {
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: var(--fifa-red);
+    color: white;
+    box-shadow: 0 4px 12px rgba(227,16,43,0.4);
+}
+
+.btn-primary:hover {
+    background: #c40e24;
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: var(--fifa-white);
+    border: 1px solid var(--fifa-gold);
+}
+
+.btn-secondary:hover {
+    background: rgba(255,215,0,0.3);
+}
+
+.actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 30px 0;
+}
+
+.admin-section {
+    background: rgba(0,0,0,0.3);
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 30px;
+}
+
+.admin-section h2 {
+    margin-bottom: 20px;
+    border-left: 5px solid var(--fifa-gold);
+    padding-left: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: none;
+    flex: 1;
+    min-width: 180px;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.2);
+    padding: 10px 16px;
+    border-radius: 50px;
+}
+
+.lista-participantes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.participante-item {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.participante-info {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pagado-badge {
+    background: #4caf50;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+}
+
+.no-pagado-badge {
+    background: #f44336;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+}
+
+.btn-toggle-pago {
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.btn-eliminar {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.ranking-container {
+    background: white;
+    border-radius: 24px;
+    overflow-x: auto;
+    color: var(--fifa-blue);
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ranking-table th, .ranking-table td {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.ranking-table th {
+    background: var(--fifa-blue);
+    color: white;
+    font-weight: 600;
+}
+
+.ranking-table tr:hover {
+    background: #f5f5f5;
+}
+
+.top-3 {
+    background: linear-gradient(90deg, #fff8e1, #fff);
+}
+
+.estadisticas {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: rgba(255,255,255,0.15);
+    padding: 20px;
+    border-radius: 20px;
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+}
+
+.stat-card span {
+    font-size: 2rem;
+    display: block;
+    color: var(--fifa-gold);
+}
+
+.admin-links {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.admin-links a {
+    color: var(--fifa-gold);
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: 600;
+}
+
+.admin-links a:hover {
+    text-decoration: underline;
+}
+
+.mensaje, .error-msg {
+    text-align: center;
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+.mensaje.success {
+    background: #4caf50;
+    color: white;
+}
+
+.mensaje.error {
+    background: #f44336;
+    color: white;
+}
+
+.error-msg {
+    color: #ffcc00;
+    font-size: 0.9rem;
+}
+
+/* Estilos para banderas */
+.flag-icon {
+    width: 28px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.match-teams img {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.filtros-ranking {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.filtros-ranking select {
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    font-weight: 500;
+}
+
+.resultados-filtro {
+    margin-bottom: 20px;
+}
+
+.resultados-filtro select {
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    font-weight: 500;
+}
+
+/* Mejoras para banderas SVG */
+.flag-icon {
+    width: 28px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    vertical-align: middle;
+    margin-right: 6px;
+    background-color: #f0f0f0;
+}
+
+/* Fallback para SVG que no cargan */
+.flag-icon[src*="svg"] {
+    background-color: #e0e0e0;
+}
+
+/* Estilos para el nuevo sistema de fechas */
+.calendario-container {
+    background: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendario-container label {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.dia-select {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--fifa-white);
+    font-weight: 500;
+    min-width: 280px;
+}
+
+.estado-dia {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+}
+
+.badge-activo {
+    background: #4caf50;
+    padding: 8px 16px;
+    border-radius: 50px;
+    display: inline-block;
+}
+
+.badge-pasado {
+    background: #f44336;
+    padding: 8px 16px;
+    border-radius: 50px;
+    display: inline-block;
+}
+
+.badge-futuro {
+    background: #ff9800;
+    padding: 8px 16px;
+    border-radius: 50px;
+    display: inline-block;
+}
+
+.apuesta-card.bloqueado {
+    opacity: 0.85;
+    background: #e8e8e8;
+    border-left: 5px solid #f44336;
+}
+
+.score-readonly {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.9rem;
+    background: #f5f5f5;
+    padding: 10px 15px;
+    border-radius: 12px;
+    min-width: 200px;
+}
+
+.score-readonly .resultado-oficial {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 25px;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 20px;
+    max-height: 80%;
+    overflow-y: auto;
+    color: var(--fifa-blue);
+}
+
+.modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: var(--fifa-red);
+}
+
+.apuesta-resumen {
+    background: #f5f5f5;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 12px;
+    border-left: 4px solid var(--fifa-gold);
+}
+
+.apuesta-resumen .puntos {
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* Estilos para editar participante */
+.modal-editar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-editar-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    color: #333;
+}
+
+.modal-editar-content h3 {
+    margin-bottom: 20px;
+    color: var(--fifa-blue);
+}
+
+.modal-editar-content label {
+    display: block;
+    margin: 10px 0 5px;
+    font-weight: 600;
+}
+
+.modal-editar-content input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.modal-editar-content input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    flex: 1;
+}
+
+.participante-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-editar {
+    background: #2196f3;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-editar:hover {
+    background: #1976d2;
+}
+
+.participante-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.participante-nombre, .participante-telefono {
+    font-size: 0.9rem;
+}
+
+/* Puntos en solo lectura */
+.apuesta-info {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.resultado-info {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.puntos-acierto-exacto {
+    color: #4caf50;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.puntos-acierto-ganador {
+    color: #ff9800;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.puntos-error {
+    color: #f44336;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.total-puntos {
+    background: linear-gradient(135deg, var(--fifa-gold), #ff9800);
+    color: var(--fifa-blue);
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-top: 20px;
+}
+
+/* Copa Oficial y Popup de Reglas */
+.copa-oficial {
+    height: 80px;
+    width: auto;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    animation: brilloCopa 2s ease-in-out infinite;
+}
+
+@keyframes brilloCopa {
+    0%, 100% { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+    50% { filter: drop-shadow(0 0 15px rgba(255,215,0,0.6)); }
+}
+
+.copa-modal {
+    height: 50px;
+    width: auto;
+}
+
+.modal-reglas {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-reglas-content {
+    background: linear-gradient(135deg, #0a1e3c, #1a3a6c);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 550px;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    border: 2px solid var(--fifa-gold);
+    animation: fadeInScale 0.4s ease;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-reglas-header {
+    background: var(--fifa-red);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.modal-reglas-header h2 {
+    color: white;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.close-reglas {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 2rem;
+    color: white;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-weight: bold;
+}
+
+.close-reglas:hover {
+    color: var(--fifa-gold);
+}
+
+.modal-reglas-body {
+    padding: 25px;
+    max-height: 60vh;
+    overflow-y: auto;
+    color: white;
+}
+
+#reglas-editable {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 16px;
+    line-height: 1.6;
+    outline: none;
+    margin-bottom: 15px;
+}
+
+#reglas-editable:focus {
+    background: rgba(255,255,255,0.15);
+    box-shadow: 0 0 0 2px var(--fifa-gold);
+}
+
+#reglas-editable p {
+    margin: 10px 0;
+}
+
+#reglas-editable strong {
+    color: var(--fifa-gold);
+}
+
+.reglas-footer {
+    text-align: center;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.reglas-footer small {
+    display: block;
+    margin-bottom: 12px;
+    color: #ccc;
+    font-size: 0.8rem;
+}
+
+.btn-guardar-reglas {
+    background: var(--fifa-gold);
+    color: var(--fifa-blue);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-guardar-reglas:hover {
+    background: #ffc107;
+    transform: scale(1.02);
+}
+
+/* Estilos para hora límite */
+.hora-limite {
+    font-size: 0.7rem;
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.badge-finalizado {
+    background: rgba(255, 100, 100, 0.2);
+    color: #ff8888;
+    padding: 8px 15px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+.apuesta-card.bloqueado .match-date {
+    opacity: 0.8;
+}
+
+.apuesta-card .match-date {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 5px;
+}
+
+/* Selector de grupos */
+.grupo-selector-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.grupo-selector-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #ffd700;
+    font-size: 0.9rem;
+}
+
+.grupo-select {
+    width: 100%;
+    padding: 12px 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 10px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.grupo-select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.1rem;
+}
+
+.badge-info {
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    padding: 8px 15px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+.hora-limite {
+    font-size: 0.7rem;
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.badge-finalizado {
+    background: rgba(255, 100, 100, 0.2);
+    color: #ff8888;
+    padding: 8px 15px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+.grupo-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-cambiar-contrasena {
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+}
+
+.btn-cambiar-contrasena:hover {
+    background: rgba(255, 215, 0, 0.3);
+}
+
+.modal-editar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.modal-editar-content {
+    background: #1a1a2e;
+    padding: 30px;
+    border-radius: 20px;
+    min-width: 350px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.modal-editar-content h3 {
+    color: #ffd700;
+    margin-bottom: 15px;
+}
+
+.modal-editar-content label {
+    display: block;
+    margin: 15px 0 5px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.modal-editar-content input {
+    width: 100%;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    color: white;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+/* Estilos para múltiples apuestas */
+.apuestas-lista {
+    margin: 10px 0;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.apuestas-multiples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.apuesta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.apuesta-item.acierto-exacto {
+    background: rgba(76, 175, 80, 0.3);
+    border: 1px solid #4caf50;
+}
+
+.apuesta-item.acierto-ganador {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+}
+
+.apuesta-item.acierto-error {
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid #f44336;
+    opacity: 0.7;
+}
+
+.apuesta-marcador {
+    color: #ffd700;
+}
+
+.acierto-exacto .apuesta-marcador {
+    color: #4caf50;
+}
+
+.acierto-ganador .apuesta-marcador {
+    color: #ffc107;
+}
+
+.btn-eliminar-apuesta {
+    background: rgba(255, 80, 80, 0.2);
+    border: none;
+    color: #ff6666;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.btn-eliminar-apuesta:hover {
+    background: rgba(255, 80, 80, 0.5);
+    transform: scale(1.1);
+}
+
+.no-apuestas {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 5px;
+}
+
+.nueva-apuesta-form {
+    margin-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 10px;
+}
+
+.btn-agregar-apuesta {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    color: #4caf50;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.btn-agregar-apuesta:hover {
+    background: rgba(76, 175, 80, 0.4);
+    transform: scale(1.02);
+}
+
+.limite-apuestas {
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.resultado-oficial {
+    margin-top: 8px;
+    padding: 5px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #ffd700;
+    text-align: center;
+}
+
+.apuesta-resumen {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
+.puntos {
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.total-puntos {
+    background: rgba(255, 215, 0, 0.2);
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+    
+    .worldcup-header h1 {
+        font-size: 1.6rem;
+    }
+    
+    .apuesta-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .score-inputs {
+        justify-content: center;
+    }
+    
+    .match-teams {
+        justify-content: center;
+    }
+}

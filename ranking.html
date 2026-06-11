@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking | Quiniela Mundial 2026</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .grupo-selector-ranking {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .grupo-selector-ranking label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffd700;
+            font-weight: 600;
+        }
+        .grupo-selector-ranking select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+        .tipo-ranking-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tipo-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 30px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tipo-btn.active {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        .dia-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .dia-selector label {
+            color: #ffd700;
+        }
+        .dia-selector select {
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            color: white;
+            flex: 1;
+        }
+        .grupo-info {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .grupo-badge {
+            background: rgba(255, 215, 0, 0.15);
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: #ffd700;
+            font-size: 0.85rem;
+        }
+        .podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .podium-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 16px;
+            min-width: 180px;
+            transition: transform 0.3s;
+        }
+        .podium-item:hover {
+            transform: translateY(-5px);
+        }
+        .podium-1 {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+            border: 2px solid #ffd700;
+            order: 2;
+        }
+        .podium-2 {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.05));
+            border: 2px solid #c0c0c0;
+            order: 1;
+        }
+        .podium-3 {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(205, 127, 50, 0.05));
+            border: 2px solid #cd7f32;
+            order: 3;
+        }
+        .podium-medal {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        .podium-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .podium-points {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #ffd700;
+        }
+        .podium-stats {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+        .ranking-table-container {
+            overflow-x: auto;
+        }
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .ranking-table th,
+        .ranking-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ranking-table th {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            font-weight: 600;
+        }
+        .ranking-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .empty-ranking {
+            text-align: center;
+            padding: 50px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .premios-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .premios-info h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        .premios-info span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .btn-secondary {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .admin-links {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .admin-links a {
+            color: #ffd700;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        .admin-links a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .podium {
+                flex-direction: column;
+                align-items: center;
+            }
+            .podium-item {
+                width: 100%;
+                max-width: 250px;
+            }
+            .podium-1 { order: 1; }
+            .podium-2 { order: 2; }
+            .podium-3 { order: 3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="worldcup-header">
+            <div class="logo">
+                <img src="/assets/trophy.png" 
+                     alt="Copa Mundial FIFA"
+                     class="copa-oficial"
+                     onerror="this.outerHTML='<span style=\'font-size:32px;\'>🏆</span>'">
+            </div>
+            <h1>🏆 Ranking de Participantes</h1>
+            <p>Ranking diario y acumulado - Cada día tiene su propio podio</p>
+        </header>
+
+        <div class="grupo-selector-ranking">
+            <label>🏆 Seleccioná un grupo para ver su ranking:</label>
+            <select id="grupo-select-ranking">
+                <option value="">Cargando grupos...</option>
+            </select>
+        </div>
+
+        <div id="grupo-info-panel" class="ranking-header" style="display: none;">
+            <div class="grupo-info">
+                <span class="grupo-badge" id="grupo-nombre-display"></span>
+                <span class="grupo-badge" id="grupo-participantes-display"></span>
+                <span class="grupo-badge" id="grupo-reglas-display"></span>
+            </div>
+        </div>
+
+        <div class="tipo-ranking-selector" id="tipo-ranking-selector" style="display: none;">
+            <button class="tipo-btn active" data-tipo="acumulado">🏆 Ranking Acumulado</button>
+            <button class="tipo-btn" data-tipo="diario">📅 Ranking por Día</button>
+        </div>
+
+        <div id="dia-selector-container" class="dia-selector" style="display: none;">
+            <label>📅 Seleccioná el día:</label>
+            <select id="dia-select-ranking">
+                <option value="">Cargando días...</option>
+            </select>
+        </div>
+
+        <div id="podium-container" class="podium" style="display: none;"></div>
+
+        <div id="ranking-table" class="ranking-table-container"></div>
+
+        <div id="premios-info" class="premios-info" style="display: none;"></div>
+
+        <div style="text-align: center;">
+            <button id="exportar-csv" class="btn-secondary">📎 Exportar CSV</button>
+        </div>
+
+        <div class="admin-links">
+            <a href="admin.html">👑 Panel Admin</a>
+            <a href="index.html">📅 Volver a Apuestas</a>
+            <a href="home.html">🏠 Inicio</a>
+        </div>
+    </div>
+    <script type="module" src="src/ranking.js"></script>
+</body>
+</html>
