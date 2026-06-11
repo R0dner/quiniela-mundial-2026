@@ -21,7 +21,8 @@ import {
     getResultadosDelGrupo,
     eliminarApuesta,
     getApuestasDePartido,
-    getLimiteApuestasParticipante
+    getLimiteApuestasParticipante,
+    getReglasDelGrupo
 } from './groups.js';
 
 let currentGrupoId = '';
@@ -54,7 +55,6 @@ function init() {
 }
 
 function verificarSesion() {
-    // Verificar si hay una sesión guardada
     const sesionGuardada = sessionStorage.getItem('quiniela_sesion_actual');
     if (sesionGuardada) {
         const sesion = JSON.parse(sesionGuardada);
@@ -89,7 +89,6 @@ function cargarGrupos() {
     }
     gruposLista.innerHTML = html;
     
-    // Eventos para seleccionar grupo
     document.querySelectorAll('.grupo-card-selector').forEach(card => {
         card.addEventListener('click', () => {
             const grupoId = card.dataset.grupoId;
@@ -104,7 +103,6 @@ function seleccionarGrupo(grupoId, grupoNombre) {
     currentGrupoNombre = grupoNombre;
     currentParticipante = '';
     
-    // Limpiar estados
     registroPanel.style.display = 'block';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
@@ -113,7 +111,6 @@ function seleccionarGrupo(grupoId, grupoNombre) {
     registroNombre.value = '';
     registroTelefono.value = '';
     
-    // Scroll al registro
     registroPanel.scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -132,7 +129,6 @@ async function registrarParticipante() {
         registroMensaje.innerHTML = `<div class="mensaje-exito">✅ ${resultado.message}</div>`;
         currentParticipante = nombre;
         
-        // Guardar sesión
         sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
             participante: nombre,
             grupoId: currentGrupoId,
@@ -324,7 +320,6 @@ function cargarApuestasExistentes(fecha) {
         }
     });
     
-    // Eventos para eliminar
     document.querySelectorAll('.btn-eliminar-apuesta').forEach(btn => {
         btn.removeEventListener('click', handleEliminarApuesta);
         btn.addEventListener('click', handleEliminarApuesta);
@@ -399,18 +394,15 @@ function mostrarMensaje(msg, tipo) {
 }
 
 function cambiarGrupo() {
-    // Limpiar sesión
     sessionStorage.removeItem('quiniela_sesion_actual');
     currentGrupoId = '';
     currentGrupoNombre = '';
     currentParticipante = '';
     
-    // Resetear UI
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
     
-    // Recargar grupos
     cargarGrupos();
 }
 
@@ -430,7 +422,6 @@ function verMisApuestas() {
     let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
     let totalPuntos = 0;
     
-    // Ordenar por fecha
     const apuestasArray = [];
     for (const [partidoId, apuestas] of Object.entries(todasApuestas)) {
         const partido = todosLosPartidos.find(p => p.id === parseInt(partidoId));
@@ -483,17 +474,11 @@ function verMisApuestas() {
     modal.style.display = 'block';
 }
 
-function getReglasDelGrupo(grupoId) {
-    const grupos = getGrupos();
-    return grupos[grupoId]?.reglas || { puntosExacto: 3, puntosGanador: 1 };
-}
-
 function setupEventListeners() {
     registrarBtn.addEventListener('click', registrarParticipante);
     cambiarGrupoBtn.addEventListener('click', cambiarGrupo);
     verApuestasBtn.addEventListener('click', verMisApuestas);
     
-    // Modal close
     const modal = document.getElementById('modal-apuestas');
     const closeBtn = document.querySelector('.modal-close');
     closeBtn?.addEventListener('click', () => modal.style.display = 'none');

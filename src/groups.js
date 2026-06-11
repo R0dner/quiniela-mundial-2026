@@ -107,6 +107,12 @@ export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
     return { success: true, message: `¡Bienvenido ${nombreNormalizado}!` };
 }
 
+export function participanteRegistrado(grupoId, nombre) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return false;
+    return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+}
+
 export function getParticipantesDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     return grupo ? grupo.participantes : [];
