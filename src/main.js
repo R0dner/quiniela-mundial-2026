@@ -709,12 +709,12 @@ function mostrarMisApuestas() {
     const reglas = getReglasDelGrupo(currentGrupoId);
     
     if (Object.keys(todasApuestas).length === 0) {
-        modalBody.innerHTML = '<p style="text-align:center;">📭 No has realizado ningún pronóstico</p>';
+        modalBody.innerHTML = '<div style="text-align:center; padding:40px; color:rgba(255,255,255,0.6);">📭 No has realizado ningún pronóstico</div>';
         modal.style.display = 'block';
         return;
     }
     
-    let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
+    let html = `<h3>📊 Grupo: ${currentGrupoNombre}</h3>`;
     let totalPuntos = 0;
     const apuestasArray = [];
     
@@ -732,33 +732,52 @@ function mostrarMisApuestas() {
     apuestasArray.forEach(ap => {
         if (currentFechaHtml !== ap.partido.fecha) {
             currentFechaHtml = ap.partido.fecha;
-            html += `<h4>📅 ${formatearFecha(ap.partido.fecha)} - ${ap.partido.local} vs ${ap.partido.visitante}</h4>`;
+            html += `<h4>📅 ${formatearFecha(ap.partido.fecha)}</h4>`;
+            html += `<div style="margin-bottom: 10px; font-size: 0.85rem; color: rgba(255,255,255,0.6);">⚽ ${ap.partido.local} vs ${ap.partido.visitante}</div>`;
         }
         
         let puntos = 0;
         let acierto = '';
+        let clasePuntos = '';
+        
         if (ap.resultado) {
             if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
                 puntos = reglas.puntosExacto;
-                acierto = '✅ EXACTO';
+                acierto = '¡RESULTADO EXACTO!';
+                clasePuntos = 'puntos-exacto';
             } else if ((ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
                        (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
                        (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)) {
                 puntos = reglas.puntosGanador;
-                acierto = '🎯 GANADOR';
+                acierto = 'GANADOR CORRECTO';
+                clasePuntos = 'puntos-ganador';
             } else {
-                acierto = '❌ ERROR';
+                acierto = 'INCORRECTO';
+                clasePuntos = 'puntos-error';
             }
             totalPuntos += puntos;
         }
         
-        html += `<div class="apuesta-resumen">
-            Pronóstico: ${ap.local} - ${ap.visitante}
-            ${ap.resultado ? `<br>Resultado: ${ap.resultado.local} - ${ap.resultado.visitante}<br>${acierto} ${puntos > 0 ? `(+${puntos})` : ''}` : '<br>⏳ Resultado pendiente'}
-        </div>`;
+        html += `
+            <div class="apuesta-resumen">
+                <strong>🎯 Pronóstico:</strong>
+                <div class="pronostico">${ap.local} - ${ap.visitante}</div>
+                ${ap.resultado ? `
+                    <div class="resultado">🏆 Resultado oficial: ${ap.resultado.local} - ${ap.resultado.visitante}</div>
+                    <div class="puntos ${clasePuntos}">${acierto} +${puntos} puntos</div>
+                ` : '<div class="resultado" style="color: #ffc107;">⏳ Resultado pendiente</div>'}
+            </div>
+        `;
     });
     
-    html += `<div class="total-puntos">🏆 TOTAL DE PUNTOS: ${totalPuntos}</div>`;
+    const premios = getPremiosDelGrupo(currentGrupoId);
+    const cantidadGanadores = premios?.cantidadGanadores || 3;
+    
+    html += `<div class="total-puntos">
+        🏆 TOTAL DE PUNTOS ACUMULADOS: ${totalPuntos} 🏆
+        <div style="font-size: 0.7rem; margin-top: 5px;">📌 Posición en el ranking: Calculada al finalizar la jornada</div>
+    </div>`;
+    
     modalBody.innerHTML = html;
     modal.style.display = 'block';
 }
