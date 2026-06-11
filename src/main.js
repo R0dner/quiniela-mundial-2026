@@ -23,7 +23,8 @@ import {
     getLimiteApuestasParticipante,
     getReglasDelGrupo,
     obtenerGrupoGeneral,
-    unirseAlGrupoGeneral
+    unirseAlGrupoGeneral,
+    getPremiosDelGrupo
 } from './groups.js';
 
 // Variables globales
@@ -95,6 +96,35 @@ function mostrarPopupReglas() {
         };
         document.addEventListener('keydown', handleEsc);
     }
+}
+
+// ============ NOTIFICACIÓN CENTRAL ============
+
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    // Crear elemento de notificación
+    const notificacion = document.createElement('div');
+    notificacion.className = `notificacion-central ${tipo}`;
+    notificacion.innerHTML = `
+        <div class="notificacion-contenido">
+            <span class="notificacion-icono">${tipo === 'success' ? '✅' : '❌'}</span>
+            <span class="notificacion-mensaje">${mensaje}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notificacion);
+    
+    // Animar entrada
+    setTimeout(() => {
+        notificacion.classList.add('mostrar');
+    }, 10);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        notificacion.classList.remove('mostrar');
+        setTimeout(() => {
+            notificacion.remove();
+        }, 300);
+    }, 3000);
 }
 
 // ============ INICIALIZACIÓN ============
@@ -188,7 +218,7 @@ function mostrarBannerGrupoGeneral() {
     }
 }
 
-// ============ MODAL GRUPO GENERAL (CON VERIFICACIÓN) ============
+// ============ MODAL GRUPO GENERAL ============
 
 function mostrarModalGrupoGeneral() {
     const modal = document.getElementById('modal-general');
@@ -196,7 +226,6 @@ function mostrarModalGrupoGeneral() {
     const pasoIngresar = document.getElementById('general-paso-ingresar');
     const pasoRegistro = document.getElementById('general-paso-registro');
     
-    // Limpiar campos y errores
     const nombreIngresar = document.getElementById('general-nombre-ingresar');
     const nombreRegistro = document.getElementById('general-nombre-registro');
     const telefonoRegistro = document.getElementById('general-telefono-registro');
@@ -209,7 +238,6 @@ function mostrarModalGrupoGeneral() {
     if (errorIngresar) errorIngresar.style.display = 'none';
     if (errorRegistro) errorRegistro.style.display = 'none';
     
-    // Mostrar solo el paso de verificación inicial
     if (pasoVerificar) pasoVerificar.style.display = 'block';
     if (pasoIngresar) pasoIngresar.style.display = 'none';
     if (pasoRegistro) pasoRegistro.style.display = 'none';
@@ -302,6 +330,7 @@ async function ingresarAlGrupoGeneral() {
         
         cerrarModalGeneral();
         iniciarPanelApuestas();
+        mostrarNotificacion(`🎉 Bienvenido de vuelta ${nombre}!`, 'success');
     } else {
         if (errorDiv) {
             errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en el Grupo General. Verifica o regístrate.`;
@@ -359,7 +388,7 @@ async function registrarEnGrupoGeneral() {
         
         cerrarModalGeneral();
         iniciarPanelApuestas();
-        mostrarMensaje(`🎉 ${resultado.message}`, 'success');
+        mostrarNotificacion(`🎉 ${resultado.message}`, 'success');
     } else {
         if (errorDiv) {
             errorDiv.textContent = `❌ ${resultado.message}`;
@@ -430,6 +459,7 @@ function verificarYAEstoyRegistrado() {
         
         cerrarModalVerificacion();
         iniciarPanelApuestas();
+        mostrarNotificacion(`🎉 Bienvenido de vuelta ${nombre}!`, 'success');
     } else {
         errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en "${grupoNombre}". Verifica que esté escrito correctamente o regístrate.`;
         errorDiv.style.display = 'block';
@@ -483,6 +513,7 @@ async function registrarNuevoParticipante() {
         
         setTimeout(() => {
             iniciarPanelApuestas();
+            mostrarNotificacion(`🎉 ${resultado.message}`, 'success');
         }, 1000);
     } else {
         registroMensaje.innerHTML = `<div class="mensaje-error">❌ ${resultado.message}</div>`;
@@ -655,7 +686,7 @@ function cargarApuestasExistentes(fecha) {
             const apuestaId = btn.dataset.apuesta;
             eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
             cargarPartidos(currentFecha);
-            mostrarMensaje('Pronóstico eliminado', 'success');
+            mostrarNotificacion('🗑️ Pronóstico eliminado correctamente', 'success');
         };
     });
 }
@@ -669,7 +700,7 @@ function configurarBotonesAgregar() {
             const visitante = parseInt(card.querySelector('.score-visitante').value);
             
             if (isNaN(local) || isNaN(visitante)) {
-                mostrarMensaje('Ingresá un marcador válido', 'error');
+                mostrarNotificacion('❌ Ingresá un marcador válido', 'error');
                 return;
             }
             
@@ -677,12 +708,12 @@ function configurarBotonesAgregar() {
             const actuales = getApuestasDePartido(currentGrupoId, currentParticipante, partidoId).length;
             
             if (actuales >= limite) {
-                mostrarMensaje(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
+                mostrarNotificacion(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
                 return;
             }
             
             agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
-            mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado (${actuales + 1}/${limite})`, 'success');
+            mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado (${actuales + 1}/${limite})`, 'success');
             cargarPartidos(currentFecha);
         };
     });
@@ -698,15 +729,28 @@ function cambiarDeGrupo() {
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
     cargarListaGrupos();
+    mostrarNotificacion('🔄 Has salido del grupo', 'info');
 }
 
 // ============ VER MIS APUESTAS ============
 function mostrarMisApuestas() {
+    console.log('Mostrando apuestas para:', currentParticipante, 'en grupo:', currentGrupoId);
+    
+    if (!currentParticipante) {
+        mostrarNotificacion('❌ Primero selecciona un grupo y regístrate', 'error');
+        return;
+    }
+    
     const todasApuestas = getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
     const resultados = getResultadosDelGrupo(currentGrupoId);
     const modalBody = document.getElementById('modal-body');
     const modal = document.getElementById('modal-apuestas');
     const reglas = getReglasDelGrupo(currentGrupoId);
+    
+    if (!modalBody || !modal) {
+        console.error('Modal no encontrado');
+        return;
+    }
     
     if (Object.keys(todasApuestas).length === 0) {
         modalBody.innerHTML = '<div style="text-align:center; padding:40px; color:rgba(255,255,255,0.6);">📭 No has realizado ningún pronóstico</div>';
@@ -770,12 +814,9 @@ function mostrarMisApuestas() {
         `;
     });
     
-    const premios = getPremiosDelGrupo(currentGrupoId);
-    const cantidadGanadores = premios?.cantidadGanadores || 3;
-    
     html += `<div class="total-puntos">
         🏆 TOTAL DE PUNTOS ACUMULADOS: ${totalPuntos} 🏆
-        <div style="font-size: 0.7rem; margin-top: 5px;">📌 Posición en el ranking: Calculada al finalizar la jornada</div>
+        <div style="font-size: 0.7rem; margin-top: 5px;">📌 Los premios se reparten al finalizar cada jornada</div>
     </div>`;
     
     modalBody.innerHTML = html;
@@ -784,13 +825,8 @@ function mostrarMisApuestas() {
 
 // ============ UTILIDADES ============
 function mostrarMensaje(msg, tipo) {
-    const mensajeDiv = document.getElementById('mensaje');
-    mensajeDiv.textContent = msg;
-    mensajeDiv.className = `mensaje ${tipo}`;
-    setTimeout(() => {
-        mensajeDiv.textContent = '';
-        mensajeDiv.className = 'mensaje';
-    }, 3000);
+    // Usar la notificación central en lugar del mensaje antiguo
+    mostrarNotificacion(msg, tipo);
 }
 
 function configurarEventListeners() {

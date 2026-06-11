@@ -799,6 +799,85 @@
             margin-top: 20px;
         }
 
+/* ============ NOTIFICACIONES CENTRALES ============ */
+        .notificacion-central {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
+            border-radius: 16px;
+            padding: 20px 30px;
+            min-width: 280px;
+            max-width: 90%;
+            text-align: center;
+            z-index: 20001;
+            opacity: 0;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .notificacion-central.mostrar {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .notificacion-central.success {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #0a2a1a, #0a0f1f);
+        }
+
+        .notificacion-central.error {
+            border-color: #f44336;
+            background: linear-gradient(135deg, #2a1a1a, #0a0f1f);
+        }
+
+        .notificacion-central.info {
+            border-color: #2196f3;
+        }
+
+        .notificacion-contenido {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .notificacion-icono {
+            font-size: 1.8rem;
+        }
+
+        .notificacion-mensaje {
+            font-size: 1rem;
+            color: white;
+            font-weight: 500;
+        }
+
+        .notificacion-central.success .notificacion-mensaje {
+            color: #4caf50;
+        }
+
+        .notificacion-central.error .notificacion-mensaje {
+            color: #f44336;
+        }
+
+        @media (max-width: 550px) {
+            .notificacion-central {
+                padding: 15px 20px;
+                min-width: 250px;
+            }
+            
+            .notificacion-icono {
+                font-size: 1.4rem;
+            }
+            
+            .notificacion-mensaje {
+                font-size: 0.85rem;
+            }
+        }
+
         /* ============ MODAL DE APUESTAS - ESTILOS CORREGIDOS ============ */
         .modal {
             display: none;
