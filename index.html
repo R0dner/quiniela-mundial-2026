@@ -419,6 +419,353 @@
             font-size: 0.9rem;
             color: #ffd700;
         }
+
+        /* ============ ESTILOS MEJORADOS PARA APUESTAS ============ */
+
+        /* Contenedor de cada partido */
+        .apuesta-card {
+            background: rgba(10, 20, 40, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .apuesta-card:hover {
+            border-color: rgba(255, 215, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .apuesta-card.bloqueado {
+            opacity: 0.7;
+            background: rgba(10, 20, 40, 0.3);
+        }
+
+        /* Información del partido */
+        .match-info {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+        }
+
+        .match-teams {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffd700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .match-date {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+        }
+
+        /* Lista de pronósticos existentes */
+        .apuestas-lista {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            min-height: 60px;
+        }
+
+        .apuestas-multiples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .apuesta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .apuesta-item.acierto-exacto {
+            background: rgba(76, 175, 80, 0.25);
+            border-color: #4caf50;
+        }
+
+        .apuesta-item.acierto-ganador {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: #ffc107;
+        }
+
+        .apuesta-item.acierto-error {
+            background: rgba(244, 67, 54, 0.15);
+            border-color: #f44336;
+        }
+
+        .btn-eliminar-apuesta {
+            background: rgba(255, 80, 80, 0.2);
+            border: none;
+            color: #ff8888;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-eliminar-apuesta:hover {
+            background: rgba(255, 80, 80, 0.5);
+            transform: scale(1.1);
+        }
+
+        .no-apuestas {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+            padding: 8px;
+        }
+
+        /* Formulario de nueva apuesta */
+        .nueva-apuesta-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 215, 0, 0.15);
+        }
+
+        .score-inputs {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Inputs mejorados */
+        .score-local, .score-visitante {
+            width: 85px;
+            padding: 12px 8px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .score-local:focus, .score-visitante:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .score-local::placeholder, .score-visitante::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+            font-weight: normal;
+        }
+
+        .vs {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.15);
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .btn-agregar-apuesta {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-agregar-apuesta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-agregar-apuesta:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .limite-apuestas {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Resultado oficial */
+        .resultado-oficial {
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #ffd700;
+            margin-top: 10px;
+        }
+
+        /* ============ RESPONSIVE PARA MÓVILES ============ */
+        @media (max-width: 768px) {
+            .apuesta-card {
+                padding: 15px;
+            }
+            
+            .match-teams {
+                font-size: 0.95rem;
+                gap: 8px;
+                flex-direction: column;
+            }
+            
+            .match-teams .flag-icon {
+                width: 20px;
+                height: auto;
+            }
+            
+            .score-inputs {
+                gap: 8px;
+            }
+            
+            .score-local, .score-visitante {
+                width: 70px;
+                padding: 10px 5px;
+                font-size: 1rem;
+            }
+            
+            .vs {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            
+            .btn-agregar-apuesta {
+                padding: 10px 18px;
+                font-size: 0.85rem;
+            }
+            
+            .apuesta-item {
+                font-size: 0.75rem;
+                padding: 5px 12px;
+            }
+            
+            .btn-eliminar-apuesta {
+                width: 22px;
+                height: 22px;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .apuesta-card {
+                padding: 12px;
+            }
+            
+            .score-inputs {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .score-local, .score-visitante {
+                width: 65px;
+                padding: 8px 4px;
+                font-size: 0.9rem;
+            }
+            
+            .vs {
+                order: 1;
+            }
+            
+            .score-local {
+                order: 0;
+            }
+            
+            .score-visitante {
+                order: 2;
+            }
+            
+            .btn-agregar-apuesta {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                margin-top: 8px;
+            }
+            
+            .limite-apuestas {
+                order: 4;
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .score-local, .score-visitante {
+                width: 55px;
+                padding: 8px 3px;
+                font-size: 0.85rem;
+            }
+            
+            .vs {
+                width: 30px;
+                height: 30px;
+                font-size: 0.9rem;
+            }
+            
+            .btn-agregar-apuesta {
+                padding: 8px 15px;
+                font-size: 0.8rem;
+            }
+            
+            .match-teams {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Animación para nuevos pronósticos */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .apuesta-item {
+            animation: fadeInUp 0.2s ease;
+        }
     </style>
 </head>
 <body>
