@@ -21,7 +21,9 @@ import {
     eliminarApuesta,
     getApuestasDePartido,
     getLimiteApuestasParticipante,
-    getReglasDelGrupo
+    getReglasDelGrupo,
+    obtenerGrupoGeneral,
+    unirseAlGrupoGeneral
 } from './groups.js';
 
 // Variables globales
@@ -51,6 +53,7 @@ const verApuestasBtn = document.getElementById('ver-mis-apuestas');
 // ============ INICIALIZACIÓN ============
 function init() {
     console.log('Iniciando aplicación...');
+    obtenerGrupoGeneral();
     cargarListaGrupos();
     configurarEventListeners();
     verificarSesionGuardada();
@@ -86,6 +89,8 @@ function cargarListaGrupos() {
     
     let html = '';
     for (const [id, grupo] of Object.entries(grupos)) {
+        if (id === 'general') continue;
+        
         html += `
             <div class="grupo-card-selector" data-id="${id}" data-nombre="${grupo.nombre}">
                 <div class="grupo-nombre">🏆 ${grupo.nombre}</div>
@@ -96,7 +101,8 @@ function cargarListaGrupos() {
     }
     gruposLista.innerHTML = html;
     
-    // Agregar eventos a las tarjetas
+    mostrarBannerGrupoGeneral();
+    
     document.querySelectorAll('.grupo-card-selector').forEach(card => {
         card.addEventListener('click', () => {
             const grupoId = card.dataset.id;
@@ -106,16 +112,82 @@ function cargarListaGrupos() {
     });
 }
 
+function mostrarBannerGrupoGeneral() {
+    const grupos = getGrupos();
+    const banner = document.getElementById('banner-grupo-general');
+    
+    if (currentParticipante && grupos['general'] && 
+        grupos['general'].participantes.includes(currentParticipante)) {
+        if (banner) banner.style.display = 'none';
+        return;
+    }
+    
+    if (banner && grupos['general']) {
+        banner.style.display = 'block';
+        
+        const btnUnirse = document.getElementById('btn-unirse-general');
+        if (btnUnirse) {
+            btnUnirse.onclick = (e) => {
+                e.stopPropagation();
+                mostrarModalGrupoGeneral();
+            };
+        }
+        
+        banner.onclick = (e) => {
+            if (e.target === btnUnirse || btnUnirse?.contains(e.target)) return;
+            mostrarModalGrupoGeneral();
+        };
+    }
+}
+
+function mostrarModalGrupoGeneral() {
+    const modal = document.getElementById('modal-general');
+    const nombreInput = document.getElementById('modal-general-nombre');
+    const telefonoInput = document.getElementById('modal-general-telefono');
+    
+    nombreInput.value = '';
+    telefonoInput.value = '';
+    modal.style.display = 'flex';
+    setTimeout(() => nombreInput.focus(), 100);
+}
+
+function cerrarModalGeneral() {
+    const modal = document.getElementById('modal-general');
+    modal.style.display = 'none';
+}
+
+async function unirseAGrupoGeneral() {
+    const nombre = document.getElementById('modal-general-nombre').value.trim();
+    const telefono = document.getElementById('modal-general-telefono').value.trim();
+    
+    if (!nombre) {
+        alert('❌ Por favor, ingresa tu nombre');
+        return;
+    }
+    
+    const resultado = unirseAlGrupoGeneral(nombre, telefono);
+    
+    if (resultado.success) {
+        alert(resultado.message + '\n\n🎉 ¡Ya puedes apostar en el Grupo General! 🎉');
+        cerrarModalGeneral();
+        
+        const grupoGeneral = obtenerGrupoGeneral();
+        if (grupoGeneral) {
+            handleGrupoSeleccionado('general', grupoGeneral.nombre);
+        }
+    } else {
+        alert('❌ ' + resultado.message);
+    }
+}
+
 function handleGrupoSeleccionado(grupoId, grupoNombre) {
     currentGrupoId = grupoId;
     currentGrupoNombre = grupoNombre;
     
-    // Obtener información del grupo
     const grupos = getGrupos();
     const grupo = grupos[grupoId];
     const totalParticipantes = grupo ? grupo.participantes.length : 0;
     
-    // Mostrar modal personalizado
     const modal = document.getElementById('modal-verificacion');
     const modalGrupoNombre = document.getElementById('modal-grupo-nombre');
     const modalGrupoInfo = document.getElementById('modal-grupo-info');
@@ -123,17 +195,20 @@ function handleGrupoSeleccionado(grupoId, grupoNombre) {
     const errorDiv = document.getElementById('modal-error-mensaje');
     
     modalGrupoNombre.textContent = `🏆 ${grupoNombre}`;
-    modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
+    
+    if (grupoId === 'general') {
+        modalGrupoInfo.innerHTML = `⭐ GRUPO ESPECIAL ⭐<br>📊 ${totalParticipantes} participantes registrados<br>🎯 5 pts exacto / 2 pts ganador<br>💰 Premios: 60% / 25% / 15%`;
+    } else {
+        modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
+    }
+    
     nombreInput.value = '';
     errorDiv.style.display = 'none';
     
-    // Guardar referencia para usar en los botones
     modal.dataset.grupoId = grupoId;
     modal.dataset.grupoNombre = grupoNombre;
     
     modal.style.display = 'flex';
-    
-    // Enfocar el input
     setTimeout(() => nombreInput.focus(), 100);
 }
 
@@ -519,7 +594,6 @@ function configurarEventListeners() {
     if (cambiarGrupoBtn) cambiarGrupoBtn.addEventListener('click', cambiarDeGrupo);
     if (verApuestasBtn) verApuestasBtn.addEventListener('click', mostrarMisApuestas);
     
-    // Eventos del modal de verificación
     const btnVerificar = document.getElementById('btn-verificar');
     const btnRegistrarNuevo = document.getElementById('btn-registrar-nuevo');
     const btnCancelar = document.getElementById('btn-cancelar-modal');
@@ -542,12 +616,30 @@ function configurarEventListeners() {
         });
     }
     
-    // Modal de apuestas
+    const btnConfirmarGeneral = document.getElementById('btn-confirmar-general');
+    const btnCancelarGeneral = document.getElementById('btn-cancelar-general');
+    const modalGeneral = document.getElementById('modal-general');
+    const generalNombreInput = document.getElementById('modal-general-nombre');
+    
+    if (btnConfirmarGeneral) btnConfirmarGeneral.addEventListener('click', unirseAGrupoGeneral);
+    if (btnCancelarGeneral) btnCancelarGeneral.addEventListener('click', cerrarModalGeneral);
+    
+    if (modalGeneral) {
+        modalGeneral.addEventListener('click', (e) => {
+            if (e.target === modalGeneral) cerrarModalGeneral();
+        });
+    }
+    
+    if (generalNombreInput) {
+        generalNombreInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') unirseAGrupoGeneral();
+        });
+    }
+    
     const modal = document.getElementById('modal-apuestas');
     const closeBtn = document.querySelector('.modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
 
-// Iniciar
 init();

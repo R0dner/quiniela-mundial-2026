@@ -289,7 +289,6 @@ export function calcularPuntosMultiples(grupoId, participante) {
     return puntos;
 }
 
-// Ranking acumulado (todos los partidos)
 export function getRankingDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     if (!grupo) return [];
@@ -311,12 +310,10 @@ export function getRankingDelGrupo(grupoId) {
     }));
 }
 
-// Ranking por día específico
 export function getRankingDelGrupoPorDia(grupoId, fecha) {
     const grupo = getGrupo(grupoId);
     if (!grupo) return [];
     
-    // Filtrar partidos de esa fecha
     const partidosDeFecha = todosLosPartidosGlobal.filter(p => p.fecha === fecha);
     const partidosIds = partidosDeFecha.map(p => p.id);
     
@@ -399,4 +396,104 @@ export function actualizarReglasDelGrupo(grupoId, nuevasReglas) {
 export function getReglasDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     return grupo ? grupo.reglas : { puntosExacto: 3, puntosGanador: 1 };
+}
+
+// ============ GRUPO GENERAL (ESPECIAL) ============
+
+export function obtenerGrupoGeneral() {
+    const grupos = getGrupos();
+    
+    if (!grupos['general']) {
+        grupos['general'] = {
+            nombre: "🏆 GRUPO GENERAL - POZO MAYOR 🏆",
+            codigo: "GENERAL",
+            descripcion: "Grupo principal con pozo mayor. ¡Participa y gana grandes premios!",
+            reglas: {
+                puntosExacto: 5,
+                puntosGanador: 2,
+                permiteModificar: true,
+                cierreAutomatico: true
+            },
+            premios: {
+                cantidadGanadores: 3,
+                primero: 60,
+                segundo: 25,
+                tercero: 15
+            },
+            participantes: [],
+            participantesInfo: {},
+            apuestas: {},
+            resultados: {},
+            apuestasExtras: {},
+            fechaCreacion: new Date().toISOString(),
+            activo: true,
+            esGrupoGeneral: true
+        };
+        guardarGrupos(grupos);
+        console.log('✅ Grupo General creado automáticamente con pozo mayor');
+    }
+    
+    return grupos['general'];
+}
+
+export function unirseAlGrupoGeneral(nombre, telefono = '') {
+    const grupos = getGrupos();
+    let grupoGeneral = grupos['general'];
+    
+    if (!grupoGeneral) {
+        obtenerGrupoGeneral();
+        grupoGeneral = grupos['general'];
+    }
+    
+    const nombreNormalizado = nombre.trim();
+    if (!nombreNormalizado) {
+        return { success: false, message: 'El nombre es obligatorio' };
+    }
+    
+    const existe = grupoGeneral.participantes.some(
+        p => p.toLowerCase() === nombreNormalizado.toLowerCase()
+    );
+    
+    if (existe) {
+        return { success: false, message: 'Ya estás registrado en el Grupo General' };
+    }
+    
+    grupoGeneral.participantes.push(nombreNormalizado);
+    
+    if (!grupoGeneral.participantesInfo) {
+        grupoGeneral.participantesInfo = {};
+    }
+    
+    grupoGeneral.participantesInfo[nombreNormalizado] = {
+        telefono: telefono,
+        fechaRegistro: new Date().toISOString(),
+        esMiembroGeneral: true
+    };
+    
+    guardarGrupos(grupos);
+    return { success: true, message: `🎉 ¡Bienvenido al GRUPO GENERAL! 🎉\nTienes premios mayores y puntos extra.` };
+}
+
+export function esGrupoGeneral(grupoId) {
+    const grupo = getGrupo(grupoId);
+    return grupo ? grupo.esGrupoGeneral === true : false;
+}
+
+export function getEstadisticasGrupoGeneral() {
+    const grupo = getGrupo('general');
+    if (!grupo) return null;
+    
+    const totalParticipantes = grupo.participantes.length;
+    const totalApuestas = Object.values(grupo.apuestas || {}).reduce((sum, p) => 
+        sum + Object.keys(p).length, 0);
+    
+    return {
+        totalParticipantes,
+        totalApuestas,
+        premioPrimero: grupo.premios.primero,
+        premioSegundo: grupo.premios.segundo,
+        premioTercero: grupo.premios.tercero,
+        puntosExacto: grupo.reglas.puntosExacto,
+        puntosGanador: grupo.reglas.puntosGanador
+    };
 }
