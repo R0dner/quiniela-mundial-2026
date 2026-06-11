@@ -1,4 +1,4 @@
-// src/main.js - Con selección de grupos y auto-registro
+// src/main.js - Con selección de grupos, auto-registro y modal profesional
 import { 
     getPartidosPorDia, 
     getDiasCalendario, 
@@ -15,7 +15,6 @@ import {
     getGrupos, 
     registrarParticipanteEnGrupo,
     participanteRegistrado,
-    getInfoParticipante,
     agregarApuestaEnGrupo,
     getApuestasMultiplesDeParticipante,
     getResultadosDelGrupo,
@@ -25,12 +24,13 @@ import {
     getReglasDelGrupo
 } from './groups.js';
 
+// Variables globales
 let currentGrupoId = '';
 let currentGrupoNombre = '';
 let currentParticipante = '';
 let currentFecha = '';
 
-// Elementos del DOM
+// Elementos DOM
 const gruposLista = document.getElementById('grupos-lista');
 const registroPanel = document.getElementById('registro-panel');
 const apuestasPanel = document.getElementById('apuestas-panel');
@@ -48,27 +48,34 @@ const estadoDia = document.getElementById('estado-dia');
 const apuestasContainer = document.getElementById('apuestas-container');
 const verApuestasBtn = document.getElementById('ver-mis-apuestas');
 
+// ============ INICIALIZACIÓN ============
 function init() {
-    cargarGrupos();
-    setupEventListeners();
-    verificarSesion();
+    console.log('Iniciando aplicación...');
+    cargarListaGrupos();
+    configurarEventListeners();
+    verificarSesionGuardada();
 }
 
-function verificarSesion() {
+function verificarSesionGuardada() {
     const sesionGuardada = sessionStorage.getItem('quiniela_sesion_actual');
     if (sesionGuardada) {
-        const sesion = JSON.parse(sesionGuardada);
-        const grupos = getGrupos();
-        if (grupos[sesion.grupoId]) {
-            currentGrupoId = sesion.grupoId;
-            currentGrupoNombre = grupos[sesion.grupoId].nombre;
-            currentParticipante = sesion.participante;
-            iniciarSesionParticipante();
+        try {
+            const sesion = JSON.parse(sesionGuardada);
+            const grupos = getGrupos();
+            if (grupos[sesion.grupoId]) {
+                currentGrupoId = sesion.grupoId;
+                currentGrupoNombre = grupos[sesion.grupoId].nombre;
+                currentParticipante = sesion.participante;
+                iniciarPanelApuestas();
+            }
+        } catch(e) {
+            console.error('Error al cargar sesión:', e);
         }
     }
 }
 
-function cargarGrupos() {
+// ============ GRUPOS ============
+function cargarListaGrupos() {
     const grupos = getGrupos();
     const gruposKeys = Object.keys(grupos);
     
@@ -80,7 +87,7 @@ function cargarGrupos() {
     let html = '';
     for (const [id, grupo] of Object.entries(grupos)) {
         html += `
-            <div class="grupo-card-selector" data-grupo-id="${id}" data-grupo-nombre="${grupo.nombre}">
+            <div class="grupo-card-selector" data-id="${id}" data-nombre="${grupo.nombre}">
                 <div class="grupo-nombre">🏆 ${grupo.nombre}</div>
                 <div class="grupo-descripcion">${grupo.descripcion || 'Participa en este grupo'}</div>
                 <div class="grupo-descripcion" style="font-size:0.7rem; margin-top:8px;">👥 ${grupo.participantes.length} participantes</div>
@@ -89,57 +96,111 @@ function cargarGrupos() {
     }
     gruposLista.innerHTML = html;
     
+    // Agregar eventos a las tarjetas
     document.querySelectorAll('.grupo-card-selector').forEach(card => {
         card.addEventListener('click', () => {
-            const grupoId = card.dataset.grupoId;
-            const grupoNombre = card.dataset.grupoNombre;
-            manejarSeleccionGrupo(grupoId, grupoNombre);
+            const grupoId = card.dataset.id;
+            const grupoNombre = card.dataset.nombre;
+            handleGrupoSeleccionado(grupoId, grupoNombre);
         });
     });
 }
 
-function manejarSeleccionGrupo(grupoId, grupoNombre) {
+function handleGrupoSeleccionado(grupoId, grupoNombre) {
     currentGrupoId = grupoId;
     currentGrupoNombre = grupoNombre;
     
-    // Preguntar si ya está registrado
-    const respuesta = prompt(`¿Ya estás registrado en el grupo "${grupoNombre}"?\n\n- Si ya estás registrado, ingresa tu nombre exacto.\n- Si es tu primera vez, escribe "nuevo" o deja vacío.`);
+    // Obtener información del grupo
+    const grupos = getGrupos();
+    const grupo = grupos[grupoId];
+    const totalParticipantes = grupo ? grupo.participantes.length : 0;
     
-    if (respuesta && respuesta.toLowerCase() !== 'nuevo' && respuesta.trim() !== '') {
-        // Verificar si el nombre existe en el grupo
-        const existe = participanteRegistrado(grupoId, respuesta);
-        if (existe) {
-            currentParticipante = respuesta;
-            sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
-                participante: respuesta,
-                grupoId: grupoId,
-                timestamp: Date.now()
-            }));
-            iniciarSesionParticipante();
-            return;
-        } else {
-            alert(`❌ El nombre "${respuesta}" no está registrado en este grupo. Por favor, regístrate.`);
-        }
-    }
+    // Mostrar modal personalizado
+    const modal = document.getElementById('modal-verificacion');
+    const modalGrupoNombre = document.getElementById('modal-grupo-nombre');
+    const modalGrupoInfo = document.getElementById('modal-grupo-info');
+    const nombreInput = document.getElementById('modal-nombre-input');
+    const errorDiv = document.getElementById('modal-error-mensaje');
     
-    // Si no está registrado o eligió "nuevo", mostrar formulario de registro
-    mostrarFormularioRegistro(grupoId, grupoNombre);
+    modalGrupoNombre.textContent = `🏆 ${grupoNombre}`;
+    modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
+    nombreInput.value = '';
+    errorDiv.style.display = 'none';
+    
+    // Guardar referencia para usar en los botones
+    modal.dataset.grupoId = grupoId;
+    modal.dataset.grupoNombre = grupoNombre;
+    
+    modal.style.display = 'flex';
+    
+    // Enfocar el input
+    setTimeout(() => nombreInput.focus(), 100);
 }
 
-function mostrarFormularioRegistro(grupoId, grupoNombre) {
-    currentParticipante = '';
+function cerrarModalVerificacion() {
+    const modal = document.getElementById('modal-verificacion');
+    modal.style.display = 'none';
+}
+
+function verificarYAEstoyRegistrado() {
+    const modal = document.getElementById('modal-verificacion');
+    const grupoId = modal.dataset.grupoId;
+    const grupoNombre = modal.dataset.grupoNombre;
+    const nombre = document.getElementById('modal-nombre-input').value.trim();
+    const errorDiv = document.getElementById('modal-error-mensaje');
+    
+    if (!nombre) {
+        errorDiv.textContent = '❌ Por favor, ingresa tu nombre';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    const existe = participanteRegistrado(grupoId, nombre);
+    
+    if (existe) {
+        currentGrupoId = grupoId;
+        currentGrupoNombre = grupoNombre;
+        currentParticipante = nombre;
+        
+        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
+            participante: nombre,
+            grupoId: grupoId,
+            timestamp: Date.now()
+        }));
+        
+        cerrarModalVerificacion();
+        iniciarPanelApuestas();
+    } else {
+        errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en "${grupoNombre}". Verifica que esté escrito correctamente o regístrate.`;
+        errorDiv.style.display = 'block';
+    }
+}
+
+function irARegistro() {
+    const modal = document.getElementById('modal-verificacion');
+    const grupoId = modal.dataset.grupoId;
+    const grupoNombre = modal.dataset.grupoNombre;
+    
+    currentGrupoId = grupoId;
+    currentGrupoNombre = grupoNombre;
+    
+    cerrarModalVerificacion();
+    mostrarFormularioRegistro();
+}
+
+function mostrarFormularioRegistro() {
     registroPanel.style.display = 'block';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
-    grupoSeleccionadoNombre.innerHTML = `🏆 ${grupoNombre}`;
+    grupoSeleccionadoNombre.innerHTML = `🏆 ${currentGrupoNombre}`;
     registroMensaje.innerHTML = '';
     registroNombre.value = '';
     registroTelefono.value = '';
-    
     registroPanel.scrollIntoView({ behavior: 'smooth' });
 }
 
-async function registrarParticipante() {
+// ============ REGISTRO ============
+async function registrarNuevoParticipante() {
     const nombre = registroNombre.value.trim();
     const telefono = registroTelefono.value.trim();
     
@@ -161,14 +222,15 @@ async function registrarParticipante() {
         }));
         
         setTimeout(() => {
-            iniciarSesionParticipante();
+            iniciarPanelApuestas();
         }, 1000);
     } else {
         registroMensaje.innerHTML = `<div class="mensaje-error">❌ ${resultado.message}</div>`;
     }
 }
 
-function iniciarSesionParticipante() {
+// ============ PANEL DE APUESTAS ============
+function iniciarPanelApuestas() {
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'block';
     seleccionGruposDiv.style.display = 'none';
@@ -176,11 +238,11 @@ function iniciarSesionParticipante() {
     participanteNombreDisplay.textContent = currentParticipante;
     participanteGrupoDisplay.textContent = `Grupo: ${currentGrupoNombre}`;
     
-    cargarDias();
-    cargarEventosCalendario();
+    cargarSelectorDias();
+    configurarSelectorDias();
 }
 
-function cargarDias() {
+function cargarSelectorDias() {
     const dias = getDiasCalendario();
     
     if (dias.length === 0) {
@@ -202,24 +264,25 @@ function cargarDias() {
     diaSelect.innerHTML = options;
     
     const hoy = getDiaActualLocal();
-    if (dias.includes(hoy)) {
+    const diasArray = getDiasCalendario();
+    if (diasArray.includes(hoy)) {
         diaSelect.value = hoy;
         currentFecha = hoy;
-        cargarPartidosDelDia(hoy);
+        cargarPartidos(hoy);
         actualizarEstadoDia(hoy);
-    } else if (dias[0]) {
-        diaSelect.value = dias[0];
-        currentFecha = dias[0];
-        cargarPartidosDelDia(dias[0]);
-        actualizarEstadoDia(dias[0]);
+    } else if (diasArray[0]) {
+        diaSelect.value = diasArray[0];
+        currentFecha = diasArray[0];
+        cargarPartidos(diasArray[0]);
+        actualizarEstadoDia(diasArray[0]);
     }
 }
 
-function cargarEventosCalendario() {
+function configurarSelectorDias() {
     diaSelect.addEventListener('change', (e) => {
         currentFecha = e.target.value;
         if (currentFecha) {
-            cargarPartidosDelDia(currentFecha);
+            cargarPartidos(currentFecha);
             actualizarEstadoDia(currentFecha);
         }
     });
@@ -238,7 +301,7 @@ function actualizarEstadoDia(fecha) {
     }
 }
 
-function cargarPartidosDelDia(fecha) {
+function cargarPartidos(fecha) {
     const partidos = getPartidosPorDia(fecha);
     const esPasado = isPartidoPasado(fecha);
     const esHoy = !esPasado && (fecha === getDiaActualLocal());
@@ -264,9 +327,7 @@ function cargarPartidosDelDia(fecha) {
                         ${!puedeApostar ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
                     </div>
                 </div>
-                
                 <div id="apuestas-lista-${partido.id}" class="apuestas-lista"></div>
-                
                 ${puedeApostar ? `
                     <div class="nueva-apuesta-form">
                         <div class="score-inputs">
@@ -277,15 +338,13 @@ function cargarPartidosDelDia(fecha) {
                         </div>
                         <div class="limite-apuestas">📊 Usados: ${apuestasActuales}/${limiteParticipante}</div>
                     </div>
-                ` : `
-                    <div class="score-readonly" id="readonly-${partido.id}"></div>
-                `}
+                ` : `<div class="score-readonly" id="readonly-${partido.id}"></div>`}
             </div>
         `;
     }).join('');
     
     cargarApuestasExistentes(fecha);
-    setupAgregarApuestas();
+    configurarBotonesAgregar();
 }
 
 function cargarApuestasExistentes(fecha) {
@@ -307,26 +366,18 @@ function cargarApuestasExistentes(fecha) {
                 let html = '<div class="apuestas-multiples">';
                 apuestasPartido.forEach((apuesta, idx) => {
                     const resultado = resultados[partido.id];
-                    let claseAcierto = '';
+                    let clase = '';
                     if (resultado) {
-                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                            claseAcierto = 'acierto-exacto';
-                        } else if (
-                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                        ) {
-                            claseAcierto = 'acierto-ganador';
-                        } else {
-                            claseAcierto = 'acierto-error';
-                        }
+                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) clase = 'acierto-exacto';
+                        else if ((apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                                 (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                                 (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)) clase = 'acierto-ganador';
+                        else clase = 'acierto-error';
                     }
-                    html += `
-                        <div class="apuesta-item ${claseAcierto}">
-                            <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
-                            ${puedeApostar ? `<button class="btn-eliminar-apuesta" data-partido="${partido.id}" data-apuesta="${apuesta.id}">🗑️</button>` : ''}
-                        </div>
-                    `;
+                    html += `<div class="apuesta-item ${clase}">
+                        <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
+                        ${puedeApostar ? `<button class="btn-eliminar-apuesta" data-partido="${partido.id}" data-apuesta="${apuesta.id}">🗑️</button>` : ''}
+                    </div>`;
                 });
                 html += '</div>';
                 container.innerHTML = html;
@@ -335,103 +386,62 @@ function cargarApuestasExistentes(fecha) {
         
         if (readonlyContainer && !puedeApostar && resultados[partido.id]) {
             readonlyContainer.innerHTML = `<div class="resultado-oficial">🏆 Resultado oficial: ${resultados[partido.id].local} - ${resultados[partido.id].visitante}</div>`;
-        } else if (readonlyContainer && !puedeApostar && apuestasPartido.length > 0) {
-            let html = '<div class="apuestas-multiples">';
-            apuestasPartido.forEach((apuesta, idx) => {
-                html += `<div class="apuesta-item">Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</div>`;
-            });
-            html += '</div>';
-            readonlyContainer.innerHTML = html;
         }
     });
     
     document.querySelectorAll('.btn-eliminar-apuesta').forEach(btn => {
-        btn.removeEventListener('click', handleEliminarApuesta);
-        btn.addEventListener('click', handleEliminarApuesta);
+        btn.onclick = () => {
+            const partidoId = parseInt(btn.dataset.partido);
+            const apuestaId = btn.dataset.apuesta;
+            eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
+            cargarPartidos(currentFecha);
+            mostrarMensaje('Pronóstico eliminado', 'success');
+        };
     });
 }
 
-function handleEliminarApuesta(e) {
-    const btn = e.currentTarget;
-    const partidoId = parseInt(btn.dataset.partido);
-    const apuestaId = btn.dataset.apuesta;
-    eliminarApuesta(currentGrupoId, currentParticipante, partidoId, apuestaId);
-    cargarPartidosDelDia(currentFecha);
-    mostrarMensaje('Pronóstico eliminado', 'success');
-}
-
-function setupAgregarApuestas() {
+function configurarBotonesAgregar() {
     document.querySelectorAll('.btn-agregar-apuesta').forEach(btn => {
-        btn.removeEventListener('click', handleAgregarApuesta);
-        btn.addEventListener('click', handleAgregarApuesta);
+        btn.onclick = () => {
+            const partidoId = parseInt(btn.dataset.id);
+            const card = btn.closest('.apuesta-card');
+            const local = parseInt(card.querySelector('.score-local').value);
+            const visitante = parseInt(card.querySelector('.score-visitante').value);
+            
+            if (isNaN(local) || isNaN(visitante)) {
+                mostrarMensaje('Ingresá un marcador válido', 'error');
+                return;
+            }
+            
+            const limite = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
+            const actuales = getApuestasDePartido(currentGrupoId, currentParticipante, partidoId).length;
+            
+            if (actuales >= limite) {
+                mostrarMensaje(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
+                return;
+            }
+            
+            agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
+            mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado (${actuales + 1}/${limite})`, 'success');
+            cargarPartidos(currentFecha);
+        };
     });
 }
 
-function handleAgregarApuesta(e) {
-    const btn = e.currentTarget;
-    const partidoId = parseInt(btn.dataset.id);
-    const card = btn.closest('.apuesta-card');
-    const localInput = card.querySelector('.score-local');
-    const visitanteInput = card.querySelector('.score-visitante');
-    
-    const local = parseInt(localInput.value);
-    const visitante = parseInt(visitanteInput.value);
-    
-    if (isNaN(local) || isNaN(visitante)) {
-        mostrarMensaje('Ingresá un marcador válido', 'error');
-        return;
-    }
-    
-    if (local < 0 || local > 20 || visitante < 0 || visitante > 20) {
-        mostrarMensaje('Usá números entre 0 y 20', 'error');
-        return;
-    }
-    
-    const partido = todosLosPartidos.find(p => p.id === partidoId);
-    if (partido && !puedeApostarPartido(partido.fecha, partido.hora)) {
-        mostrarMensaje('⏰ Ya no se puede apostar a este partido', 'error');
-        return;
-    }
-    
-    const limite = getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-    const actuales = getApuestasDePartido(currentGrupoId, currentParticipante, partidoId).length;
-    
-    if (actuales >= limite) {
-        mostrarMensaje(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
-        return;
-    }
-    
-    agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
-    mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado (${actuales + 1}/${limite})`, 'success');
-    localInput.value = '';
-    visitanteInput.value = '';
-    cargarPartidosDelDia(currentFecha);
-}
-
-function mostrarMensaje(msg, tipo) {
-    const mensajeDiv = document.getElementById('mensaje');
-    mensajeDiv.textContent = msg;
-    mensajeDiv.className = `mensaje ${tipo}`;
-    setTimeout(() => {
-        mensajeDiv.textContent = '';
-        mensajeDiv.className = 'mensaje';
-    }, 3000);
-}
-
-function cambiarGrupo() {
+// ============ CAMBIAR GRUPO ============
+function cambiarDeGrupo() {
     sessionStorage.removeItem('quiniela_sesion_actual');
     currentGrupoId = '';
     currentGrupoNombre = '';
     currentParticipante = '';
-    
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
-    
-    cargarGrupos();
+    cargarListaGrupos();
 }
 
-function verMisApuestas() {
+// ============ VER MIS APUESTAS ============
+function mostrarMisApuestas() {
     const todasApuestas = getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
     const resultados = getResultadosDelGrupo(currentGrupoId);
     const modalBody = document.getElementById('modal-body');
@@ -446,17 +456,13 @@ function verMisApuestas() {
     
     let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
     let totalPuntos = 0;
-    
     const apuestasArray = [];
+    
     for (const [partidoId, apuestas] of Object.entries(todasApuestas)) {
         const partido = todosLosPartidos.find(p => p.id === parseInt(partidoId));
         if (partido && apuestas.length > 0) {
             apuestas.forEach(apuesta => {
-                apuestasArray.push({
-                    ...apuesta,
-                    partido,
-                    resultado: resultados[partidoId]
-                });
+                apuestasArray.push({ ...apuesta, partido, resultado: resultados[partidoId] });
             });
         }
     }
@@ -475,11 +481,9 @@ function verMisApuestas() {
             if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
                 puntos = reglas.puntosExacto;
                 acierto = '✅ EXACTO';
-            } else if (
-                (ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
-                (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
-                (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)
-            ) {
+            } else if ((ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
+                       (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
+                       (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)) {
                 puntos = reglas.puntosGanador;
                 acierto = '🎯 GANADOR';
             } else {
@@ -499,17 +503,51 @@ function verMisApuestas() {
     modal.style.display = 'block';
 }
 
-function setupEventListeners() {
-    registrarBtn.addEventListener('click', registrarParticipante);
-    cambiarGrupoBtn.addEventListener('click', cambiarGrupo);
-    verApuestasBtn.addEventListener('click', verMisApuestas);
-    
-    const modal = document.getElementById('modal-apuestas');
-    const closeBtn = document.querySelector('.modal-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => modal.style.display = 'none');
-    }
-    window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+// ============ UTILIDADES ============
+function mostrarMensaje(msg, tipo) {
+    const mensajeDiv = document.getElementById('mensaje');
+    mensajeDiv.textContent = msg;
+    mensajeDiv.className = `mensaje ${tipo}`;
+    setTimeout(() => {
+        mensajeDiv.textContent = '';
+        mensajeDiv.className = 'mensaje';
+    }, 3000);
 }
 
+function configurarEventListeners() {
+    if (registrarBtn) registrarBtn.addEventListener('click', registrarNuevoParticipante);
+    if (cambiarGrupoBtn) cambiarGrupoBtn.addEventListener('click', cambiarDeGrupo);
+    if (verApuestasBtn) verApuestasBtn.addEventListener('click', mostrarMisApuestas);
+    
+    // Eventos del modal de verificación
+    const btnVerificar = document.getElementById('btn-verificar');
+    const btnRegistrarNuevo = document.getElementById('btn-registrar-nuevo');
+    const btnCancelar = document.getElementById('btn-cancelar-modal');
+    const modalVerificacion = document.getElementById('modal-verificacion');
+    const nombreInput = document.getElementById('modal-nombre-input');
+    
+    if (btnVerificar) btnVerificar.addEventListener('click', verificarYAEstoyRegistrado);
+    if (btnRegistrarNuevo) btnRegistrarNuevo.addEventListener('click', irARegistro);
+    if (btnCancelar) btnCancelar.addEventListener('click', cerrarModalVerificacion);
+    
+    if (modalVerificacion) {
+        modalVerificacion.addEventListener('click', (e) => {
+            if (e.target === modalVerificacion) cerrarModalVerificacion();
+        });
+    }
+    
+    if (nombreInput) {
+        nombreInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verificarYAEstoyRegistrado();
+        });
+    }
+    
+    // Modal de apuestas
+    const modal = document.getElementById('modal-apuestas');
+    const closeBtn = document.querySelector('.modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
+    if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+}
+
+// Iniciar
 init();
