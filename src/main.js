@@ -1,4 +1,4 @@
-// src/main.js - Versión sin QR (funcional)
+// src/main.js - Con selección de grupos, auto-registro y popup de reglas
 import { 
     getPartidosPorDia, 
     getDiasCalendario, 
@@ -127,14 +127,8 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
 
 // ============ MANEJADOR GLOBAL PARA AGREGAR APUESTAS ============
 
-let ultimoClick = 0;
-const TIEMPO_ESPERA = 1000;
-
 window.agregarApuestaHandler = async function(partidoId, btnElement) {
-    const ahora = Date.now();
-    if (ahora - ultimoClick < TIEMPO_ESPERA) return;
-    ultimoClick = ahora;
-    
+    // Evitar ejecución múltiple
     if (btnElement.disabled) return;
     
     const card = btnElement.closest('.apuesta-card');
@@ -151,6 +145,11 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         return;
     }
     
+    if (local < 0 || local > 20 || visitante < 0 || visitante > 20) {
+        mostrarNotificacion('❌ Usá números entre 0 y 20', 'error');
+        return;
+    }
+    
     const limite = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
     const apuestasActuales = await getApuestasDePartido(currentGrupoId, currentParticipante, partidoId);
     
@@ -159,20 +158,22 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         return;
     }
     
+    // Deshabilitar botón
     btnElement.disabled = true;
+    const textoOriginal = btnElement.textContent;
     btnElement.textContent = '⏳ Guardando...';
     
     const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
     
     if (apuestaId) {
-        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
+        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado (${apuestasActuales.length + 1}/${limite})`, 'success');
         localInput.value = '';
         visitanteInput.value = '';
         await cargarPartidos(currentFecha);
     } else {
         mostrarNotificacion('❌ Error al agregar pronóstico', 'error');
         btnElement.disabled = false;
-        btnElement.textContent = '➕ Agregar';
+        btnElement.textContent = textoOriginal;
     }
 };
 
@@ -228,6 +229,8 @@ async function cargarListaGrupos() {
     console.log('📋 Cargando lista de grupos...');
     const grupos = await getGrupos();
     const gruposKeys = Object.keys(grupos);
+    
+    console.log('📊 Grupos encontrados:', gruposKeys);
     
     if (gruposKeys.length === 0) {
         gruposLista.innerHTML = '<div class="loading">⚠️ No hay grupos disponibles. Contactá al administrador.</div>';
@@ -667,34 +670,28 @@ async function cargarPartidos(fecha) {
     const esHoy = !esPasado && (fecha === getDiaActualLocal());
     
     const limiteParticipante = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-    const apuestasExistentes = await getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
     
     apuestasContainer.innerHTML = partidos.map(partido => {
         const puedeApostar = esHoy && puedeApostarPartido(partido.fecha, partido.hora);
-        const apuestasActuales = apuestasExistentes[partido.id] || [];
-        const alcanzoLimite = apuestasActuales.length >= limiteParticipante;
         
         let mensajeBloqueo = '';
-        
         if (!puedeApostar) {
             if (esPasado) mensajeBloqueo = '🔒 Partido finalizado';
             else if (!esHoy) mensajeBloqueo = '⏳ Apuestas solo el día del partido';
             else mensajeBloqueo = '⏰ Apuestas cerradas';
-        } else if (alcanzoLimite) {
-            mensajeBloqueo = `🔒 Límite alcanzado (${limiteParticipante}/${limiteParticipante})`;
         }
         
         return `
-            <div class="apuesta-card ${!puedeApostar || alcanzoLimite ? 'bloqueado' : ''}" data-id="${partido.id}">
+            <div class="apuesta-card ${!puedeApostar ? 'bloqueado' : ''}" data-id="${partido.id}">
                 <div class="match-info">
                     <div class="match-teams">${conBandera(partido.local)} vs ${conBandera(partido.visitante)}</div>
                     <div class="match-date">
                         🕐 ${partido.hora} | ${getFaseNombre(partido.fase)}
-                        ${!puedeApostar || alcanzoLimite ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
+                        ${!puedeApostar ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
                     </div>
                 </div>
                 <div id="apuestas-lista-${partido.id}" class="apuestas-lista"></div>
-                ${puedeApostar && !alcanzoLimite ? `
+                ${puedeApostar ? `
                     <div class="nueva-apuesta-form">
                         <div class="score-inputs">
                             <input type="number" class="score-local" placeholder="Local" min="0" max="20">
@@ -702,7 +699,7 @@ async function cargarPartidos(fecha) {
                             <input type="number" class="score-visitante" placeholder="Visitante" min="0" max="20">
                             <button class="btn-agregar-apuesta" data-id="${partido.id}" onclick="agregarApuestaHandler(${partido.id}, this)">➕ Agregar</button>
                         </div>
-                        <div class="limite-apuestas">📊 Usados: ${apuestasActuales.length}/${limiteParticipante}</div>
+                        <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
                     </div>
                 ` : `<div class="score-readonly" id="readonly-${partido.id}"></div>`}
             </div>
@@ -722,38 +719,14 @@ async function cargarApuestasExistentes(fecha) {
     const limiteParticipante = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
     
     for (const partido of partidos) {
-        let apuestasPartido = todasApuestas[partido.id] || [];
-        
-        const unicas = [];
-        const claves = new Set();
-        for (const apuesta of apuestasPartido) {
-            const clave = `${apuesta.local}-${apuesta.visitante}`;
-            if (!claves.has(clave)) {
-                claves.add(clave);
-                unicas.push(apuesta);
-            }
-        }
-        apuestasPartido = unicas;
-        
+        const apuestasPartido = todasApuestas[partido.id] || [];
         const container = document.getElementById(`apuestas-lista-${partido.id}`);
         const readonlyContainer = document.getElementById(`readonly-${partido.id}`);
         
+        // Actualizar límite mostrado
         const limiteSpan = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .limite-apuestas`);
-        const agregarBtn = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .btn-agregar-apuesta`);
-        
         if (limiteSpan && puedeApostar) {
-            const usados = apuestasPartido.length;
-            limiteSpan.innerHTML = `📊 Usados: ${usados}/${limiteParticipante} pronósticos`;
-            
-            if (agregarBtn) {
-                if (usados >= limiteParticipante) {
-                    agregarBtn.disabled = true;
-                    agregarBtn.textContent = '🔒 Límite alcanzado';
-                } else {
-                    agregarBtn.disabled = false;
-                    agregarBtn.textContent = '➕ Agregar';
-                }
-            }
+            limiteSpan.innerHTML = `📊 Usados: ${apuestasPartido.length}/${limiteParticipante} pronósticos`;
         }
         
         if (container) {
@@ -771,7 +744,7 @@ async function cargarApuestasExistentes(fecha) {
                                  (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)) clase = 'acierto-ganador';
                         else clase = 'acierto-error';
                     }
-                    html += `<div class="apuesta-item ${clase}" data-apuesta-id="${apuesta.id}">
+                    html += `<div class="apuesta-item ${clase}">
                         <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
                         ${puedeApostar ? `<button class="btn-eliminar-apuesta" onclick="eliminarApuestaHandler(${partido.id}, '${apuesta.id}', this)">🗑️</button>` : ''}
                     </div>`;
@@ -802,6 +775,8 @@ function cambiarDeGrupo() {
 
 // ============ VER MIS APUESTAS ============
 async function mostrarMisApuestas() {
+    console.log('Mostrando apuestas para:', currentParticipante, 'en grupo:', currentGrupoId);
+    
     if (!currentParticipante) {
         mostrarNotificacion('❌ Primero selecciona un grupo y regístrate', 'error');
         return;
@@ -813,59 +788,226 @@ async function mostrarMisApuestas() {
     const modal = document.getElementById('modal-apuestas');
     const reglas = await getReglasDelGrupo(currentGrupoId);
     
-    if (!modalBody || !modal) return;
+    if (!modalBody || !modal) {
+        console.error('Modal no encontrado');
+        return;
+    }
     
     if (Object.keys(todasApuestas).length === 0) {
-        modalBody.innerHTML = '<div style="text-align:center; padding:40px;">📭 No has realizado ningún pronóstico</div>';
+        modalBody.innerHTML = `
+            <div style="text-align:center; padding:60px 20px;">
+                <div style="font-size: 4rem; margin-bottom: 15px;">📭</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 1.1rem;">No has realizado ningún pronóstico</div>
+                <div style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin-top: 8px;">Selecciona un día y comienza a apostar</div>
+            </div>
+        `;
         modal.style.display = 'block';
         return;
     }
     
-    let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
-    let totalPuntos = 0;
-    const apuestasArray = [];
-    
+    // Preparar array de apuestas
+    const apuestasDetalladas = [];
     for (const [partidoId, apuestas] of Object.entries(todasApuestas)) {
         const partido = todosLosPartidos.find(p => p.id === parseInt(partidoId));
         if (partido && apuestas.length > 0) {
             apuestas.forEach(apuesta => {
-                apuestasArray.push({ ...apuesta, partido, resultado: resultados[partidoId] });
+                const resultado = resultados[partidoId];
+                let puntos = 0;
+                let estado = 'pendiente';
+                let claseEstado = '';
+                let mensajeEstado = '';
+                
+                if (resultado) {
+                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                        puntos = reglas.puntosExacto;
+                        estado = 'exacto';
+                        claseEstado = 'exacto';
+                        mensajeEstado = '¡RESULTADO EXACTO!';
+                    } else if (
+                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                    ) {
+                        puntos = reglas.puntosGanador;
+                        estado = 'ganador';
+                        claseEstado = 'ganador';
+                        mensajeEstado = 'GANADOR CORRECTO';
+                    } else {
+                        puntos = 0;
+                        estado = 'error';
+                        claseEstado = 'error';
+                        mensajeEstado = 'INCORRECTO';
+                    }
+                }
+                
+                apuestasDetalladas.push({
+                    partido,
+                    apuesta,
+                    resultado,
+                    puntos,
+                    estado,
+                    claseEstado,
+                    mensajeEstado,
+                    fechaApuesta: apuesta.fecha || new Date().toISOString()
+                });
             });
         }
     }
-    apuestasArray.sort((a, b) => a.partido.fecha.localeCompare(b.partido.fecha));
     
-    let currentFechaHtml = '';
-    apuestasArray.forEach(ap => {
-        if (currentFechaHtml !== ap.partido.fecha) {
-            currentFechaHtml = ap.partido.fecha;
-            html += `<h4>📅 ${formatearFecha(ap.partido.fecha)} - ${ap.partido.local} vs ${ap.partido.visitante}</h4>`;
+    apuestasDetalladas.sort((a, b) => a.partido.fecha.localeCompare(b.partido.fecha));
+    
+    const totalPronosticos = apuestasDetalladas.length;
+    const aciertosExactos = apuestasDetalladas.filter(a => a.estado === 'exacto').length;
+    const aciertosGanador = apuestasDetalladas.filter(a => a.estado === 'ganador').length;
+    const errores = apuestasDetalladas.filter(a => a.estado === 'error').length;
+    const pendientes = apuestasDetalladas.filter(a => a.estado === 'pendiente').length;
+    const totalPuntos = apuestasDetalladas.reduce((sum, a) => sum + a.puntos, 0);
+    
+    const esGrupoGeneral = currentGrupoId === 'general';
+    const grupoNombre = esGrupoGeneral ? '🏆 GRUPO GENERAL - POZO MAYOR' : `🏆 ${currentGrupoNombre}`;
+    
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin: 0; font-size: 1.3rem;">📋 ${grupoNombre}</h2>
+            <div style="background: rgba(255,215,0,0.15); padding: 5px 12px; border-radius: 20px;">
+                <span style="color: #ffd700;">👤 ${currentParticipante}</span>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 25px;">
+            <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700;">${totalPronosticos}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">TOTAL PRONÓSTICOS</div>
+            </div>
+            <div style="background: rgba(76,175,80,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #4caf50;">${aciertosExactos}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">RESULTADOS EXACTOS</div>
+            </div>
+            <div style="background: rgba(255,193,7,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #ffc107;">${aciertosGanador}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">GANADORES CORRECTOS</div>
+            </div>
+            <div style="background: rgba(244,67,54,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #f44336;">${errores}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">INCORRECTOS</div>
+            </div>
+            <div style="background: rgba(33,150,243,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #2196f3;">${pendientes}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">PENDIENTES</div>
+            </div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,100,0,0.1)); border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 25px; border: 1px solid rgba(255,215,0,0.3);">
+            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">🏆 PUNTOS TOTALES ACUMULADOS 🏆</div>
+            <div style="font-size: 2.5rem; font-weight: bold; color: #ffd700;">${totalPuntos}</div>
+            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 5px;">⭐ Sistema de puntuación: ${reglas.puntosExacto} pts exacto / ${reglas.puntosGanador} pts ganador</div>
+        </div>
+    `;
+    
+    let currentFechaDisplay = '';
+    for (const ap of apuestasDetalladas) {
+        const fechaPartido = ap.partido.fecha;
+        const fechaFormateada = formatearFecha(fechaPartido);
+        
+        if (currentFechaDisplay !== fechaPartido) {
+            currentFechaDisplay = fechaPartido;
+            const esFechaPasada = isPartidoPasado(fechaPartido);
+            const iconoFecha = esFechaPasada ? '🔒' : '📅';
+            html += `
+                <div style="margin-top: 25px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 8px;">
+                        <span style="font-size: 1.2rem;">${iconoFecha}</span>
+                        <h3 style="margin: 0; color: #ffd700; font-size: 1rem;">${fechaFormateada}</h3>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">${esFechaPasada ? 'FINALIZADO' : 'PRÓXIMO'}</span>
+                    </div>
+                </div>
+            `;
         }
         
-        let puntos = 0;
-        let acierto = '';
-        if (ap.resultado) {
-            if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
-                puntos = reglas.puntosExacto;
-                acierto = '✅ EXACTO';
-            } else if ((ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
-                       (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
-                       (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)) {
-                puntos = reglas.puntosGanador;
-                acierto = '🎯 GANADOR';
-            } else {
-                acierto = '❌ ERROR';
-            }
-            totalPuntos += puntos;
+        let bgColor = 'rgba(0,0,0,0.3)';
+        let borderColor = 'rgba(255,215,0,0.15)';
+        let resultadoHtml = '';
+        
+        if (ap.estado === 'exacto') {
+            bgColor = 'rgba(76,175,80,0.1)';
+            borderColor = '#4caf50';
+            resultadoHtml = `<div style="display: inline-block; background: rgba(76,175,80,0.2); color: #4caf50; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">✅ EXACTO +${ap.puntos} pts</div>`;
+        } else if (ap.estado === 'ganador') {
+            bgColor = 'rgba(255,193,7,0.1)';
+            borderColor = '#ffc107';
+            resultadoHtml = `<div style="display: inline-block; background: rgba(255,193,7,0.2); color: #ffc107; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">🎯 GANADOR +${ap.puntos} pts</div>`;
+        } else if (ap.estado === 'error') {
+            bgColor = 'rgba(244,67,54,0.1)';
+            borderColor = '#f44336';
+            resultadoHtml = `<div style="display: inline-block; background: rgba(244,67,54,0.2); color: #f44336; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">❌ INCORRECTO 0 pts</div>`;
+        } else {
+            resultadoHtml = `<div style="display: inline-block; background: rgba(33,150,243,0.2); color: #2196f3; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">⏳ RESULTADO PENDIENTE</div>`;
         }
         
-        html += `<div class="apuesta-resumen">
-            Pronóstico: ${ap.local} - ${ap.visitante}
-            ${ap.resultado ? `<br>Resultado: ${ap.resultado.local} - ${ap.resultado.visitante}<br>${acierto} ${puntos > 0 ? `(+${puntos})` : ''}` : '<br>⏳ Resultado pendiente'}
-        </div>`;
-    });
+        html += `
+            <div style="background: ${bgColor}; border-left: 3px solid ${borderColor}; border-radius: 12px; padding: 15px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <span style="font-weight: bold; font-size: 0.85rem; color: rgba(255,255,255,0.7);">⚽ ${ap.partido.local} vs ${ap.partido.visitante}</span>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">🕐 ${ap.partido.hora}</span>
+                    </div>
+                    ${resultadoHtml}
+                </div>
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 15px 0; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">TU PRONÓSTICO</div>
+                        <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700; display: flex; align-items: center; gap: 15px;">
+                            <span>${ap.apuesta.local}</span>
+                            <span style="font-size: 1.2rem;">-</span>
+                            <span>${ap.apuesta.visitante}</span>
+                        </div>
+                    </div>
+                    
+                    ${ap.resultado ? `
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">RESULTADO OFICIAL</div>
+                            <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700; display: flex; align-items: center; gap: 15px;">
+                                <span>${ap.resultado.local}</span>
+                                <span style="font-size: 1.2rem;">-</span>
+                                <span>${ap.resultado.visitante}</span>
+                            </div>
+                        </div>
+                    ` : `
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">ESTADO</div>
+                            <div style="font-size: 1rem; font-weight: bold; color: #ffc107;">⏳ Esperando resultado</div>
+                        </div>
+                    `}
+                </div>
+                
+                ${ap.fechaApuesta ? `
+                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); text-align: center; margin-top: 8px;">
+                        📝 Pronóstico realizado: ${new Date(ap.fechaApuesta).toLocaleString()}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
     
-    html += `<div class="total-puntos">🏆 TOTAL DE PUNTOS: ${totalPuntos}</div>`;
+    const premios = await getPremiosDelGrupo(currentGrupoId);
+    const cantidadGanadores = premios?.cantidadGanadores || 3;
+    
+    html += `
+        <div style="background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; margin-top: 20px; text-align: center;">
+            <div style="color: #ffd700; font-size: 0.85rem; margin-bottom: 8px;">💰 INFORMACIÓN DE PREMIOS DEL GRUPO</div>
+            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                <span>🏆 ${cantidadGanadores} Ganador(es)</span>
+                <span>🥇 1er: ${premios?.primero || 50}%</span>
+                ${cantidadGanadores >= 2 ? `<span>🥈 2do: ${premios?.segundo || 30}%</span>` : ''}
+                ${cantidadGanadores >= 3 ? `<span>🥉 3ro: ${premios?.tercero || 20}%</span>` : ''}
+            </div>
+            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 8px;">
+                📌 Los premios se reparten al finalizar cada jornada (20% para organizador, 80% para ganadores)
+            </div>
+        </div>
+    `;
+    
     modalBody.innerHTML = html;
     modal.style.display = 'block';
 }
@@ -880,6 +1022,7 @@ function configurarEventListeners() {
     if (cambiarGrupoBtn) cambiarGrupoBtn.addEventListener('click', cambiarDeGrupo);
     if (verApuestasBtn) verApuestasBtn.addEventListener('click', mostrarMisApuestas);
     
+    // Modal de verificación
     const btnVerificar = document.getElementById('btn-verificar');
     const btnRegistrarNuevo = document.getElementById('btn-registrar-nuevo');
     const btnCancelar = document.getElementById('btn-cancelar-modal');
@@ -902,6 +1045,7 @@ function configurarEventListeners() {
         });
     }
     
+    // Modal General
     const btnSi = document.getElementById('general-btn-si');
     const btnNo = document.getElementById('general-btn-no');
     const btnIngresar = document.getElementById('general-btn-ingresar');
@@ -939,10 +1083,12 @@ function configurarEventListeners() {
         });
     }
     
+    // Modal de apuestas
     const modal = document.getElementById('modal-apuestas');
     const closeBtn = document.querySelector('.modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
 
+// Iniciar
 init();
