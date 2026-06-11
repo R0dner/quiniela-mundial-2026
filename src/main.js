@@ -196,6 +196,17 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         btnElement.disabled = false;
         btnElement.textContent = textoOriginal;
     }
+       if (apuestaId) {
+        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
+        localInput.value = '';
+        visitanteInput.value = '';
+        await cargarPartidos(currentFecha);
+        mostrarQR(); // <-- AGREGAR ESTA LÍNEA PARA MOSTRAR EL QR
+    } else {
+        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
+        btnElement.disabled = false;
+        btnElement.textContent = textoOriginal;
+    }
 };
 
 window.eliminarApuestaHandler = async function(partidoId, apuestaId, btnElement) {
@@ -1137,6 +1148,38 @@ function configurarEventListeners() {
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
+// ============ MOSTRAR QR DESPUÉS DE APOSTAR ============
 
+let qrMostrado = false;
+
+function mostrarQR() {
+    const qrDiv = document.getElementById('qr-pago');
+    if (qrDiv && !qrMostrado) {
+        qrDiv.style.display = 'block';
+        qrMostrado = true;
+        
+        // Scroll suave al QR
+        setTimeout(() => {
+            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
+    }
+}
+
+// Configurar el botón de WhatsApp
+function configurarBotonWhatsApp() {
+    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
+    if (btnWhatsApp) {
+        btnWhatsApp.addEventListener('click', () => {
+            const nombre = currentParticipante || 'Participante';
+            const grupo = currentGrupoNombre || 'Grupo';
+            const mensaje = `Hola%2C%20deseo%20inscribirme%20en%20la%20quiniela%20del%20Mundial%202026.%0A%0A📌%20Mi%20nombre%20es%3A%20${encodeURIComponent(nombre)}%0A📌%20Grupo%3A%20${encodeURIComponent(grupo)}%0A📌%20Total%20a%20pagar%3A%20Bs.%205%0A%0AAdjunto%20mi%20comprobante%20de%20pago.`;
+            window.open(`https://wa.me/59174277508?text=${mensaje}`, '_blank');
+        });
+    }
+}
+
+// Modificar la función cargarPartidos para mostrar QR después de la primera apuesta
+// En la función handleAgregarClick (dentro de agregarApuestaHandler), después del éxito, agregar:
+// mostrarQR();
 // Iniciar
 init();
