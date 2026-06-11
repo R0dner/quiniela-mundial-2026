@@ -1,4 +1,4 @@
-// src/groups.js - Sistema de grupos con auto-registro de usuarios
+// src/groups.js - Sistema de grupos SIN CONTRASEÑAS (auto-registro de usuarios)
 
 const GRUPOS_INICIALES = {};
 
@@ -36,13 +36,9 @@ export function crearGrupo(grupoId, config) {
     if (!grupoId || grupoId.trim() === '') {
         throw new Error('El ID del grupo es obligatorio');
     }
-    if (!config.contrasena || config.contrasena.trim() === '') {
-        throw new Error('La contraseña del grupo es obligatoria');
-    }
     grupos[grupoId] = {
         nombre: config.nombre,
         codigo: config.codigo || grupoId.toUpperCase(),
-        contrasena: config.contrasena,
         descripcion: config.descripcion || '',
         reglas: {
             puntosExacto: config.reglas?.puntosExacto || 3,
@@ -56,10 +52,11 @@ export function crearGrupo(grupoId, config) {
             segundo: 30,
             tercero: 20
         },
-        participantes: [], // Se llenará con auto-registro
-        participantesInfo: {}, // Información de cada participante
+        participantes: [],
+        participantesInfo: {},
         apuestas: {},
         resultados: {},
+        apuestasExtras: {},
         fechaCreacion: new Date().toISOString(),
         activo: true
     };
@@ -76,17 +73,8 @@ export function eliminarGrupo(grupoId) {
     guardarGrupos(grupos);
 }
 
-export function actualizarContrasenaGrupo(grupoId, nuevaContrasena) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    grupos[grupoId].contrasena = nuevaContrasena;
-    guardarGrupos(grupos);
-    return true;
-}
-
 // ============ AUTO-REGISTRO DE PARTICIPANTES ============
 
-// Registrar un participante en un grupo (auto-registro)
 export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
     const grupos = getGrupos();
     if (!grupos[grupoId]) return { success: false, message: 'El grupo no existe' };
@@ -96,7 +84,6 @@ export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
         return { success: false, message: 'El nombre es obligatorio' };
     }
     
-    // Verificar si ya existe
     const existe = grupos[grupoId].participantes.some(
         p => p.toLowerCase() === nombreNormalizado.toLowerCase()
     );
@@ -105,7 +92,6 @@ export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
         return { success: false, message: 'Ya estás registrado en este grupo' };
     }
     
-    // Registrar nuevo participante
     grupos[grupoId].participantes.push(nombreNormalizado);
     
     if (!grupos[grupoId].participantesInfo) {
@@ -118,27 +104,72 @@ export function registrarParticipanteEnGrupo(grupoId, nombre, telefono = '') {
     };
     
     guardarGrupos(grupos);
-    return { success: true, message: `¡Bienvenido ${nombreNormalizado}! Ya puedes apostar` };
+    return { success: true, message: `¡Bienvenido ${nombreNormalizado}!` };
 }
 
-// Obtener participantes de un grupo
 export function getParticipantesDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     return grupo ? grupo.participantes : [];
 }
 
-// Obtener información de un participante
 export function getInfoParticipante(grupoId, nombre) {
     const grupo = getGrupo(grupoId);
     if (!grupo) return null;
     return grupo.participantesInfo?.[nombre] || { telefono: '', fechaRegistro: '' };
 }
 
-// Verificar si un participante está registrado
-export function participanteRegistrado(grupoId, nombre) {
+export function eliminarParticipanteDeGrupo(grupoId, nombre) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    const index = grupos[grupoId].participantes.findIndex(
+        p => p.toLowerCase() === nombre.toLowerCase()
+    );
+    
+    if (index !== -1) {
+        grupos[grupoId].participantes.splice(index, 1);
+        if (grupos[grupoId].participantesInfo?.[nombre]) {
+            delete grupos[grupoId].participantesInfo[nombre];
+        }
+        if (grupos[grupoId].apuestas[nombre]) {
+            delete grupos[grupoId].apuestas[nombre];
+        }
+        guardarGrupos(grupos);
+        return true;
+    }
+    return false;
+}
+
+// ============ LÍMITE DE APUESTAS EXTRA ============
+
+export function getLimiteApuestasParticipante(grupoId, participante) {
     const grupo = getGrupo(grupoId);
-    if (!grupo) return false;
-    return grupo.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+    if (!grupo) return 1;
+    
+    if (!grupo.apuestasExtras) {
+        grupo.apuestasExtras = {};
+    }
+    
+    return grupo.apuestasExtras[participante] || 1;
+}
+
+export function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
+    const grupos = getGrupos();
+    if (!grupos[grupoId]) return false;
+    
+    if (!grupos[grupoId].apuestasExtras) {
+        grupos[grupoId].apuestasExtras = {};
+    }
+    
+    grupos[grupoId].apuestasExtras[participante] = limite;
+    guardarGrupos(grupos);
+    return true;
+}
+
+export function getApuestasExtrasDelGrupo(grupoId) {
+    const grupo = getGrupo(grupoId);
+    if (!grupo) return {};
+    return grupo.apuestasExtras || {};
 }
 
 // ============ APUESTAS ============
@@ -199,38 +230,6 @@ export function eliminarApuesta(grupoId, participante, partidoId, apuestaId) {
     return false;
 }
 
-// ============ LÍMITE DE APUESTAS ============
-
-export function getLimiteApuestasParticipante(grupoId, participante) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return 1;
-    
-    if (!grupo.apuestasExtras) {
-        grupo.apuestasExtras = {};
-    }
-    
-    return grupo.apuestasExtras[participante] || 1;
-}
-
-export function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
-    const grupos = getGrupos();
-    if (!grupos[grupoId]) return false;
-    
-    if (!grupos[grupoId].apuestasExtras) {
-        grupos[grupoId].apuestasExtras = {};
-    }
-    
-    grupos[grupoId].apuestasExtras[participante] = limite;
-    guardarGrupos(grupos);
-    return true;
-}
-
-export function getApuestasExtrasDelGrupo(grupoId) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return {};
-    return grupo.apuestasExtras || {};
-}
-
 // ============ RESULTADOS ============
 
 export function guardarResultadoEnGrupo(grupoId, partidoId, resultado) {
@@ -281,7 +280,7 @@ export function calcularPuntosMultiples(grupoId, participante) {
         }
     }
     
-    return pontos;
+    return puntos;
 }
 
 export function getRankingDelGrupo(grupoId) {
@@ -344,12 +343,4 @@ export function actualizarReglasDelGrupo(grupoId, nuevasReglas) {
 export function getReglasDelGrupo(grupoId) {
     const grupo = getGrupo(grupoId);
     return grupo ? grupo.reglas : { puntosExacto: 3, puntosGanador: 1 };
-}
-
-// ============ VALIDACIONES ============
-
-export function validarContrasenaGrupo(grupoId, contrasena) {
-    const grupo = getGrupo(grupoId);
-    if (!grupo) return false;
-    return grupo.contrasena === contrasena;
 }
