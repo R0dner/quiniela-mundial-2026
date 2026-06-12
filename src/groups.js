@@ -1,4 +1,5 @@
 // src/groups.js - Sistema de grupos con Firebase (SIN CONTRASEÑAS)
+import { getPartidosPorDia } from './data.js'; 
 import { 
     guardarGrupoEnFirebase, 
     obtenerGrupoDeFirebase, 
@@ -361,7 +362,7 @@ export async function getRankingDelGrupoPorDia(grupoId, fecha) {
     if (!grupo) return [];
     
     // Obtener los IDs de los partidos de esa fecha
-    const partidosDeFecha = getPartidosPorFecha(fecha);
+    const partidosDeFecha = getPartidosPorDia(fecha);
     const partidosIds = partidosDeFecha.map(p => p.id);
     
     const ranking = [];

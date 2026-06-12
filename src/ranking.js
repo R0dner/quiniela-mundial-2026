@@ -1,11 +1,12 @@
 // src/ranking.js - Ranking diario y acumulado por grupos (con Firebase)
 import { 
     getGrupos, 
-    getRankingDelGrupo, 
+    getRankingDelGrupo,
+    getRankingDelGrupoPorDia,   
     getReglasDelGrupo,
     getPremiosDelGrupo
 } from './groups.js';
-import { getDiasCalendario, formatearFecha } from './data.js';
+import { getDiasCalendario, formatearFecha, getPartidosPorFecha } from './data.js';
 
 let grupos = {};
 let currentGrupoId = '';
@@ -134,7 +135,7 @@ async function actualizarRanking() {
             const dias = getDiasCalendario();
             if (dias.length > 0) currentFecha = dias[0];
         }
-        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
+        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha); // ← ahora usa la de groups.js
         document.getElementById('dia-selector-container').style.display = 'flex';
     }
     
@@ -149,60 +150,71 @@ async function actualizarRanking() {
 async function getRankingDelGrupoPorDia(grupoId, fecha) {
     const grupo = await getGrupo(grupoId);
     if (!grupo) return [];
-    
-    // Obtener todos los partidos de esa fecha
-    const partidosDeFecha = getPartidosPorFecha(fecha);
-    
+
+    // Usar la función importada de data.js en vez de window.todosLosPartidos
+    const partidosDeFecha = getPartidosPorFecha(fecha); // ← el fix principal
+
+    const reglas = grupo.reglas;
+    const resultados = grupo.resultados || {};
     const ranking = [];
+
     for (const participante of grupo.participantes) {
         let puntos = 0;
-        const apuestas = grupo.apuestas[participante] || {};
-        const resultados = grupo.resultados || {};
-        const reglas = grupo.reglas;
-        
-        for (const [partidoId, apuestasArray] of Object.entries(apuestas)) {
-            const partido = partidosDeFecha.find(p => p.id === parseInt(partidoId));
-            if (partido && Array.isArray(apuestasArray)) {
-                const resultado = resultados[partidoId];
-                if (resultado) {
-                    for (const apuesta of apuestasArray) {
-                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                            puntos += reglas.puntosExacto;
-                        }
-                        else if (
-                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                        ) {
-                            puntos += reglas.puntosGanador;
-                        }
+        let exactos = 0;
+        let ganadores = 0;
+        const apuestas = grupo.apuestas?.[participante] || {};
+
+        for (const partido of partidosDeFecha) {
+            const partidoId = String(partido.id);
+            const resultado = resultados[partidoId];
+            if (!resultado) continue;
+
+            const apuestasDelPartido = apuestas[partidoId];
+            if (!Array.isArray(apuestasDelPartido)) continue;
+
+            for (const apuesta of apuestasDelPartido) {
+                // Exacto
+                if (apuesta.local === resultado.local && 
+                    apuesta.visitante === resultado.visitante) {
+                    puntos += reglas.puntosExacto;
+                    exactos++;
+                }
+                // Ganador/empate correcto
+                else if (
+                    (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                    (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                    (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                ) {
+                    // Distinguir empate de ganador si hay puntosEmpate definido
+                    const esEmpate = apuesta.local === apuesta.visitante;
+                    if (esEmpate && reglas.puntosEmpate !== undefined) {
+                        puntos += reglas.puntosEmpate;
+                    } else {
+                        puntos += reglas.puntosGanador;
                     }
+                    ganadores++;
                 }
             }
         }
-        
+
         ranking.push({
             nombre: participante,
-            puntos: puntos,
+            puntos,
+            exactos,
+            ganadores,
             telefono: grupo.participantesInfo?.[participante]?.telefono || '',
             fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
         });
     }
-    
+
     ranking.sort((a, b) => b.puntos - a.puntos);
-    
+
     return ranking.map((item, index) => ({
         ...item,
         posicion: index + 1
     }));
 }
 
-function getPartidosPorFecha(fecha) {
-    if (typeof window.todosLosPartidos !== 'undefined') {
-        return window.todosLosPartidos.filter(p => p.fecha === fecha);
-    }
-    return [];
-}
 
 function mostrarPodio(ranking, cantidadGanadores) {
     const container = document.getElementById('podium-container');
