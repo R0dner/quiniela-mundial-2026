@@ -23,8 +23,6 @@ import {
     getApuestasDePartido,
     getLimiteApuestasParticipante,
     getReglasDelGrupo,
-    obtenerGrupoGeneral,
-    unirseAlGrupoGeneral,
     getPremiosDelGrupo
 } from './groups.js';
 
@@ -264,7 +262,6 @@ window.eliminarApuestaHandler = async function(partidoId, apuestaId, btnElement)
 // ============ INICIALIZACIÓN ============
 async function init() {
     console.log('🚀 Iniciando aplicación...');
-    await obtenerGrupoGeneral();
     await cargarListaGrupos();
     configurarEventListeners();
     await verificarSesionGuardada();
@@ -290,41 +287,60 @@ async function verificarSesionGuardada() {
 }
 
 // ============ GRUPOS ============
+// REEMPLAZAR toda la función por esta:
 async function cargarListaGrupos() {
     console.log('📋 Cargando lista de grupos...');
     const grupos = await getGrupos();
     const gruposKeys = Object.keys(grupos);
-    
-    console.log('📊 Grupos encontrados:', gruposKeys);
-    
+
     if (gruposKeys.length === 0) {
         gruposLista.innerHTML = '<div class="loading">⚠️ No hay grupos disponibles. Contactá al administrador.</div>';
         return;
     }
-    
-    let html = '';
-    for (const [id, grupo] of Object.entries(grupos)) {
-        if (id === 'general') continue;
-        
-        html += `
-            <div class="grupo-card-selector" data-id="${id}" data-nombre="${grupo.nombre}">
-                <div class="grupo-nombre">🏆 ${grupo.nombre}</div>
-                <div class="grupo-descripcion">${grupo.descripcion || 'Participa en este grupo'}</div>
-                <div class="grupo-descripcion" style="font-size:0.7rem; margin-top:8px;">👥 ${grupo.participantes.length} participantes</div>
+
+    // Ocultar el banner del grupo general (ya no existe)
+    const banner = document.getElementById('banner-grupo-general');
+    if (banner) banner.style.display = 'none';
+
+    // Buscar el grupo principal (familia o el primero que exista)
+    const GRUPO_PRINCIPAL_ID = 'familia'; // ← ID de tu grupo FAMPER'S
+
+    const grupoPrincipal = grupos[GRUPO_PRINCIPAL_ID];
+
+    if (!grupoPrincipal) {
+        gruposLista.innerHTML = '<div class="loading">⚠️ No hay grupos disponibles.</div>';
+        return;
+    }
+
+    // Mostrar SOLO el grupo principal con estilo de banner especial
+    const seleccionDiv = document.getElementById('seleccion-grupos');
+    if (seleccionDiv) {
+        seleccionDiv.innerHTML = `
+            <div id="banner-grupo-principal" 
+                 class="banner-grupo-general" 
+                 style="cursor:pointer; margin-bottom: 20px;"
+                 onclick="window._handleGrupoPrincipal()">
+                <div class="banner-content">
+                    <div class="banner-icon">🏆</div>
+                    <div class="banner-text">
+                        <h3>${grupoPrincipal.nombre}</h3>
+                        <p>${grupoPrincipal.descripcion || 'Premios más altos • Puntos extra • Participación especial'}</p>
+                        <p style="font-size:0.8rem; margin-top:6px; color:rgba(255,255,255,0.5);">
+                            👥 ${grupoPrincipal.participantes.length} participantes registrados
+                        </p>
+                    </div>
+                    <button class="btn-unirse-general" onclick="event.stopPropagation(); window._handleGrupoPrincipal()">
+                        🎯 Ingresar al Grupo
+                    </button>
+                </div>
             </div>
         `;
     }
-    gruposLista.innerHTML = html;
-    
-    mostrarBannerGrupoGeneral();
-    
-    document.querySelectorAll('.grupo-card-selector').forEach(card => {
-        card.addEventListener('click', () => {
-            const grupoId = card.dataset.id;
-            const grupoNombre = card.dataset.nombre;
-            handleGrupoSeleccionado(grupoId, grupoNombre);
-        });
-    });
+
+    // Handler global para el grupo principal
+    window._handleGrupoPrincipal = () => {
+        handleGrupoSeleccionado(GRUPO_PRINCIPAL_ID, grupoPrincipal.nombre);
+    };
 }
 
 async function mostrarBannerGrupoGeneral() {
@@ -876,7 +892,7 @@ function cambiarDeGrupo() {
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
-    cargarListaGrupos();
+    cargarListaGrupos(); // recarga el banner principal
     mostrarNotificacion('🔄 Has salido del grupo', 'info');
 }
 

@@ -276,29 +276,36 @@ export async function agregarApuestaEnGrupo(grupoId, participante, partidoId, ap
 }
 
 export async function getApuestasMultiplesDeParticipante(grupoId, participante) {
-    // FORZAR RECARGA ABSOLUTA desde Firebase - SIN CACHÉ
-    try {
-        const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
-        const grupo = gruposFirebase[grupoId];
-        
-        if (!grupo || !grupo.apuestas || !grupo.apuestas[participante]) {
-            console.log(`📭 No hay apuestas para ${participante} en ${grupoId}`);
-            return {};
+    const grupo = await getGrupo(grupoId);
+    if (!grupo || !grupo.apuestas || !grupo.apuestas[participante]) return {};
+    
+    const apuestasBrutas = grupo.apuestas[participante];
+    const apuestasLimpias = {};
+    
+    for (const [partidoId, valor] of Object.entries(apuestasBrutas)) {
+        // Firebase a veces convierte arrays a objetos {0: {...}, 1: {...}}
+        if (Array.isArray(valor)) {
+            apuestasLimpias[partidoId] = valor;
+        } else if (typeof valor === 'object' && valor !== null) {
+            // Convertir objeto de Firebase a array
+            apuestasLimpias[partidoId] = Object.values(valor);
         }
-        
-        console.log(`📊 Apuestas encontradas para ${participante}:`, Object.keys(grupo.apuestas[participante]).length, 'partidos');
-        return grupo.apuestas[participante];
-        
-    } catch (error) {
-        console.error('Error cargando apuestas:', error);
-        return {};
     }
+    
+    return apuestasLimpias;
 }
 
 export async function getApuestasDePartido(grupoId, participante, partidoId) {
-    const grupo = await getGrupo(grupoId, true);
+    const grupo = await getGrupo(grupoId);
     if (!grupo || !grupo.apuestas || !grupo.apuestas[participante]) return [];
-    return grupo.apuestas[participante][partidoId] || [];
+    
+    const valor = grupo.apuestas[participante][partidoId];
+    if (!valor) return [];
+    
+    // Firebase puede devolver objeto en lugar de array
+    if (Array.isArray(valor)) return valor;
+    if (typeof valor === 'object') return Object.values(valor);
+    return [];
 }
 
 export async function eliminarApuesta(grupoId, participante, partidoId, apuestaId) {
