@@ -848,9 +848,9 @@ setTimeout(() => {
     }
 }, 100);
 
-// ============ LIMPIAR PRONÓSTICOS DUPLICADOS ============
+// ============ LIMPIAR PRONÓSTICOS DUPLICADOS (VERSIÓN MEJORADA) ============
 window.limpiarPronosticosDuplicados = async (grupoId, participanteNombre) => {
-    if (!confirm(`⚠️ ¿Limpiar pronósticos duplicados de ${participanteNombre}?`)) return;
+    if (!confirm(`⚠️ ¿Limpiar TODOS los pronósticos duplicados de ${participanteNombre}? Se mantendrá SOLO UN pronóstico por partido.`)) return;
     
     try {
         const grupos = await getGrupos();
@@ -862,31 +862,49 @@ window.limpiarPronosticosDuplicados = async (grupoId, participanteNombre) => {
         }
         
         const pronosticos = grupo.apuestas[participanteNombre];
-        const pronosticosUnicos = {};
+        const pronosticosLimpios = {};
         let eliminados = 0;
+        let partidosConDuplicados = [];
         
-        // Mantener solo el último pronóstico de cada partido
+        // Mostrar qué pronósticos existían antes
+        console.log('Pronósticos ANTES:', pronosticos);
+        
+        // Para cada partido, mantener SOLO el primer pronóstico (o el más reciente)
         for (const [partidoId, apuesta] of Object.entries(pronosticos)) {
-            const key = `${partidoId}_${apuesta.local}_${apuesta.visitante}`;
-            if (!pronosticosUnicos[partidoId]) {
-                pronosticosUnicos[partidoId] = apuesta;
+            if (!pronosticosLimpios[partidoId]) {
+                // Si no tenemos ningún pronóstico para este partido, lo guardamos
+                pronosticosLimpios[partidoId] = apuesta;
             } else {
+                // Ya existe un pronóstico para este partido, este es duplicado
                 eliminados++;
-                console.log(`Eliminando duplicado para partido ${partidoId}`);
+                if (!partidosConDuplicados.includes(partidoId)) {
+                    partidosConDuplicados.push(partidoId);
+                }
+                console.log(`Eliminando duplicado para partido ${partidoId}: ${apuesta.local}-${apuesta.visitante}`);
             }
         }
         
-        grupo.apuestas[participanteNombre] = pronosticosUnicos;
+        if (eliminados === 0) {
+            mostrarMensaje(`✅ ${participanteNombre} no tiene pronósticos duplicados`, 'success');
+            return;
+        }
+        
+        // Reemplazar con los pronósticos limpios
+        grupo.apuestas[participanteNombre] = pronosticosLimpios;
         await guardarGrupos(grupos);
         
-        mostrarMensaje(`✅ Eliminados ${eliminados} pronósticos duplicados de ${participanteNombre}`, 'success');
+        mostrarMensaje(`✅ Eliminados ${eliminados} pronóstico(s) duplicado(s) de ${participanteNombre} (${partidosConDuplicados.length} partido(s) afectados)`, 'success');
         
-        // Recargar el modal
+        // Recargar el modal para mostrar los cambios
         await cargarPronosticosParticipante(grupoId, participanteNombre);
         await cargarParticipantesDelGrupoEnPanel(grupoId);
         actualizarEstadisticas();
         
+        const nuevosPronosticos = Object.keys(pronosticosLimpios).length;
+        mostrarMensaje(`📊 ${participanteNombre} ahora tiene ${nuevosPronosticos} pronóstico(s) único(s)`, 'info');
+        
     } catch (error) {
+        console.error('Error al limpiar:', error);
         mostrarMensaje('Error al limpiar: ' + error.message, 'error');
     }
 };
