@@ -296,11 +296,22 @@ export async function calcularPuntosMultiples(grupoId, participante) {
     for (const [partidoId, apuestas] of Object.entries(apuestasPorPartido)) {
         const resultado = resultados[partidoId];
         if (resultado && Array.isArray(apuestas)) {
+            
+            // ✅ DEDUPLICAR antes de calcular: una sola apuesta por marcador
+            const unicas = [];
+            const claves = new Set();
             for (const apuesta of apuestas) {
+                const clave = `${apuesta.local}-${apuesta.visitante}`;
+                if (!claves.has(clave)) {
+                    claves.add(clave);
+                    unicas.push(apuesta);
+                }
+            }
+            
+            for (const apuesta of unicas) {
                 if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
                     puntos += reglas.puntosExacto;
-                }
-                else if (
+                } else if (
                     (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
                     (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
                     (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
@@ -333,6 +344,63 @@ export async function getRankingDelGrupo(grupoId) {
         ...item,
         posicion: index + 1
     }));
+}
+
+async function getRankingDelGrupoPorDia(grupoId, fecha) {
+    const grupo = await getGrupo(grupoId);
+    if (!grupo) return [];
+    
+    const partidosDeFecha = getPartidosPorFecha(fecha);
+    
+    const ranking = [];
+    for (const participante of grupo.participantes) {
+        let puntos = 0;
+        const apuestas = grupo.apuestas[participante] || {};
+        const resultados = grupo.resultados || {};
+        const reglas = grupo.reglas;
+        
+        for (const [partidoId, apuestasArray] of Object.entries(apuestas)) {
+            const partido = partidosDeFecha.find(p => p.id === parseInt(partidoId));
+            if (partido && Array.isArray(apuestasArray)) {
+                const resultado = resultados[partidoId];
+                if (resultado) {
+                    
+                    // ✅ DEDUPLICAR antes de calcular
+                    const unicas = [];
+                    const claves = new Set();
+                    for (const apuesta of apuestasArray) {
+                        const clave = `${apuesta.local}-${apuesta.visitante}`;
+                        if (!claves.has(clave)) {
+                            claves.add(clave);
+                            unicas.push(apuesta);
+                        }
+                    }
+                    
+                    for (const apuesta of unicas) {
+                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                            puntos += reglas.puntosExacto;
+                        } else if (
+                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                        ) {
+                            puntos += reglas.puntosGanador;
+                        }
+                    }
+                }
+            }
+        }
+        
+        ranking.push({
+            nombre: participante,
+            puntos,
+            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
+            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
+        });
+    }
+    
+    ranking.sort((a, b) => b.puntos - a.puntos);
+    return ranking.map((item, index) => ({ ...item, posicion: index + 1 }));
 }
 
 // ============ REGLAS Y PREMIOS ============
