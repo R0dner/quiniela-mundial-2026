@@ -317,6 +317,15 @@
         </div>
     </div>
 
+    <!-- Modal historial de pronósticos -->
+    <div id="modal-historial-ranking" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; overflow-y:auto; padding:20px;">
+        <div style="max-width:700px; margin:0 auto; background:#1a2744; border-radius:20px; padding:25px; position:relative;">
+            <button onclick="document.getElementById('modal-historial-ranking').style.display='none'"
+                style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.1); border:none; color:white; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1.1rem;">✕</button>
+            <div id="modal-historial-contenido"></div>
+        </div>
+    </div>
+
     <script type="module" src="src/ranking.js"></script>
 </body>
 </html>

@@ -4,7 +4,9 @@ import {
     getRankingDelGrupo,
     getRankingDelGrupoPorDia,   
     getReglasDelGrupo,
-    getPremiosDelGrupo
+    getPremiosDelGrupo,
+    getApuestasMultiplesDeParticipante, 
+    getResultadosDelGrupo  
 } from './groups.js';
 import { getDiasCalendario, formatearFecha } from './data.js';
 
@@ -168,14 +170,21 @@ function mostrarPodio(ranking, cantidadGanadores) {
         const medalla = medallas[index] || `#${index + 1}`;
         const colorClass = colores[index] || 'podium-1';
         html += `
-            <div class="podium-item ${colorClass}">
-                <div class="podium-medal">${medalla}</div>
-                <div class="podium-name">${participante.nombre}</div>
-                <div class="podium-points">${participante.puntos} pts</div>
-                <div class="podium-stats">
-                    ${index === 0 ? '🏆 LÍDER' : index === 1 ? '🥈 SUBCAMPEÓN' : index === 2 ? '🥉 TERCER LUGAR' : `${index + 1}° LUGAR`}
+                <div class="podium-item ${colorClass}">
+                    <div class="podium-medal">${medalla}</div>
+                    <div class="podium-name">${participante.nombre}</div>
+                    <div class="podium-points">${participante.puntos} pts</div>
+                    <div class="podium-stats">
+                        ${index === 0 ? '🏆 LÍDER' : index === 1 ? '🥈 SUBCAMPEÓN' : '🥉 TERCER LUGAR'}
+                    </div>
+                    <!-- ← AGREGAR ESTE BOTÓN -->
+                    <button 
+                        class="btn-ver-historial-podio" 
+                        onclick="verHistorialParticipante('${participante.nombre}')"
+                        style="margin-top:8px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:5px 12px; border-radius:20px; cursor:pointer; font-size:0.75rem;">
+                        📋 Ver pronósticos
+                    </button>
                 </div>
-            </div>
         `;
     });
     
@@ -251,7 +260,15 @@ function mostrarRanking(ranking, tipo, fecha) {
                     return `
                         <tr class="${claseTop}">
                             <td><span class="posicion-medal">${medalla}${p.posicion}</span></td>
-                            <td><strong>${p.nombre}</strong></td>
+                            <td>
+                                <strong>${p.nombre}</strong>
+                                <!-- ← AGREGAR ESTE BOTÓN -->
+                                <button 
+                                    onclick="verHistorialParticipante('${p.nombre}')"
+                                    style="margin-left:8px; background:rgba(255,215,0,0.2); border:1px solid rgba(255,215,0,0.4); color:#ffd700; padding:3px 8px; border-radius:12px; cursor:pointer; font-size:0.7rem;">
+                                    📋
+                                </button>
+                            </td>
                             <td>${p.telefono || '—'}</td>
                             <td style="font-size:1.3rem; font-weight:800; color:#ffd700;">${p.puntos}</td>
                         </tr>
@@ -362,7 +379,136 @@ function mostrarToast(msg, tipo) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Función auxiliar para obtener un grupo (necesaria para getRankingDelGrupoPorDia)
+window.verHistorialParticipante = async function(nombreParticipante) {
+    const modal = document.getElementById('modal-historial-ranking');
+    const contenido = document.getElementById('modal-historial-contenido');
+    
+    if (!modal || !contenido || !currentGrupoId) return;
+    
+    contenido.innerHTML = '<div style="text-align:center; padding:40px; color:white;">⏳ Cargando pronósticos...</div>';
+    modal.style.display = 'block';
+    
+    // Obtener datos
+    const todasApuestas = await getApuestasMultiplesDeParticipante(currentGrupoId, nombreParticipante);
+    const resultados = await getResultadosDelGrupo(currentGrupoId);
+    const reglas = await getReglasDelGrupo(currentGrupoId);
+    
+    // Filtrar partidos según tipo de ranking
+    let partidosFiltrados = todosLosPartidos;
+    if (currentTipoRanking === 'diario' && currentFecha) {
+        partidosFiltrados = todosLosPartidos.filter(p => p.fecha === currentFecha);
+    }
+    
+    // Solo mostrar partidos que ya tienen resultado
+    const partidosConResultado = partidosFiltrados.filter(p => resultados[p.id]);
+    
+    if (partidosConResultado.length === 0) {
+        contenido.innerHTML = `
+            <h3 style="color:#ffd700; margin-bottom:20px;">📋 ${nombreParticipante}</h3>
+            <div style="text-align:center; padding:40px; color:rgba(255,255,255,0.6);">
+                📭 No hay partidos con resultado aún
+            </div>
+        `;
+        return;
+    }
+    
+    let totalPuntos = 0;
+    let html = `
+        <h3 style="color:#ffd700; margin-bottom:5px;">📋 Pronósticos de: ${nombreParticipante}</h3>
+        <p style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-bottom:20px;">
+            ${currentTipoRanking === 'diario' ? `📅 ${formatearFecha(currentFecha)}` : '🏆 Ranking Acumulado'}
+        </p>
+    `;
+    
+    for (const partido of partidosConResultado) {
+        const apuestasDelPartido = todasApuestas[partido.id] || [];
+        const resultado = resultados[partido.id];
+        
+        let puntosPartido = 0;
+        let apuestasHtml = '';
+        
+        if (apuestasDelPartido.length === 0) {
+            apuestasHtml = '<span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">Sin pronóstico</span>';
+        } else {
+            apuestasDelPartido.forEach(apuesta => {
+                let pts = 0;
+                let claseColor = '#f44336';
+                let icono = '❌';
+                
+                if (apuesta.esEmpate === true) {
+                    if (resultado.local === resultado.visitante) {
+                        pts = reglas.puntosEmpate || 2;
+                        claseColor = '#ffc107';
+                        icono = '🎯';
+                    }
+                    apuestasHtml += `
+                        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); border-radius:8px; padding:4px 10px; margin:3px;">
+                            <span style="font-size:0.85rem;">🤝 EMPATE</span>
+                            <span style="color:${claseColor}; font-weight:bold;">${icono} +${pts}pts</span>
+                        </div>
+                    `;
+                } else {
+                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                        pts = reglas.puntosExacto;
+                        claseColor = '#4caf50';
+                        icono = '✅';
+                    } else if (
+                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                    ) {
+                        pts = reglas.puntosGanador;
+                        claseColor = '#ffc107';
+                        icono = '🎯';
+                    }
+                    apuestasHtml += `
+                        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); border-radius:8px; padding:4px 10px; margin:3px;">
+                            <span style="font-size:0.85rem;">${apuesta.local} - ${apuesta.visitante}</span>
+                            <span style="color:${claseColor}; font-weight:bold;">${icono} +${pts}pts</span>
+                        </div>
+                    `;
+                }
+                puntosPartido += pts;
+            });
+        }
+        
+        totalPuntos += puntosPartido;
+        
+        html += `
+            <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:15px; margin-bottom:12px; border-left:3px solid rgba(255,215,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <span style="font-weight:bold; color:white;">⚽ ${partido.local} vs ${partido.visitante}</span>
+                        <span style="color:rgba(255,255,255,0.4); font-size:0.75rem; margin-left:8px;">🕐 ${partido.hora}</span>
+                    </div>
+                    <div style="background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.3); border-radius:8px; padding:3px 10px;">
+                        <span style="color:rgba(255,255,255,0.6); font-size:0.75rem;">Resultado: </span>
+                        <span style="color:#ffd700; font-weight:bold;">${resultado.local} - ${resultado.visitante}</span>
+                    </div>
+                </div>
+                <div style="margin-top:8px;">
+                    <span style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin-right:6px;">Pronósticos:</span>
+                    ${apuestasHtml}
+                </div>
+                ${puntosPartido > 0 ? `
+                    <div style="text-align:right; margin-top:8px; font-size:0.8rem; color:#4caf50;">
+                        +${puntosPartido} pts en este partido
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+    
+    // Resumen final
+    html += `
+        <div style="background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,100,0,0.1)); border-radius:16px; padding:15px; text-align:center; margin-top:15px; border:1px solid rgba(255,215,0,0.3);">
+            <div style="color:rgba(255,255,255,0.7); font-size:0.8rem;">TOTAL DE PUNTOS</div>
+            <div style="color:#ffd700; font-size:2.2rem; font-weight:bold;">${totalPuntos}</div>
+        </div>
+    `;
+    
+    contenido.innerHTML = html;
+};
 
 
 init();
