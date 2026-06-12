@@ -925,7 +925,19 @@ async function mostrarMisApuestas() {
                 let mensajeEstado = '';
                 
                 if (resultado) {
-                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                    if (apuesta.esEmpate === true) {
+                        if (resultado.local === resultado.visitante) {
+                            puntos = reglas.puntosGanador;
+                            estado = 'ganador';
+                            claseEstado = 'ganador';
+                            mensajeEstado = '¡EMPATE CORRECTO!';
+                        } else {
+                            puntos = 0;
+                            estado = 'error';
+                            claseEstado = 'error';
+                            mensajeEstado = 'EMPATE INCORRECTO';
+                        }
+                    } else if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
                         puntos = reglas.puntosExacto;
                         estado = 'exacto';
                         claseEstado = 'exacto';
@@ -1064,11 +1076,14 @@ async function mostrarMisApuestas() {
                 <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 15px 0; flex-wrap: wrap;">
                     <div style="text-align: center;">
                         <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">TU PRONÓSTICO</div>
-                        <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700; display: flex; align-items: center; gap: 15px;">
-                            <span>${ap.apuesta.local}</span>
-                            <span style="font-size: 1.2rem;">-</span>
-                            <span>${ap.apuesta.visitante}</span>
-                        </div>
+                        ${ap.apuesta.esEmpate === true
+                            ? `<div style="font-size: 1.4rem; font-weight: bold; color: #aaaaff; background: rgba(100,100,255,0.2); border: 1px solid rgba(150,150,255,0.4); border-radius: 12px; padding: 8px 20px; margin-top: 5px;">🤝 EMPATE (X)</div>`
+                            : `<div style="font-size: 1.8rem; font-weight: bold; color: #ffd700; display: flex; align-items: center; gap: 15px;">
+                                <span>${ap.apuesta.local}</span>
+                                <span style="font-size: 1.2rem;">-</span>
+                                <span>${ap.apuesta.visitante}</span>
+                               </div>`
+                        }
                     </div>
                     
                     ${ap.resultado ? `
