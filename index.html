@@ -15,7 +15,7 @@
 
         body {
             font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0f1f 0%, #0a1a2f 100%);
+            background: #0a0f1f;
             color: white;
             min-height: 100vh;
         }
@@ -31,10 +31,9 @@
             text-align: center;
             margin-bottom: 30px;
             padding: 20px;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.25);
-            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
         .logo {
@@ -49,10 +48,7 @@
 
         .worldcup-header h1 {
             font-size: 1.8rem;
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            color: #ffd700;
             margin-bottom: 8px;
         }
 
@@ -82,9 +78,8 @@
 
         .grupo-card-selector:hover {
             transform: translateY(-5px);
-            border-color: rgba(255, 215, 0, 0.6);
+            border-color: rgba(255, 215, 0, 0.5);
             background: rgba(10, 20, 40, 0.9);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
 
         .grupo-nombre {
@@ -101,7 +96,7 @@
 
         /* ============ BANNER GRUPO GENERAL ============ */
         .banner-grupo-general {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 100, 0, 0.08));
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 100, 0, 0.1));
             border: 2px solid #ffd700;
             border-radius: 20px;
             margin-bottom: 30px;
@@ -165,12 +160,11 @@
 
         /* ============ REGISTRO ============ */
         .registro-panel {
-            background: rgba(0, 0, 0, 0.45);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 16px;
             padding: 20px;
             margin-top: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.25);
-            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
         .form-registro {
@@ -199,13 +193,6 @@
             border: 1px solid rgba(255, 215, 0, 0.3);
             border-radius: 8px;
             color: white;
-            transition: all 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #ffd700;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
         }
 
         .btn-registrar {
@@ -217,7 +204,6 @@
             font-weight: bold;
             cursor: pointer;
             height: 42px;
-            transition: all 0.3s;
         }
 
         .btn-registrar:hover {
@@ -231,7 +217,6 @@
             padding: 10px;
             border-radius: 8px;
             margin-top: 10px;
-            border-left: 3px solid #4caf50;
         }
 
         .mensaje-error {
@@ -240,12 +225,11 @@
             padding: 10px;
             border-radius: 8px;
             margin-top: 10px;
-            border-left: 3px solid #f44336;
         }
 
         /* ============ PANEL DE APUESTAS ============ */
         .participante-info {
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 20px;
@@ -254,7 +238,6 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
-            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
         .cambiar-grupo-btn {
@@ -264,12 +247,10 @@
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
         .cambiar-grupo-btn:hover {
             background: rgba(255, 215, 0, 0.3);
-            transform: translateY(-2px);
         }
 
         .loading {
@@ -310,21 +291,20 @@
         .badge-pasado { background: rgba(244, 67, 54, 0.2); color: #f44336; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; display: inline-block; }
         .badge-futuro { background: rgba(255, 193, 7, 0.2); color: #ffc107; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; display: inline-block; }
 
-        /* ============ TARJETAS DE APUESTAS ============ */
+        /* Tarjetas de apuestas */
         .apuesta-card {
             background: rgba(10, 20, 40, 0.6);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.15);
             transition: all 0.3s ease;
         }
 
         .apuesta-card:hover {
-            border-color: rgba(255, 215, 0, 0.5);
+            border-color: rgba(255, 215, 0, 0.4);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
 
         .apuesta-card.bloqueado {
@@ -336,7 +316,7 @@
             text-align: center;
             margin-bottom: 15px;
             padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
         }
 
         .match-teams {
@@ -366,7 +346,7 @@
         .apuestas-lista {
             margin: 15px 0;
             padding: 10px;
-            background: rgba(0, 0, 0, 0.25);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
             min-height: 60px;
         }
@@ -386,8 +366,7 @@
             padding: 8px 15px;
             border-radius: 30px;
             font-size: 0.85rem;
-            border: 1px solid rgba(255, 215, 0, 0.25);
-            transition: all 0.2s;
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
         .apuesta-item.acierto-exacto {
@@ -432,11 +411,11 @@
             padding: 8px;
         }
 
-        /* Inputs de puntuación */
+        /* Formulario nueva apuesta */
         .nueva-apuesta-form {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid rgba(255, 215, 0, 0.2);
+            border-top: 1px solid rgba(255, 215, 0, 0.15);
         }
 
         .score-inputs {
@@ -465,12 +444,6 @@
             border-color: #ffd700;
             box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
             background: rgba(0, 0, 0, 0.8);
-        }
-
-        .score-local::placeholder, .score-visitante::placeholder {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 0.8rem;
-            font-weight: normal;
         }
 
         .vs {
@@ -504,12 +477,6 @@
         .btn-agregar-apuesta:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-agregar-apuesta:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
         }
 
         .limite-apuestas {
@@ -549,10 +516,88 @@
         .btn-secondary:hover {
             background: rgba(255, 215, 0, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.2);
         }
 
-        /* ============ MODALES ============ */
+        /* ============ QR DE PAGO ============ */
+        .qr-pago-container {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 100, 0, 0.05));
+            border-radius: 20px;
+            padding: 25px;
+            margin: 30px 0 20px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            text-align: center;
+        }
+
+        .qr-pago-container h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .qr-pago-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-imagen {
+            text-align: center;
+        }
+
+        .qr-imagen img {
+            width: 150px;
+            height: 150px;
+            border-radius: 16px;
+            border: 2px solid #ffd700;
+            background: white;
+            padding: 5px;
+        }
+
+        .qr-imagen p {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .qr-info {
+            text-align: left;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .qr-info p {
+            margin: 8px 0;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .qr-info strong {
+            color: #ffd700;
+        }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .btn-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+        }
+
+        /* Modal de verificación */
         .modal-verificacion {
             display: none;
             position: fixed;
@@ -574,7 +619,7 @@
             max-width: 450px;
             width: 90%;
             text-align: center;
-            border: 1px solid rgba(255, 215, 0, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.3);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             animation: modalFadeIn 0.3s ease;
         }
@@ -595,13 +640,9 @@
             margin-bottom: 8px;
         }
 
-        .grupo-info-modal {
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 12px;
-            padding: 10px;
-            margin-bottom: 15px;
+        .modal-verificacion-header p {
+            color: rgba(255, 255, 255, 0.7);
             font-size: 0.9rem;
-            color: #ffd700;
         }
 
         .modal-verificacion-body input {
@@ -614,6 +655,15 @@
             font-size: 1rem;
             text-align: center;
             margin: 15px 0;
+        }
+
+        .grupo-info-modal {
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #ffd700;
         }
 
         .modal-buttons {
@@ -640,6 +690,7 @@
             color: #ffd700;
             padding: 12px 20px;
             border-radius: 40px;
+            font-weight: bold;
             cursor: pointer;
             flex: 1;
         }
@@ -654,7 +705,162 @@
             flex: 1;
         }
 
-        /* Modal de apuestas detallado */
+        .mensaje-error-modal {
+            background: rgba(244, 67, 54, 0.2);
+            color: #ff8888;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        /* Modal General */
+        .modal-general {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-general-content {
+            background: linear-gradient(135deg, #1a2a3a, #0f1a2a);
+            border-radius: 24px;
+            padding: 35px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .modal-general-header .modal-icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .modal-general-header h3 {
+            color: #ffd700;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-general-benefits {
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .modal-general-benefits h4 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .benefit-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 12px 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 215, 0, 0.15);
+        }
+
+        .benefit-icon {
+            font-size: 1.8rem;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .benefit-text {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .benefit-value {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #ffd700;
+            line-height: 1.2;
+        }
+
+        .benefit-desc {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .benefit-compare {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+
+        .modal-general-body input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-general-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-confirmar-general {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #0a1e3c;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-cancelar-general {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 40px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        /* Modal apuestas */
         .modal {
             display: none;
             position: fixed;
@@ -663,25 +869,19 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.9);
         }
 
         .modal-content {
-            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
-            margin: 5% auto;
-            padding: 25px;
+            background: #1a1a2e;
+            margin: 10% auto;
+            padding: 20px;
             width: 90%;
-            max-width: 650px;
-            border-radius: 20px;
+            max-width: 600px;
+            border-radius: 16px;
             border: 1px solid rgba(255, 215, 0, 0.3);
-            max-height: 85vh;
+            max-height: 80%;
             overflow-y: auto;
-        }
-
-        .modal-content h2, .modal-content h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
         }
 
         .modal-close {
@@ -691,88 +891,25 @@
             color: #ffd700;
         }
 
-        /* Tarjetas de estadísticas en el modal */
         .apuesta-resumen {
             background: rgba(0, 0, 0, 0.3);
-            padding: 12px 15px;
+            padding: 10px;
             margin: 10px 0;
-            border-radius: 12px;
-            border-left: 3px solid #ffd700;
+            border-radius: 8px;
         }
 
         .total-puntos {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 100, 0, 0.1));
-            border-radius: 12px;
+            background: rgba(255, 215, 0, 0.2);
             padding: 15px;
+            border-radius: 12px;
             text-align: center;
             font-size: 1.2rem;
             font-weight: bold;
             margin-top: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            color: #ffd700;
         }
 
-        /* QR de pago */
-        .qr-pago-container {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 100, 0, 0.05));
-            border-radius: 20px;
-            padding: 25px;
-            margin: 30px 0 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            text-align: center;
-        }
-
-        .qr-pago-container h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
-        }
-
-        .qr-pago-content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 25px;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .qr-imagen img {
-            width: 150px;
-            height: 150px;
-            border-radius: 16px;
-            border: 2px solid #ffd700;
-            background: white;
-            padding: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .qr-imagen img:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-
-        .btn-whatsapp {
-            background: linear-gradient(135deg, #25D366, #128C7E);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1rem;
-        }
-
-        .btn-whatsapp:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
-        }
-
-        /* Modal para agrandar QR */
-        .modal-qr {
+        /* Popup de Reglas */
+        .popup-rules {
             display: none;
             position: fixed;
             top: 0;
@@ -781,44 +918,195 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(8px);
-            z-index: 20003;
+            z-index: 20000;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            animation: fadeIn 0.3s ease;
         }
 
-        .modal-qr-content {
-            text-align: center;
-            animation: zoomIn 0.3s ease;
-        }
-
-        @keyframes zoomIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .modal-qr-content img {
-            width: 80%;
-            max-width: 400px;
+        .popup-rules-content {
+            background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
             border-radius: 24px;
-            border: 3px solid #ffd700;
-            background: white;
-            padding: 10px;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            padding: 30px;
+            max-width: 550px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
 
-        .modal-qr-close {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            font-size: 40px;
+        .popup-rules-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .popup-rules-header .rules-icon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        .popup-rules-header h2 {
             color: #ffd700;
-            cursor: pointer;
-            transition: transform 0.2s;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
         }
 
-        .modal-qr-close:hover {
-            transform: scale(1.1);
+        .popup-rules-header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .popup-rules-body {
+            margin-bottom: 25px;
+        }
+
+        .rules-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .rules-section h3 {
+            color: #ffd700;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rules-section ul {
+            list-style: none;
+            padding-left: 5px;
+        }
+
+        .rules-section li {
+            padding: 8px 0;
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .rules-section li:last-child {
+            border-bottom: none;
+        }
+
+        .rules-section li::before {
+            content: "⚽";
+            color: #ffd700;
+            font-size: 0.9rem;
+        }
+
+        .rules-highlight {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 100, 0, 0.08));
+            border-left: 3px solid #ffd700;
+        }
+
+        .rules-highlight li::before {
+            content: "🏆";
+        }
+
+        .puntos-destacados {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .punto-card {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .punto-card .punto-valor {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffd700;
+            display: block;
+        }
+
+        .punto-card .punto-desc {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .popup-rules-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .checkbox-no-mostrar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-no-mostrar input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #ffd700;
+        }
+
+        .checkbox-no-mostrar span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .btn-cerrar-rules {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #0a1e3c;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cerrar-rules:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Scrollbar personalizado */
+        .popup-rules-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .popup-rules-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .popup-rules-content::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 3px;
         }
 
         /* Admin links */
@@ -833,15 +1121,38 @@
             color: #ffd700;
             text-decoration: none;
             margin: 0 15px;
-            transition: all 0.3s;
         }
 
         .admin-links a:hover {
             text-decoration: underline;
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
         }
 
-        /* Notificaciones */
+        .mensaje {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .mensaje.success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .mensaje.error {
+            background: #f44336;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Notificaciones centrales */
         .notificacion-central {
             position: fixed;
             top: 50%;
@@ -856,7 +1167,7 @@
             z-index: 20001;
             opacity: 0;
             transition: all 0.3s ease;
-            border: 2px solid rgba(255, 215, 0, 0.5);
+            border: 2px solid rgba(255, 215, 0, 0.3);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             pointer-events: none;
         }
@@ -868,10 +1179,12 @@
 
         .notificacion-central.success {
             border-color: #4caf50;
+            background: linear-gradient(135deg, #0a2a1a, #0a0f1f);
         }
 
         .notificacion-central.error {
             border-color: #f44336;
+            background: linear-gradient(135deg, #2a1a1a, #0a0f1f);
         }
 
         .notificacion-contenido {
@@ -881,42 +1194,167 @@
             gap: 12px;
         }
 
-        .mensaje {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
+        .notificacion-icono {
+            font-size: 1.8rem;
         }
 
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .notificacion-mensaje {
+            font-size: 1rem;
+            color: white;
+            font-weight: 500;
         }
 
         /* ============ RESPONSIVE ============ */
         @media (max-width: 768px) {
-            .container { padding: 15px; }
-            .worldcup-header h1 { font-size: 1.4rem; }
-            .banner-content { flex-direction: column; text-align: center; }
-            .apuesta-card { padding: 15px; }
-            .match-teams { font-size: 0.95rem; flex-direction: column; gap: 8px; }
-            .score-local, .score-visitante { width: 70px; padding: 10px 5px; font-size: 1rem; }
-            .vs { width: 35px; height: 35px; font-size: 1rem; }
-            .btn-agregar-apuesta { padding: 10px 18px; font-size: 0.85rem; }
-            .modal-content { margin: 10% auto; padding: 15px; width: 95%; }
+            .container {
+                padding: 15px;
+            }
+
+            .worldcup-header h1 {
+                font-size: 1.4rem;
+            }
+
+            .banner-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .modal-general-content {
+                padding: 25px;
+            }
+
+            .modal-general-header h3 {
+                font-size: 1.4rem;
+            }
+
+            .apuesta-card {
+                padding: 15px;
+            }
+
+            .match-teams {
+                font-size: 0.95rem;
+                gap: 8px;
+                flex-direction: column;
+            }
+
+            .score-local, .score-visitante {
+                width: 70px;
+                padding: 10px 5px;
+                font-size: 1rem;
+            }
+
+            .vs {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+
+            .btn-agregar-apuesta {
+                padding: 10px 18px;
+                font-size: 0.85rem;
+            }
+
+            .apuesta-item {
+                font-size: 0.75rem;
+                padding: 5px 12px;
+            }
+
+            .popup-rules-content {
+                padding: 20px;
+            }
+
+            .qr-pago-content {
+                flex-direction: column;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
         }
 
         @media (max-width: 550px) {
-            .score-inputs { flex-wrap: wrap; justify-content: center; }
-            .score-local, .score-visitante { width: 65px; padding: 8px 4px; font-size: 0.9rem; }
-            .vs { order: 1; }
-            .score-local { order: 0; }
-            .score-visitante { order: 2; }
-            .btn-agregar-apuesta { order: 3; width: 100%; justify-content: center; margin-top: 8px; }
-            .limite-apuestas { order: 4; width: 100%; text-align: center; }
+            .score-inputs {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .score-local, .score-visitante {
+                width: 65px;
+                padding: 8px 4px;
+                font-size: 0.9rem;
+            }
+
+            .vs {
+                order: 1;
+            }
+
+            .score-local {
+                order: 0;
+            }
+
+            .score-visitante {
+                order: 2;
+            }
+
+            .btn-agregar-apuesta {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                margin-top: 8px;
+            }
+
+            .limite-apuestas {
+                order: 4;
+                width: 100%;
+                text-align: center;
+            }
+
+            .puntos-destacados {
+                flex-direction: column;
+            }
+            
+            .benefit-item {
+                padding: 10px 12px;
+            }
+            
+            .benefit-icon {
+                font-size: 1.5rem;
+                min-width: 40px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .score-local, .score-visitante {
+                width: 55px;
+                padding: 8px 3px;
+                font-size: 0.85rem;
+            }
+
+            .vs {
+                width: 30px;
+                height: 30px;
+                font-size: 0.9rem;
+            }
+
+            .match-teams {
+                font-size: 0.85rem;
+            }
+            
+            .benefit-item {
+                flex-direction: column;
+                text-align: center;
+                padding: 12px;
+            }
+            
+            .benefit-icon {
+                font-size: 1.8rem;
+                min-width: auto;
+            }
+            
+            .benefit-text {
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -924,7 +1362,10 @@
     <div class="container">
         <header class="worldcup-header">
             <div class="logo">
-                <img src="/assets/trophy.png" alt="Copa Mundial FIFA" class="copa-oficial" onerror="this.outerHTML='<span style=\'font-size:32px;\'>🏆</span>'">
+                <img src="/assets/trophy.png" 
+                     alt="Copa Mundial FIFA"
+                     class="copa-oficial"
+                     onerror="this.outerHTML='<span style=\'font-size:32px;\'>🏆</span>'">
             </div>
             <h1>🇲🇽🇺🇸🇨🇦 Quiniela Mundial 2026</h1>
             <p class="subtitle">Seleccioná un grupo, registrate y comenzá a apostar</p>
@@ -945,15 +1386,23 @@
         <!-- Lista de grupos -->
         <div id="seleccion-grupos">
             <h2>🏆 Grupos Disponibles</h2>
-            <div id="grupos-lista" class="grupos-lista"><div class="loading">Cargando grupos...</div></div>
+            <div id="grupos-lista" class="grupos-lista">
+                <div class="loading">Cargando grupos...</div>
+            </div>
         </div>
 
         <!-- Panel de registro -->
         <div id="registro-panel" class="registro-panel" style="display: none;">
             <h3 id="grupo-seleccionado-nombre"></h3>
             <div class="form-registro">
-                <div class="form-group"><label>👤 Tu nombre</label><input type="text" id="registro-nombre" placeholder="Ej: Juan Pérez"></div>
-                <div class="form-group"><label>📞 Teléfono (opcional)</label><input type="tel" id="registro-telefono" placeholder="Número de contacto"></div>
+                <div class="form-group">
+                    <label>👤 Tu nombre</label>
+                    <input type="text" id="registro-nombre" placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label>📞 Teléfono (opcional)</label>
+                    <input type="tel" id="registro-telefono" placeholder="Número de contacto">
+                </div>
                 <button id="registrar-btn" class="btn-registrar">📝 Registrarse y Apostar</button>
             </div>
             <div id="registro-mensaje"></div>
@@ -962,60 +1411,218 @@
         <!-- Panel de apuestas -->
         <div id="apuestas-panel" style="display: none;">
             <div class="participante-info">
-                <div><strong>👤 Participante:</strong> <span id="participante-nombre-display"></span> <span id="participante-grupo-display" style="margin-left: 15px;"></span></div>
+                <div>
+                    <strong>👤 Participante:</strong> <span id="participante-nombre-display"></span>
+                    <span id="participante-grupo-display" style="margin-left: 15px;"></span>
+                </div>
                 <button id="cambiar-grupo-btn" class="cambiar-grupo-btn">🔄 Cambiar de Grupo</button>
             </div>
             
             <div class="calendario-container">
                 <label>📅 Seleccioná el día:</label>
-                <select id="dia-select" class="dia-select"><option value="">Cargando calendario...</option></select>
+                <select id="dia-select" class="dia-select">
+                    <option value="">Cargando calendario...</option>
+                </select>
                 <div id="estado-dia" class="estado-dia"></div>
             </div>
 
             <div id="apuestas-container" class="apuestas-grid"></div>
             
-            <!-- QR DE PAGO -->
+            <!-- QR DE PAGO - Aparece después de las apuestas -->
             <div id="qr-pago" class="qr-pago-container" style="display: none;">
                 <h3>💰 COMPLETÁ TU INSCRIPCIÓN</h3>
                 <div class="qr-pago-content">
-                    <div class="qr-imagen"><img id="qr-imagen-pequena" src="/assets/qr-pago.jpg" alt="QR para pago" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Transferencia%20Bancaria%20Quiniela%20Mundial%202026'"><p>📱 Haz clic para agrandar</p></div>
+                    <div class="qr-imagen">
+                        <img src="/assets/qr-pago.jpg" alt="QR para pago" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Transferencia%20Bancaria%20Quiniela%20Mundial%202026'">
+                        <p>Escanea el QR para pagar</p>
+                    </div>
                     <div class="qr-info">
                         <p><strong>📌 Monto por jornada:</strong> Bs. 5</p>
-                        <p><strong>📌 Banco:</strong> [Nombre del banco]</p>
-                        <p><strong>📌 Número de cuenta:</strong> [Tu número]</p>
-                        <p><strong>📌 CI/CUIT:</strong> [Tu documento]</p>
-                        <p><strong>📌 Referencia:</strong> Quiniela + Tu nombre</p>
-                        <button id="btn-enviar-comprobante" class="btn-whatsapp">📲 Enviar comprobante por WhatsApp</button>
+                        <p><strong>📌 Banco:</strong> BCP </p>
+                        <p><strong>📌 cuenta de banco:</strong> 201-51269181-3-32 </p>
+                        <p><strong>📌 CI/CUIT:</strong> 6861250 LP </p>
+                        <button id="btn-enviar-comprobante" class="btn-whatsapp">
+                            📲 Enviar comprobante por WhatsApp
+                        </button>
                     </div>
                 </div>
-                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 15px;">⭐ Una vez confirmado tu pago, tus apuestas serán válidas para el ranking</p>
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 15px;">
+                    ⭐ Una vez confirmado tu pago, tus apuestas serán válidas para el ranking
+                </p>
             </div>
             
-            <div class="actions"><button id="ver-mis-apuestas" class="btn-secondary">📋 Ver Mis Pronósticos</button></div>
+            <div class="actions">
+                <button id="ver-mis-apuestas" class="btn-secondary">📋 Ver Mis Pronósticos</button>
+            </div>
         </div>
 
         <div id="mensaje" class="mensaje"></div>
-        <div class="admin-links"><a href="home.html">🏠 Inicio</a> <a href="admin.html">👑 Panel Admin</a> <a href="ranking.html">🏆 Ranking</a></div>
+
+        <div class="admin-links">
+            <a href="home.html">🏠 Inicio</a>
+            <a href="admin.html">👑 Panel Admin</a>
+            <a href="ranking.html">🏆 Ranking</a>
+        </div>
     </div>
 
     <!-- Modal para ver apuestas -->
     <div id="modal-apuestas" class="modal">
-        <div class="modal-content"><span class="modal-close">&times;</span><h2>📋 Mis Pronósticos</h2><div id="modal-body"></div></div>
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>📋 Mis Pronósticos</h2>
+            <div id="modal-body"></div>
+        </div>
     </div>
 
     <!-- Modal de verificación de registro -->
     <div id="modal-verificacion" class="modal-verificacion">
         <div class="modal-verificacion-content">
-            <div class="modal-verificacion-header"><div class="modal-icon">🏆</div><h3 id="modal-grupo-nombre">Grupo</h3><p>¿Ya tienes una cuenta en este grupo?</p></div>
-            <div class="modal-verificacion-body"><div class="grupo-info-modal" id="modal-grupo-info"></div><input type="text" id="modal-nombre-input" placeholder="Ingresa tu nombre" autocomplete="off"><div id="modal-error-mensaje" class="mensaje-error-modal"></div></div>
-            <div class="modal-buttons"><button id="btn-verificar" class="btn-verificar">✅ Sí, ya estoy registrado</button><button id="btn-registrar-nuevo" class="btn-registrar-nuevo">📝 No, quiero registrarme</button><button id="btn-cancelar-modal" class="btn-cancelar">❌ Cancelar</button></div>
+            <div class="modal-verificacion-header">
+                <div class="modal-icon">🏆</div>
+                <h3 id="modal-grupo-nombre">Grupo</h3>
+                <p>¿Ya tienes una cuenta en este grupo?</p>
+            </div>
+            <div class="modal-verificacion-body">
+                <div class="grupo-info-modal" id="modal-grupo-info"></div>
+                <input type="text" id="modal-nombre-input" placeholder="Ingresa tu nombre" autocomplete="off">
+                <div id="modal-error-mensaje" class="mensaje-error-modal"></div>
+            </div>
+            <div class="modal-buttons">
+                <button id="btn-verificar" class="btn-verificar">✅ Sí, ya estoy registrado</button>
+                <button id="btn-registrar-nuevo" class="btn-registrar-nuevo">📝 No, quiero registrarme</button>
+                <button id="btn-cancelar-modal" class="btn-cancelar">❌ Cancelar</button>
+            </div>
         </div>
     </div>
 
-    <!-- Modal para agrandar QR -->
-    <div id="modal-qr" class="modal-qr">
-        <div class="modal-qr-close">&times;</div>
-        <div class="modal-qr-content"><img id="modal-qr-img" src="/assets/qr-pago.jpg" alt="QR para pago"><p>📱 Escanea el QR para realizar el pago</p></div>
+    <!-- Modal especial para unirse al Grupo General -->
+    <div id="modal-general" class="modal-general">
+        <div class="modal-general-content">
+            <div class="modal-general-header">
+                <div class="modal-icon">🏆</div>
+                <h3>GRUPO GENERAL</h3>
+                <p>POZO MAYOR - PREMIOS ESPECIALES</p>
+            </div>
+            <div class="modal-general-benefits">
+                <h4>✨ BENEFICIOS EXCLUSIVOS ✨</h4>
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🎯</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">5 PUNTOS</span>
+                            <span class="benefit-desc">por resultado exacto</span>
+                            <span class="benefit-compare">(vs 3 puntos normal)</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏅</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">2 PUNTOS</span>
+                            <span class="benefit-desc">por ganador correcto</span>
+                            <span class="benefit-compare">(vs 1 punto normal)</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🏆</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">COMPETENCIA GENERAL</span>
+                            <span class="benefit-desc">Con todos los participantes</span>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">⭐</div>
+                        <div class="benefit-text">
+                            <span class="benefit-value">RANKING ESPECIAL</span>
+                            <span class="benefit-desc">Premios mayores exclusivos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-general-body">
+                <input type="text" id="modal-general-nombre" placeholder="Tu nombre" autocomplete="off">
+                <input type="tel" id="modal-general-telefono" placeholder="Teléfono (opcional)">
+            </div>
+            <div class="modal-general-buttons">
+                <button id="btn-confirmar-general" class="btn-confirmar-general">🎉 UNIRME AHORA</button>
+                <button id="btn-cancelar-general" class="btn-cancelar-general">❌ AHORA NO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup de Reglas Generales -->
+    <div id="popup-rules" class="popup-rules">
+        <div class="popup-rules-content">
+            <div class="popup-rules-header">
+                <div class="rules-icon">📜⚽</div>
+                <h2>REGLAS DE LA QUINIELA</h2>
+                <p>Mundial 2026 - México • Estados Unidos • Canadá</p>
+            </div>
+            <div class="popup-rules-body">
+                <div class="rules-section">
+                    <h3>🎯 SISTEMA DE PUNTUACIÓN</h3>
+                    <div class="puntos-destacados">
+                        <div class="punto-card">
+                            <span class="punto-valor">3 PTS</span>
+                            <span class="punto-desc">Resultado EXACTO</span>
+                        </div>
+                        <div class="punto-card">
+                            <span class="punto-valor">1 PT</span>
+                            <span class="punto-desc">Ganador correcto</span>
+                        </div>
+                        <div class="punto-card">
+                            <span class="punto-valor">0 PTS</span>
+                            <span class="punto-desc">Resultado incorrecto</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rules-section">
+                    <h3>📊 GRUPO GENERAL - POZO MAYOR</h3>
+                    <ul class="rules-highlight">
+                        <li>🎯 5 PUNTOS por resultado exacto</li>
+                        <li>🏅 2 PUNTOS por ganador correcto</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>💰 SISTEMA DE PREMIOS Y POZOS</h3>
+                    <ul>
+                        <li>🎲 El pozo total se compone de las inscripciones de los participantes</li>
+                        <li>👑 El <strong>20% del pozo total</strong> es para el ORGANIZADOR</li>
+                        <li>🏆 El <strong>80% restante del pozo</strong> se reparte entre los GANADORES</li>
+                        <li>📅 Los premios se reparten al FINALIZAR CADA JORNADA de partidos</li>
+                        <li>⭐ Cada GRUPO tiene su propia configuración de ganadores</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>👥 MÚLTIPLES GRUPOS</h3>
+                    <ul>
+                        <li>Puedes participar en TODOS los grupos que quieras</li>
+                        <li>Cada grupo tiene su propio ranking y premios</li>
+                        <li>Tu puntuación es independiente por cada grupo</li>
+                        <li>Puedes cambiar de grupo cuando quieras</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>⏰ FECHAS Y APUESTAS</h3>
+                    <ul>
+                        <li>Solo se puede apostar el DÍA del partido</li>
+                        <li>Las apuestas se cierran a la HORA de inicio del partido</li>
+                        <li>Los partidos de días pasados quedan bloqueados</li>
+                        <li>Puedes hacer múltiples pronósticos por partido (según tu límite)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="popup-rules-footer">
+                <label class="checkbox-no-mostrar">
+                    <input type="checkbox" id="no-mostrar-rules">
+                    <span>No volver a mostrar</span>
+                </label>
+                <button id="cerrar-rules-btn" class="btn-cerrar-rules">¡ENTENDIDO! 🎉</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="src/main.js"></script>
