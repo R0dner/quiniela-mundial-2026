@@ -1,8 +1,7 @@
 // src/ranking.js - Ranking diario y acumulado por grupos (con Firebase)
 import { 
     getGrupos, 
-    getRankingDelGrupo,
-    getRankingDelGrupoPorDia,  // Importada desde groups.js
+    getRankingDelGrupo, 
     getReglasDelGrupo,
     getPremiosDelGrupo
 } from './groups.js';
@@ -145,6 +144,64 @@ async function actualizarRanking() {
     
     await mostrarPremios(currentGrupoId);
     mostrarRanking(ranking, currentTipoRanking, currentFecha);
+}
+
+async function getRankingDelGrupoPorDia(grupoId, fecha) {
+    const grupo = await getGrupo(grupoId);
+    if (!grupo) return [];
+    
+    // Obtener todos los partidos de esa fecha
+    const partidosDeFecha = getPartidosPorFecha(fecha);
+    
+    const ranking = [];
+    for (const participante of grupo.participantes) {
+        let puntos = 0;
+        const apuestas = grupo.apuestas[participante] || {};
+        const resultados = grupo.resultados || {};
+        const reglas = grupo.reglas;
+        
+        for (const [partidoId, apuestasArray] of Object.entries(apuestas)) {
+            const partido = partidosDeFecha.find(p => p.id === parseInt(partidoId));
+            if (partido && Array.isArray(apuestasArray)) {
+                const resultado = resultados[partidoId];
+                if (resultado) {
+                    for (const apuesta of apuestasArray) {
+                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                            puntos += reglas.puntosExacto;
+                        }
+                        else if (
+                            (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                            (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                            (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                        ) {
+                            puntos += reglas.puntosGanador;
+                        }
+                    }
+                }
+            }
+        }
+        
+        ranking.push({
+            nombre: participante,
+            puntos: puntos,
+            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
+            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
+        });
+    }
+    
+    ranking.sort((a, b) => b.puntos - a.puntos);
+    
+    return ranking.map((item, index) => ({
+        ...item,
+        posicion: index + 1
+    }));
+}
+
+function getPartidosPorFecha(fecha) {
+    if (typeof window.todosLosPartidos !== 'undefined') {
+        return window.todosLosPartidos.filter(p => p.fecha === fecha);
+    }
+    return [];
 }
 
 function mostrarPodio(ranking, cantidadGanadores) {
@@ -360,5 +417,14 @@ function mostrarToast(msg, tipo) {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
+
+// Función auxiliar para obtener un grupo (necesaria para getRankingDelGrupoPorDia)
+async function getGrupo(grupoId) {
+    const gruposCompletos = await getGrupos();
+    return gruposCompletos[grupoId];
+}
+
+// Hacer disponible globalmente
+window.getGrupo = getGrupo;
 
 init();
