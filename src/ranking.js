@@ -6,7 +6,7 @@ import {
     getReglasDelGrupo,
     getPremiosDelGrupo
 } from './groups.js';
-import { getDiasCalendario, formatearFecha, getPartidosPorFecha } from './data.js';
+import { getDiasCalendario, formatearFecha } from './data.js';
 
 let grupos = {};
 let currentGrupoId = '';
@@ -145,74 +145,6 @@ async function actualizarRanking() {
     
     await mostrarPremios(currentGrupoId);
     mostrarRanking(ranking, currentTipoRanking, currentFecha);
-}
-
-async function getRankingDelGrupoPorDia(grupoId, fecha) {
-    const grupo = await getGrupo(grupoId);
-    if (!grupo) return [];
-
-    // Usar la función importada de data.js en vez de window.todosLosPartidos
-    const partidosDeFecha = getPartidosPorFecha(fecha); // ← el fix principal
-
-    const reglas = grupo.reglas;
-    const resultados = grupo.resultados || {};
-    const ranking = [];
-
-    for (const participante of grupo.participantes) {
-        let puntos = 0;
-        let exactos = 0;
-        let ganadores = 0;
-        const apuestas = grupo.apuestas?.[participante] || {};
-
-        for (const partido of partidosDeFecha) {
-            const partidoId = String(partido.id);
-            const resultado = resultados[partidoId];
-            if (!resultado) continue;
-
-            const apuestasDelPartido = apuestas[partidoId];
-            if (!Array.isArray(apuestasDelPartido)) continue;
-
-            for (const apuesta of apuestasDelPartido) {
-                // Exacto
-                if (apuesta.local === resultado.local && 
-                    apuesta.visitante === resultado.visitante) {
-                    puntos += reglas.puntosExacto;
-                    exactos++;
-                }
-                // Ganador/empate correcto
-                else if (
-                    (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                    (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                    (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                ) {
-                    // Distinguir empate de ganador si hay puntosEmpate definido
-                    const esEmpate = apuesta.local === apuesta.visitante;
-                    if (esEmpate && reglas.puntosEmpate !== undefined) {
-                        puntos += reglas.puntosEmpate;
-                    } else {
-                        puntos += reglas.puntosGanador;
-                    }
-                    ganadores++;
-                }
-            }
-        }
-
-        ranking.push({
-            nombre: participante,
-            puntos,
-            exactos,
-            ganadores,
-            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
-            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
-        });
-    }
-
-    ranking.sort((a, b) => b.puntos - a.puntos);
-
-    return ranking.map((item, index) => ({
-        ...item,
-        posicion: index + 1
-    }));
 }
 
 
@@ -431,12 +363,6 @@ function mostrarToast(msg, tipo) {
 }
 
 // Función auxiliar para obtener un grupo (necesaria para getRankingDelGrupoPorDia)
-async function getGrupo(grupoId) {
-    const gruposCompletos = await getGrupos();
-    return gruposCompletos[grupoId];
-}
 
-// Hacer disponible globalmente
-window.getGrupo = getGrupo;
 
 init();
