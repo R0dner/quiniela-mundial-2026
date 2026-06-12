@@ -1356,6 +1356,71 @@
                 align-items: center;
             }
         }
+
+        /* ============ FIX MODAL MIS PRONÓSTICOS ============ */
+.modal-content {
+    background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
+    margin: 5% auto;
+    padding: 25px;
+    width: 90%;
+    max-width: 650px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+}
+
+.modal-content h2 {
+    color: #ffd700;
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #ffd700;
+}
+
+/* Scrollbar del modal */
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+.modal-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.4);
+    border-radius: 3px;
+}
+
+/* Fix modal general con scroll */
+.modal-general-content {
+    max-height: 92vh;
+    overflow-y: auto;
+}
+.modal-general-content::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-general-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.4);
+    border-radius: 3px;
+}
+
     </style>
 </head>
 <body>

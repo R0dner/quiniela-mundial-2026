@@ -187,26 +187,16 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
     const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
     
     if (apuestaId) {
-        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
-        localInput.value = '';
-        visitanteInput.value = '';
-        await cargarPartidos(currentFecha);
-    } else {
-        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
-        btnElement.disabled = false;
-        btnElement.textContent = textoOriginal;
-    }
-       if (apuestaId) {
-        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
-        localInput.value = '';
-        visitanteInput.value = '';
-        await cargarPartidos(currentFecha);
-        mostrarQR(); // <-- AGREGAR ESTA LÍNEA PARA MOSTRAR EL QR
-    } else {
-        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
-        btnElement.disabled = false;
-        btnElement.textContent = textoOriginal;
-    }
+            mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
+            localInput.value = '';
+            visitanteInput.value = '';
+            await cargarPartidos(currentFecha);
+            mostrarQR();
+        } else {
+            mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
+            btnElement.disabled = false;
+            btnElement.textContent = textoOriginal;
+        }
 };
 
 window.eliminarApuestaHandler = async function(partidoId, apuestaId, btnElement) {
