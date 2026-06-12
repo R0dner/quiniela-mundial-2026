@@ -8,7 +8,7 @@ import {
     getApuestasMultiplesDeParticipante, 
     getResultadosDelGrupo  
 } from './groups.js';
-import { getDiasCalendario, formatearFecha } from './data.js';
+import { getDiasCalendario, formatearFecha, todosLosPartidos } from './data.js';
 
 let grupos = {};
 let currentGrupoId = '';
