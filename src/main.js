@@ -128,14 +128,22 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
 // ============ MANEJADOR GLOBAL PARA AGREGAR APUESTAS ============
 
 let ultimoClick = 0;
-const TIEMPO_ESPERA = 1000;
+const TIEMPO_ESPERA = 1000; // 1 segundo de espera entre clicks
 
 window.agregarApuestaHandler = async function(partidoId, btnElement) {
+    // Evitar múltiples clicks rápidos
     const ahora = Date.now();
-    if (ahora - ultimoClick < TIEMPO_ESPERA) return;
+    if (ahora - ultimoClick < TIEMPO_ESPERA) {
+        console.log('⚠️ Click demasiado rápido, ignorando...');
+        return;
+    }
     ultimoClick = ahora;
     
-    if (btnElement.disabled) return;
+    // Evitar si el botón ya está deshabilitado
+    if (btnElement.disabled) {
+        console.log('⚠️ Botón ya deshabilitado, ignorando...');
+        return;
+    }
     
     const card = btnElement.closest('.apuesta-card');
     if (!card) return;
@@ -151,15 +159,29 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         return;
     }
     
+    if (local < 0 || local > 20 || visitante < 0 || visitante > 20) {
+        mostrarNotificacion('❌ Usá números entre 0 y 20', 'error');
+        return;
+    }
+    
     const limite = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
     const apuestasActuales = await getApuestasDePartido(currentGrupoId, currentParticipante, partidoId);
+    
+    // Verificar si ya existe el mismo marcador
+    const yaExiste = apuestasActuales.some(a => a.local === local && a.visitante === visitante);
+    if (yaExiste) {
+        mostrarNotificacion(`❌ Ya tienes el pronóstico ${local}-${visitante} para este partido`, 'error');
+        return;
+    }
     
     if (apuestasActuales.length >= limite) {
         mostrarNotificacion(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
         return;
     }
     
+    // Deshabilitar botón
     btnElement.disabled = true;
+    const textoOriginal = btnElement.textContent;
     btnElement.textContent = '⏳ Guardando...';
     
     const apuestaId = await agregarApuestaEnGrupo(currentGrupoId, currentParticipante, partidoId, { local, visitante });
@@ -169,11 +191,21 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         localInput.value = '';
         visitanteInput.value = '';
         await cargarPartidos(currentFecha);
-        mostrarQR();
     } else {
-        mostrarNotificacion('❌ Error al agregar pronóstico', 'error');
+        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
         btnElement.disabled = false;
-        btnElement.textContent = '➕ Agregar';
+        btnElement.textContent = textoOriginal;
+    }
+       if (apuestaId) {
+        mostrarNotificacion(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
+        localInput.value = '';
+        visitanteInput.value = '';
+        await cargarPartidos(currentFecha);
+        mostrarQR(); // <-- AGREGAR ESTA LÍNEA PARA MOSTRAR EL QR
+    } else {
+        mostrarNotificacion('❌ Error al agregar pronóstico o ya existe', 'error');
+        btnElement.disabled = false;
+        btnElement.textContent = textoOriginal;
     }
 };
 
@@ -204,7 +236,6 @@ async function init() {
     configurarEventListeners();
     await verificarSesionGuardada();
     mostrarPopupReglas();
-    configurarBotonWhatsApp();
 }
 
 async function verificarSesionGuardada() {
@@ -230,6 +261,8 @@ async function cargarListaGrupos() {
     console.log('📋 Cargando lista de grupos...');
     const grupos = await getGrupos();
     const gruposKeys = Object.keys(grupos);
+    
+    console.log('📊 Grupos encontrados:', gruposKeys);
     
     if (gruposKeys.length === 0) {
         gruposLista.innerHTML = '<div class="loading">⚠️ No hay grupos disponibles. Contactá al administrador.</div>';
@@ -278,18 +311,197 @@ async function mostrarBannerGrupoGeneral() {
         if (btnUnirse) {
             btnUnirse.onclick = (e) => {
                 e.stopPropagation();
-                handleGrupoSeleccionado('general', grupos['general'].nombre);
+                mostrarModalGrupoGeneral();
             };
         }
         
         banner.onclick = (e) => {
             if (e.target === btnUnirse || btnUnirse?.contains(e.target)) return;
-            handleGrupoSeleccionado('general', grupos['general'].nombre);
+            mostrarModalGrupoGeneral();
         };
     }
 }
 
-// ============ SELECCIÓN DE GRUPOS (NORMAL Y GENERAL) ============
+// ============ MODAL GRUPO GENERAL ============
+
+function mostrarModalGrupoGeneral() {
+    const modal = document.getElementById('modal-general');
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    
+    const nombreIngresar = document.getElementById('general-nombre-ingresar');
+    const nombreRegistro = document.getElementById('general-nombre-registro');
+    const telefonoRegistro = document.getElementById('general-telefono-registro');
+    const errorIngresar = document.getElementById('general-error-ingresar');
+    const errorRegistro = document.getElementById('general-error-registro');
+    
+    if (nombreIngresar) nombreIngresar.value = '';
+    if (nombreRegistro) nombreRegistro.value = '';
+    if (telefonoRegistro) telefonoRegistro.value = '';
+    if (errorIngresar) errorIngresar.style.display = 'none';
+    if (errorRegistro) errorRegistro.style.display = 'none';
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'block';
+    if (pasoIngresar) pasoIngresar.style.display = 'none';
+    if (pasoRegistro) pasoRegistro.style.display = 'none';
+    
+    modal.style.display = 'flex';
+}
+
+function cerrarModalGeneral() {
+    const modal = document.getElementById('modal-general');
+    modal.style.display = 'none';
+}
+
+function mostrarPasoIngresar() {
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    const nombreInput = document.getElementById('general-nombre-ingresar');
+    const errorDiv = document.getElementById('general-error-ingresar');
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'none';
+    if (pasoIngresar) pasoIngresar.style.display = 'block';
+    if (pasoRegistro) pasoRegistro.style.display = 'none';
+    if (errorDiv) errorDiv.style.display = 'none';
+    if (nombreInput) nombreInput.focus();
+}
+
+function mostrarPasoRegistro() {
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    const nombreInput = document.getElementById('general-nombre-registro');
+    const errorDiv = document.getElementById('general-error-registro');
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'none';
+    if (pasoIngresar) pasoIngresar.style.display = 'none';
+    if (pasoRegistro) pasoRegistro.style.display = 'block';
+    if (errorDiv) errorDiv.style.display = 'none';
+    if (nombreInput) nombreInput.focus();
+}
+
+function volverAlVerificar() {
+    const pasoVerificar = document.getElementById('general-paso-verificar');
+    const pasoIngresar = document.getElementById('general-paso-ingresar');
+    const pasoRegistro = document.getElementById('general-paso-registro');
+    const errorIngresar = document.getElementById('general-error-ingresar');
+    const errorRegistro = document.getElementById('general-error-registro');
+    
+    if (pasoVerificar) pasoVerificar.style.display = 'block';
+    if (pasoIngresar) pasoIngresar.style.display = 'none';
+    if (pasoRegistro) pasoRegistro.style.display = 'none';
+    if (errorIngresar) errorIngresar.style.display = 'none';
+    if (errorRegistro) errorRegistro.style.display = 'none';
+}
+
+async function ingresarAlGrupoGeneral() {
+    const nombre = document.getElementById('general-nombre-ingresar').value.trim();
+    const errorDiv = document.getElementById('general-error-ingresar');
+    
+    if (!nombre) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Por favor, ingresa tu nombre';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const grupos = await getGrupos();
+    const grupoGeneral = grupos['general'];
+    
+    if (!grupoGeneral) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Error: Grupo General no disponible';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const existe = grupoGeneral.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+    
+    if (existe) {
+        currentGrupoId = 'general';
+        currentGrupoNombre = grupoGeneral.nombre;
+        currentParticipante = nombre;
+        
+        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
+            participante: nombre,
+            grupoId: 'general',
+            timestamp: Date.now()
+        }));
+        
+        cerrarModalGeneral();
+        iniciarPanelApuestas();
+        mostrarNotificacion(`🎉 Bienvenido de vuelta ${nombre}!`, 'success');
+    } else {
+        if (errorDiv) {
+            errorDiv.textContent = `❌ El nombre "${nombre}" no está registrado en el Grupo General. Verifica o regístrate.`;
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+async function registrarEnGrupoGeneral() {
+    const nombre = document.getElementById('general-nombre-registro').value.trim();
+    const telefono = document.getElementById('general-telefono-registro').value.trim();
+    const errorDiv = document.getElementById('general-error-registro');
+    
+    if (!nombre) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ El nombre es obligatorio';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const grupos = await getGrupos();
+    const grupoGeneral = grupos['general'];
+    
+    if (!grupoGeneral) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Error: Grupo General no disponible';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const existe = grupoGeneral.participantes.some(p => p.toLowerCase() === nombre.toLowerCase());
+    
+    if (existe) {
+        if (errorDiv) {
+            errorDiv.textContent = `❌ El nombre "${nombre}" ya está registrado. Usa la opción "Ya estoy registrado".`;
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
+    
+    const resultado = await unirseAlGrupoGeneral(nombre, telefono);
+    
+    if (resultado && resultado.success) {
+        currentGrupoId = 'general';
+        currentGrupoNombre = grupoGeneral.nombre;
+        currentParticipante = nombre;
+        
+        sessionStorage.setItem('quiniela_sesion_actual', JSON.stringify({
+            participante: nombre,
+            grupoId: 'general',
+            timestamp: Date.now()
+        }));
+        
+        cerrarModalGeneral();
+        iniciarPanelApuestas();
+        mostrarNotificacion(`🎉 ${resultado.message}`, 'success');
+    } else {
+        if (errorDiv) {
+            errorDiv.textContent = `❌ ${resultado?.message || 'Error al registrar'}`;
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+// ============ SELECCIÓN DE GRUPOS NORMALES ============
 
 async function handleGrupoSeleccionado(grupoId, grupoNombre) {
     currentGrupoId = grupoId;
@@ -298,7 +510,6 @@ async function handleGrupoSeleccionado(grupoId, grupoNombre) {
     const grupos = await getGrupos();
     const grupo = grupos[grupoId];
     const totalParticipantes = grupo ? grupo.participantes.length : 0;
-    const esGrupoGeneral = grupoId === 'general';
     
     const modal = document.getElementById('modal-verificacion');
     const modalGrupoNombre = document.getElementById('modal-grupo-nombre');
@@ -307,18 +518,7 @@ async function handleGrupoSeleccionado(grupoId, grupoNombre) {
     const errorDiv = document.getElementById('modal-error-mensaje');
     
     modalGrupoNombre.textContent = `🏆 ${grupoNombre}`;
-    
-    if (esGrupoGeneral) {
-        const reglas = grupo.reglas;
-        modalGrupoInfo.innerHTML = `
-            ⭐ GRUPO GENERAL - POZO MAYOR ⭐<br>
-            📊 ${totalParticipantes} participantes registrados<br>
-            🎯 ${reglas.puntosExacto} pts exacto / ${reglas.puntosGanador} pts ganador<br>
-            💰 Premios: ${grupo.premios.primero}% / ${grupo.premios.segundo}% / ${grupo.premios.tercero}%
-        `;
-    } else {
-        modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
-    }
+    modalGrupoInfo.innerHTML = `📊 ${totalParticipantes} participantes registrados<br>🔐 Grupo abierto para nuevos miembros`;
     
     nombreInput.value = '';
     errorDiv.style.display = 'none';
@@ -435,7 +635,6 @@ function iniciarPanelApuestas() {
     
     cargarSelectorDias();
     configurarSelectorDias();
-    configurarModalQR();
 }
 
 function cargarSelectorDias() {
@@ -491,7 +690,7 @@ function actualizarEstadoDia(fecha) {
     if (esPasado) {
         estadoDia.innerHTML = '<span class="badge-pasado">🔒 DÍA FINALIZADO - Solo consulta</span>';
     } else if (esHoy) {
-        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Podés apostar</span>';
+        estadoDia.innerHTML = '<span class="badge-activo">✅ DÍA ACTIVO - Puedes apostar</span>';
     } else {
         estadoDia.innerHTML = '<span class="badge-futuro">⏳ DÍA FUTURO - Apuestas disponibles el día del partido</span>';
     }
@@ -503,34 +702,28 @@ async function cargarPartidos(fecha) {
     const esHoy = !esPasado && (fecha === getDiaActualLocal());
     
     const limiteParticipante = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
-    const apuestasExistentes = await getApuestasMultiplesDeParticipante(currentGrupoId, currentParticipante);
     
     apuestasContainer.innerHTML = partidos.map(partido => {
         const puedeApostar = esHoy && puedeApostarPartido(partido.fecha, partido.hora);
-        const apuestasActuales = apuestasExistentes[partido.id] || [];
-        const alcanzoLimite = apuestasActuales.length >= limiteParticipante;
         
         let mensajeBloqueo = '';
-        
         if (!puedeApostar) {
             if (esPasado) mensajeBloqueo = '🔒 Partido finalizado';
             else if (!esHoy) mensajeBloqueo = '⏳ Apuestas solo el día del partido';
             else mensajeBloqueo = '⏰ Apuestas cerradas';
-        } else if (alcanzoLimite) {
-            mensajeBloqueo = `🔒 Límite alcanzado (${limiteParticipante}/${limiteParticipante})`;
         }
         
         return `
-            <div class="apuesta-card ${!puedeApostar || alcanzoLimite ? 'bloqueado' : ''}" data-id="${partido.id}">
+            <div class="apuesta-card ${!puedeApostar ? 'bloqueado' : ''}" data-id="${partido.id}">
                 <div class="match-info">
                     <div class="match-teams">${conBandera(partido.local)} vs ${conBandera(partido.visitante)}</div>
                     <div class="match-date">
                         🕐 ${partido.hora} | ${getFaseNombre(partido.fase)}
-                        ${!puedeApostar || alcanzoLimite ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
+                        ${!puedeApostar ? ` | ${mensajeBloqueo}` : ' | ✅ Disponible'}
                     </div>
                 </div>
                 <div id="apuestas-lista-${partido.id}" class="apuestas-lista"></div>
-                ${puedeApostar && !alcanzoLimite ? `
+                ${puedeApostar ? `
                     <div class="nueva-apuesta-form">
                         <div class="score-inputs">
                             <input type="number" class="score-local" placeholder="Local" min="0" max="20">
@@ -538,7 +731,7 @@ async function cargarPartidos(fecha) {
                             <input type="number" class="score-visitante" placeholder="Visitante" min="0" max="20">
                             <button class="btn-agregar-apuesta" data-id="${partido.id}" onclick="agregarApuestaHandler(${partido.id}, this)">➕ Agregar</button>
                         </div>
-                        <div class="limite-apuestas">📊 Usados: ${apuestasActuales.length}/${limiteParticipante}</div>
+                        <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
                     </div>
                 ` : `<div class="score-readonly" id="readonly-${partido.id}"></div>`}
             </div>
@@ -560,6 +753,7 @@ async function cargarApuestasExistentes(fecha) {
     for (const partido of partidos) {
         let apuestasPartido = todasApuestas[partido.id] || [];
         
+        // Eliminar duplicados en los datos (por si acaso)
         const unicas = [];
         const claves = new Set();
         for (const apuesta of apuestasPartido) {
@@ -574,6 +768,7 @@ async function cargarApuestasExistentes(fecha) {
         const container = document.getElementById(`apuestas-lista-${partido.id}`);
         const readonlyContainer = document.getElementById(`readonly-${partido.id}`);
         
+        // Actualizar límite mostrado
         const limiteSpan = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .limite-apuestas`);
         const agregarBtn = document.querySelector(`.apuesta-card[data-id="${partido.id}"] .btn-agregar-apuesta`);
         
@@ -581,6 +776,7 @@ async function cargarApuestasExistentes(fecha) {
             const usados = apuestasPartido.length;
             limiteSpan.innerHTML = `📊 Usados: ${usados}/${limiteParticipante} pronósticos`;
             
+            // Si ya se alcanzó el límite, deshabilitar el botón de agregar
             if (agregarBtn) {
                 if (usados >= limiteParticipante) {
                     agregarBtn.disabled = true;
@@ -651,144 +847,228 @@ async function mostrarMisApuestas() {
     const modal = document.getElementById('modal-apuestas');
     const reglas = await getReglasDelGrupo(currentGrupoId);
     
-    if (!modalBody || !modal) return;
+    if (!modalBody || !modal) {
+        console.error('Modal no encontrado');
+        return;
+    }
     
     if (Object.keys(todasApuestas).length === 0) {
-        modalBody.innerHTML = '<div style="text-align:center; padding:40px;">📭 No has realizado ningún pronóstico</div>';
+        modalBody.innerHTML = `
+            <div style="text-align:center; padding:60px 20px;">
+                <div style="font-size: 4rem; margin-bottom: 15px;">📭</div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 1.1rem;">No has realizado ningún pronóstico</div>
+                <div style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin-top: 8px;">Selecciona un día y comienza a apostar</div>
+            </div>
+        `;
         modal.style.display = 'block';
         return;
     }
     
-    let html = `<h3>Grupo: ${currentGrupoNombre}</h3>`;
-    let totalPuntos = 0;
-    const apuestasArray = [];
-    
+    // Preparar array de apuestas
+    const apuestasDetalladas = [];
     for (const [partidoId, apuestas] of Object.entries(todasApuestas)) {
         const partido = todosLosPartidos.find(p => p.id === parseInt(partidoId));
         if (partido && apuestas.length > 0) {
             apuestas.forEach(apuesta => {
-                apuestasArray.push({ ...apuesta, partido, resultado: resultados[partidoId] });
+                const resultado = resultados[partidoId];
+                let puntos = 0;
+                let estado = 'pendiente';
+                let claseEstado = '';
+                let mensajeEstado = '';
+                
+                if (resultado) {
+                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                        puntos = reglas.puntosExacto;
+                        estado = 'exacto';
+                        claseEstado = 'exacto';
+                        mensajeEstado = '¡RESULTADO EXACTO!';
+                    } else if (
+                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                    ) {
+                        puntos = reglas.puntosGanador;
+                        estado = 'ganador';
+                        claseEstado = 'ganador';
+                        mensajeEstado = 'GANADOR CORRECTO';
+                    } else {
+                        puntos = 0;
+                        estado = 'error';
+                        claseEstado = 'error';
+                        mensajeEstado = 'INCORRECTO';
+                    }
+                }
+                
+                apuestasDetalladas.push({
+                    partido,
+                    apuesta,
+                    resultado,
+                    puntos,
+                    estado,
+                    claseEstado,
+                    mensajeEstado,
+                    fechaApuesta: apuesta.fecha || new Date().toISOString()
+                });
             });
         }
     }
-    apuestasArray.sort((a, b) => a.partido.fecha.localeCompare(b.partido.fecha));
     
-    let currentFechaHtml = '';
-    apuestasArray.forEach(ap => {
-        if (currentFechaHtml !== ap.partido.fecha) {
-            currentFechaHtml = ap.partido.fecha;
-            html += `<h4>📅 ${formatearFecha(ap.partido.fecha)} - ${ap.partido.local} vs ${ap.partido.visitante}</h4>`;
+    apuestasDetalladas.sort((a, b) => a.partido.fecha.localeCompare(b.partido.fecha));
+    
+    const totalPronosticos = apuestasDetalladas.length;
+    const aciertosExactos = apuestasDetalladas.filter(a => a.estado === 'exacto').length;
+    const aciertosGanador = apuestasDetalladas.filter(a => a.estado === 'ganador').length;
+    const errores = apuestasDetalladas.filter(a => a.estado === 'error').length;
+    const pendientes = apuestasDetalladas.filter(a => a.estado === 'pendiente').length;
+    const totalPuntos = apuestasDetalladas.reduce((sum, a) => sum + a.puntos, 0);
+    
+    const esGrupoGeneral = currentGrupoId === 'general';
+    const grupoNombre = esGrupoGeneral ? '🏆 GRUPO GENERAL - POZO MAYOR' : `🏆 ${currentGrupoNombre}`;
+    
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin: 0; font-size: 1.3rem;">📋 ${grupoNombre}</h2>
+            <div style="background: rgba(255,215,0,0.15); padding: 5px 12px; border-radius: 20px;">
+                <span style="color: #ffd700;">👤 ${currentParticipante}</span>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 25px;">
+            <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700;">${totalPronosticos}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">TOTAL PRONÓSTICOS</div>
+            </div>
+            <div style="background: rgba(76,175,80,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #4caf50;">${aciertosExactos}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">RESULTADOS EXACTOS</div>
+            </div>
+            <div style="background: rgba(255,193,7,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #ffc107;">${aciertosGanador}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">GANADORES CORRECTOS</div>
+            </div>
+            <div style="background: rgba(244,67,54,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #f44336;">${errores}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">INCORRECTOS</div>
+            </div>
+            <div style="background: rgba(33,150,243,0.15); border-radius: 12px; padding: 12px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: bold; color: #2196f3;">${pendientes}</div>
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6);">PENDIENTES</div>
+            </div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,100,0,0.1)); border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 25px; border: 1px solid rgba(255,215,0,0.3);">
+            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">🏆 PUNTOS TOTALES ACUMULADOS 🏆</div>
+            <div style="font-size: 2.5rem; font-weight: bold; color: #ffd700;">${totalPuntos}</div>
+            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 5px;">⭐ Sistema de puntuación: ${reglas.puntosExacto} pts exacto / ${reglas.puntosGanador} pts ganador</div>
+        </div>
+    `;
+    
+    let currentFechaDisplay = '';
+    for (const ap of apuestasDetalladas) {
+        const fechaPartido = ap.partido.fecha;
+        const fechaFormateada = formatearFecha(fechaPartido);
+        
+        if (currentFechaDisplay !== fechaPartido) {
+            currentFechaDisplay = fechaPartido;
+            const esFechaPasada = isPartidoPasado(fechaPartido);
+            const iconoFecha = esFechaPasada ? '🔒' : '📅';
+            html += `
+                <div style="margin-top: 25px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 8px;">
+                        <span style="font-size: 1.2rem;">${iconoFecha}</span>
+                        <h3 style="margin: 0; color: #ffd700; font-size: 1rem;">${fechaFormateada}</h3>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">${esFechaPasada ? 'FINALIZADO' : 'PRÓXIMO'}</span>
+                    </div>
+                </div>
+            `;
         }
         
-        let puntos = 0;
-        let acierto = '';
-        let clasePuntos = '';
+        let bgColor = 'rgba(0,0,0,0.3)';
+        let borderColor = 'rgba(255,215,0,0.15)';
+        let resultadoHtml = '';
         
-        if (ap.resultado) {
-            if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
-                puntos = reglas.puntosExacto;
-                acierto = '✅ EXACTO';
-                clasePuntos = 'puntos-exacto';
-            } else if ((ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
-                       (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
-                       (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)) {
-                puntos = reglas.puntosGanador;
-                acierto = '🎯 GANADOR';
-                clasePuntos = 'puntos-ganador';
-            } else {
-                acierto = '❌ ERROR';
-                clasePuntos = 'puntos-error';
-            }
-            totalPuntos += puntos;
+        if (ap.estado === 'exacto') {
+            bgColor = 'rgba(76,175,80,0.1)';
+            borderColor = '#4caf50';
+            resultadoHtml = `<div style="display: inline-block; background: rgba(76,175,80,0.2); color: #4caf50; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">✅ EXACTO +${ap.puntos} pts</div>`;
+        } else if (ap.estado === 'ganador') {
+            bgColor = 'rgba(255,193,7,0.1)';
+            borderColor = '#ffc107';
+            resultadoHtml = `<div style="display: inline-block; background: rgba(255,193,7,0.2); color: #ffc107; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">🎯 GANADOR +${ap.puntos} pts</div>`;
+        } else if (ap.estado === 'error') {
+            bgColor = 'rgba(244,67,54,0.1)';
+            borderColor = '#f44336';
+            resultadoHtml = `<div style="display: inline-block; background: rgba(244,67,54,0.2); color: #f44336; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">❌ INCORRECTO 0 pts</div>`;
+        } else {
+            resultadoHtml = `<div style="display: inline-block; background: rgba(33,150,243,0.2); color: #2196f3; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">⏳ RESULTADO PENDIENTE</div>`;
         }
         
         html += `
-            <div class="apuesta-resumen">
-                <strong>🎯 Pronóstico:</strong>
-                <div class="pronostico">${ap.local} - ${ap.visitante}</div>
-                ${ap.resultado ? `
-                    <div class="resultado">🏆 Resultado oficial: ${ap.resultado.local} - ${ap.resultado.visitante}</div>
-                    <div class="puntos ${clasePuntos}">${acierto} +${puntos} puntos</div>
-                ` : '<div class="resultado" style="color: #ffc107;">⏳ Resultado pendiente</div>'}
+            <div style="background: ${bgColor}; border-left: 3px solid ${borderColor}; border-radius: 12px; padding: 15px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <span style="font-weight: bold; font-size: 0.85rem; color: rgba(255,255,255,0.7);">⚽ ${ap.partido.local} vs ${ap.partido.visitante}</span>
+                        <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">🕐 ${ap.partido.hora}</span>
+                    </div>
+                    ${resultadoHtml}
+                </div>
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 15px 0; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">TU PRONÓSTICO</div>
+                        <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700; display: flex; align-items: center; gap: 15px;">
+                            <span>${ap.apuesta.local}</span>
+                            <span style="font-size: 1.2rem;">-</span>
+                            <span>${ap.apuesta.visitante}</span>
+                        </div>
+                    </div>
+                    
+                    ${ap.resultado ? `
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">RESULTADO OFICIAL</div>
+                            <div style="font-size: 1.8rem; font-weight: bold; color: #ffd700; display: flex; align-items: center; gap: 15px;">
+                                <span>${ap.resultado.local}</span>
+                                <span style="font-size: 1.2rem;">-</span>
+                                <span>${ap.resultado.visitante}</span>
+                            </div>
+                        </div>
+                    ` : `
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">ESTADO</div>
+                            <div style="font-size: 1rem; font-weight: bold; color: #ffc107;">⏳ Esperando resultado</div>
+                        </div>
+                    `}
+                </div>
+                
+                ${ap.fechaApuesta ? `
+                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); text-align: center; margin-top: 8px;">
+                        📝 Pronóstico realizado: ${new Date(ap.fechaApuesta).toLocaleString()}
+                    </div>
+                ` : ''}
             </div>
         `;
-    });
+    }
     
-    html += `<div class="total-puntos">🏆 TOTAL DE PUNTOS: ${totalPuntos}</div>`;
+    const premios = await getPremiosDelGrupo(currentGrupoId);
+    const cantidadGanadores = premios?.cantidadGanadores || 3;
+    
+    html += `
+        <div style="background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; margin-top: 20px; text-align: center;">
+            <div style="color: #ffd700; font-size: 0.85rem; margin-bottom: 8px;">💰 INFORMACIÓN DE PREMIOS DEL GRUPO</div>
+            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                <span>🏆 ${cantidadGanadores} Ganador(es)</span>
+                <span>🥇 1er: ${premios?.primero || 50}%</span>
+                ${cantidadGanadores >= 2 ? `<span>🥈 2do: ${premios?.segundo || 30}%</span>` : ''}
+                ${cantidadGanadores >= 3 ? `<span>🥉 3ro: ${premios?.tercero || 20}%</span>` : ''}
+            </div>
+            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 8px;">
+                📌 Los premios se reparten al finalizar cada jornada (20% para organizador, 80% para ganadores)
+            </div>
+        </div>
+    `;
+    
     modalBody.innerHTML = html;
     modal.style.display = 'block';
-}
-
-// ============ MOSTRAR QR DESPUÉS DE APOSTAR ============
-
-let qrMostrado = false;
-
-function mostrarQR() {
-    const qrDiv = document.getElementById('qr-pago');
-    if (qrDiv && !qrMostrado) {
-        qrDiv.style.display = 'block';
-        qrMostrado = true;
-        localStorage.setItem('quiniela_qr_mostrado', 'true');
-        
-        setTimeout(() => {
-            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 500);
-    }
-}
-
-function configurarBotonWhatsApp() {
-    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
-    if (btnWhatsApp) {
-        btnWhatsApp.addEventListener('click', () => {
-            const nombre = currentParticipante || 'Participante';
-            const grupo = currentGrupoNombre || 'Grupo';
-            const mensaje = `Hola%2C%20deseo%20inscribirme%20en%20la%20quiniela%20del%20Mundial%202026.%0A%0A📌%20Mi%20nombre%20es%3A%20${encodeURIComponent(nombre)}%0A📌%20Grupo%3A%20${encodeURIComponent(grupo)}%0A📌%20Total%20a%20pagar%3A%20Bs.%205%0A%0AAdjunto%20mi%20comprobante%20de%20pago.`;
-            window.open(`https://wa.me/59174277508?text=${mensaje}`, '_blank');
-        });
-    }
-}
-
-function configurarModalQR() {
-    const modalQr = document.getElementById('modal-qr');
-    const closeBtn = document.querySelector('.modal-qr-close');
-    const qrImg = document.querySelector('.qr-imagen img');
-    
-    if (!modalQr) return;
-    
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modalQr.style.display = 'none';
-        });
-    }
-    
-    modalQr.addEventListener('click', (e) => {
-        if (e.target === modalQr) {
-            modalQr.style.display = 'none';
-        }
-    });
-    
-    if (qrImg) {
-        qrImg.style.cursor = 'pointer';
-        qrImg.addEventListener('click', () => {
-            const modalImg = document.getElementById('modal-qr-img');
-            if (modalImg) {
-                modalImg.src = qrImg.src;
-                modalQr.style.display = 'flex';
-            }
-        });
-    }
-    
-    const qrImgContainer = document.querySelector('#qr-pago .qr-imagen img');
-    if (qrImgContainer && qrImgContainer !== qrImg) {
-        qrImgContainer.style.cursor = 'pointer';
-        qrImgContainer.addEventListener('click', () => {
-            const modalImg = document.getElementById('modal-qr-img');
-            if (modalImg) {
-                modalImg.src = qrImgContainer.src;
-                modalQr.style.display = 'flex';
-            }
-        });
-    }
 }
 
 // ============ UTILIDADES ============
@@ -801,6 +1081,7 @@ function configurarEventListeners() {
     if (cambiarGrupoBtn) cambiarGrupoBtn.addEventListener('click', cambiarDeGrupo);
     if (verApuestasBtn) verApuestasBtn.addEventListener('click', mostrarMisApuestas);
     
+    // Modal de verificación
     const btnVerificar = document.getElementById('btn-verificar');
     const btnRegistrarNuevo = document.getElementById('btn-registrar-nuevo');
     const btnCancelar = document.getElementById('btn-cancelar-modal');
@@ -823,11 +1104,82 @@ function configurarEventListeners() {
         });
     }
     
+    // Modal General
+    const btnSi = document.getElementById('general-btn-si');
+    const btnNo = document.getElementById('general-btn-no');
+    const btnIngresar = document.getElementById('general-btn-ingresar');
+    const btnRegistrar = document.getElementById('general-btn-registrar');
+    const btnVolver = document.getElementById('general-btn-volver');
+    const btnVolver2 = document.getElementById('general-btn-volver2');
+    const btnCancelarGeneral = document.getElementById('general-cancelar');
+    const modalGeneral = document.getElementById('modal-general');
+    const generalNombreIngresar = document.getElementById('general-nombre-ingresar');
+    const generalNombreRegistro = document.getElementById('general-nombre-registro');
+    
+    if (btnSi) btnSi.addEventListener('click', mostrarPasoIngresar);
+    if (btnNo) btnNo.addEventListener('click', mostrarPasoRegistro);
+    if (btnIngresar) btnIngresar.addEventListener('click', ingresarAlGrupoGeneral);
+    if (btnRegistrar) btnRegistrar.addEventListener('click', registrarEnGrupoGeneral);
+    if (btnVolver) btnVolver.addEventListener('click', volverAlVerificar);
+    if (btnVolver2) btnVolver2.addEventListener('click', volverAlVerificar);
+    if (btnCancelarGeneral) btnCancelarGeneral.addEventListener('click', cerrarModalGeneral);
+    
+    if (modalGeneral) {
+        modalGeneral.addEventListener('click', (e) => {
+            if (e.target === modalGeneral) cerrarModalGeneral();
+        });
+    }
+    
+    if (generalNombreIngresar) {
+        generalNombreIngresar.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') ingresarAlGrupoGeneral();
+        });
+    }
+    
+    if (generalNombreRegistro) {
+        generalNombreRegistro.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') registrarEnGrupoGeneral();
+        });
+    }
+    
+    // Modal de apuestas
     const modal = document.getElementById('modal-apuestas');
     const closeBtn = document.querySelector('.modal-close');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     if (modal) window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 }
+// ============ MOSTRAR QR DESPUÉS DE APOSTAR ============
 
+let qrMostrado = false;
+
+function mostrarQR() {
+    const qrDiv = document.getElementById('qr-pago');
+    if (qrDiv && !qrMostrado) {
+        qrDiv.style.display = 'block';
+        qrMostrado = true;
+        
+        // Scroll suave al QR
+        setTimeout(() => {
+            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
+    }
+}
+
+// Configurar el botón de WhatsApp
+function configurarBotonWhatsApp() {
+    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
+    if (btnWhatsApp) {
+        btnWhatsApp.addEventListener('click', () => {
+            const nombre = currentParticipante || 'Participante';
+            const grupo = currentGrupoNombre || 'Grupo';
+            const mensaje = `Hola%2C%20deseo%20inscribirme%20en%20la%20quiniela%20del%20Mundial%202026.%0A%0A📌%20Mi%20nombre%20es%3A%20${encodeURIComponent(nombre)}%0A📌%20Grupo%3A%20${encodeURIComponent(grupo)}%0A📌%20Total%20a%20pagar%3A%20Bs.%205%0A%0AAdjunto%20mi%20comprobante%20de%20pago.`;
+            window.open(`https://wa.me/59174277508?text=${mensaje}`, '_blank');
+        });
+    }
+}
+
+// Modificar la función cargarPartidos para mostrar QR después de la primera apuesta
+// En la función handleAgregarClick (dentro de agregarApuestaHandler), después del éxito, agregar:
+// mostrarQR();
 // Iniciar
 init();
