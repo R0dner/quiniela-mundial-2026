@@ -426,24 +426,34 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
             `;
         }
         
-        html += '</tbody>}</div>';
+        html += '</tbody></table>';
         container.innerHTML = html;
         
-        if (Object.keys(pronosticos).length > 0) {
-            container.innerHTML += `
-                <div style="margin-top: 15px; text-align: center;">
-                    <button id="eliminar-todos-pronosticos" style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
-                        🗑️ Eliminar TODOS los pronósticos de ${participanteNombre}
-                    </button>
-                </div>
-            `;
-            
-            document.getElementById('eliminar-todos-pronosticos')?.addEventListener('click', () => {
-                if (confirm(`⚠️ ¿Eliminar TODOS los pronósticos de ${participanteNombre}? Esta acción no se puede deshacer.`)) {
-                    eliminarTodosPronosticos(grupoId, participanteNombre);
-                }
-            });
-        }
+        // Botones de acciones (después de la tabla)
+        container.innerHTML += `
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button id="limpiar-duplicados" style="background: rgba(255,152,0,0.2); border: 1px solid #ff9800; color: #ff9800; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
+                    🔧 Limpiar pronósticos duplicados automáticamente
+                </button>
+                <button id="eliminar-todos-pronosticos" style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
+                    🗑️ Eliminar TODOS los pronósticos de ${participanteNombre}
+                </button>
+            </div>
+        `;
+        
+        // Event listener para limpiar duplicados
+        document.getElementById('limpiar-duplicados')?.addEventListener('click', () => {
+            if (confirm(`🔧 ¿Limpiar pronósticos duplicados de ${participanteNombre}? Se mantendrá solo un pronóstico por partido.`)) {
+                window.limpiarPronosticosDuplicados(grupoId, participanteNombre);
+            }
+        });
+        
+        // Event listener para eliminar todos
+        document.getElementById('eliminar-todos-pronosticos')?.addEventListener('click', () => {
+            if (confirm(`⚠️ ¿Eliminar TODOS los pronósticos de ${participanteNombre}? Esta acción no se puede deshacer.`)) {
+                eliminarTodosPronosticos(grupoId, participanteNombre);
+            }
+        });
         
     } catch (error) {
         console.error('Error cargando pronósticos:', error);
@@ -837,3 +847,46 @@ setTimeout(() => {
         init();
     }
 }, 100);
+
+// ============ LIMPIAR PRONÓSTICOS DUPLICADOS ============
+window.limpiarPronosticosDuplicados = async (grupoId, participanteNombre) => {
+    if (!confirm(`⚠️ ¿Limpiar pronósticos duplicados de ${participanteNombre}?`)) return;
+    
+    try {
+        const grupos = await getGrupos();
+        const grupo = grupos[grupoId];
+        
+        if (!grupo || !grupo.apuestas || !grupo.apuestas[participanteNombre]) {
+            mostrarMensaje('No hay pronósticos para este participante', 'error');
+            return;
+        }
+        
+        const pronosticos = grupo.apuestas[participanteNombre];
+        const pronosticosUnicos = {};
+        let eliminados = 0;
+        
+        // Mantener solo el último pronóstico de cada partido
+        for (const [partidoId, apuesta] of Object.entries(pronosticos)) {
+            const key = `${partidoId}_${apuesta.local}_${apuesta.visitante}`;
+            if (!pronosticosUnicos[partidoId]) {
+                pronosticosUnicos[partidoId] = apuesta;
+            } else {
+                eliminados++;
+                console.log(`Eliminando duplicado para partido ${partidoId}`);
+            }
+        }
+        
+        grupo.apuestas[participanteNombre] = pronosticosUnicos;
+        await guardarGrupos(grupos);
+        
+        mostrarMensaje(`✅ Eliminados ${eliminados} pronósticos duplicados de ${participanteNombre}`, 'success');
+        
+        // Recargar el modal
+        await cargarPronosticosParticipante(grupoId, participanteNombre);
+        await cargarParticipantesDelGrupoEnPanel(grupoId);
+        actualizarEstadisticas();
+        
+    } catch (error) {
+        mostrarMensaje('Error al limpiar: ' + error.message, 'error');
+    }
+};
