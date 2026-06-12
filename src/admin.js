@@ -57,26 +57,26 @@ function setupEventListeners() {
     // === RESULTADOS POR GRUPO ===
     const grupoResultadosSelect = document.getElementById('grupo-resultados-select');
     if (grupoResultadosSelect) {
-        grupoResultadosSelect.addEventListener('change', async (e) => {
+        grupoResultadosSelect.addEventListener('change', (e) => {
             currentGrupoId = e.target.value;
             if (currentGrupoId) {
                 document.getElementById('resultados-panel').style.display = 'block';
-                await cargarResultados(currentGrupoId, 'all');
+                cargarResultados(currentGrupoId, 'all');
             } else {
                 document.getElementById('resultados-panel').style.display = 'none';
             }
         });
     }
-
+    
     const filtroFase = document.getElementById('filtro-fase-resultados');
     if (filtroFase) {
-        filtroFase.addEventListener('change', async (e) => {
+        filtroFase.addEventListener('change', (e) => {
             if (currentGrupoId) {
-                await cargarResultados(currentGrupoId, e.target.value);
+                cargarResultados(currentGrupoId, e.target.value);
             }
         });
     }
-
+    
     const guardarResultadosBtn = document.getElementById('guardar-resultados-grupo');
     if (guardarResultadosBtn) {
         guardarResultadosBtn.addEventListener('click', () => guardarResultadosDelGrupo(currentGrupoId));
@@ -278,15 +278,15 @@ async function cargarParticipantesDelGrupoEnPanel(grupoId) {
     });
 }
 
-// ============ RESULTADOS MEJORADOS - REEMPLAZAR COMPLETAMENTE ESTA SECCIÓN ============
+// ============ RESULTADOS ============
 
 async function cargarResultados(grupoId, filtro = 'all') {
     const resultados = await getResultadosDelGrupo(grupoId);
     const container = document.getElementById('resultados-container');
     if (!container) return;
     
-    // Filtrar partidos por fase si es necesario
     let partidosFiltrados = todosLosPartidosData;
+    
     switch(filtro) {
         case 'grupos':
             partidosFiltrados = todosLosPartidosData.filter(p => p.fase === 'grupos');
@@ -307,369 +307,56 @@ async function cargarResultados(grupoId, filtro = 'all') {
             partidosFiltrados = todosLosPartidosData;
     }
     
-    // Agrupar partidos por fecha
-    const partidosPorFecha = {};
-    partidosFiltrados.forEach(partido => {
-        if (!partidosPorFecha[partido.fecha]) {
-            partidosPorFecha[partido.fecha] = [];
-        }
-        partidosPorFecha[partido.fecha].push(partido);
-    });
-    
-    // Ordenar fechas
-    const fechasOrdenadas = Object.keys(partidosPorFecha).sort();
-    
-    if (fechasOrdenadas.length === 0) {
-        container.innerHTML = '<div class="empty">No hay partidos en esta fase</div>';
-        return;
-    }
-    
-    // Estado de colapso (usando localStorage para recordar)
-    const collapsedState = JSON.parse(localStorage.getItem('resultadosCollapsedState') || '{}');
-    
-    let html = `
-        <style>
-            .resultados-fecha-group {
-                margin-bottom: 20px;
-                border-radius: 12px;
-                overflow: hidden;
-                background: rgba(0,0,0,0.2);
-            }
-            .resultados-fecha-header {
-                background: rgba(255,215,0,0.15);
-                padding: 12px 15px;
-                cursor: pointer;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                font-weight: bold;
-                color: #ffd700;
-            }
-            .resultados-fecha-header:hover {
-                background: rgba(255,215,0,0.25);
-            }
-            .resultados-fecha-body {
-                display: block;
-            }
-            .resultados-fecha-body.collapsed {
-                display: none;
-            }
-            .resultado-card-mejorado {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px 15px;
-                border-bottom: 1px solid rgba(255,255,255,0.05);
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            .resultado-card-mejorado:hover {
-                background: rgba(255,255,255,0.03);
-            }
-            .resultado-card-mejorado:last-child {
-                border-bottom: none;
-            }
-            .match-info-mejorado {
-                flex: 2;
-                min-width: 200px;
-            }
-            .match-teams {
-                font-weight: bold;
-                font-size: 0.95rem;
-            }
-            .match-teams img {
-                width: 24px;
-                height: 18px;
-                vertical-align: middle;
-                margin-right: 5px;
-            }
-            .match-metadata {
-                font-size: 0.7rem;
-                color: rgba(255,255,255,0.5);
-                margin-top: 4px;
-            }
-            .score-inputs-mejorado {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background: rgba(0,0,0,0.3);
-                padding: 5px 12px;
-                border-radius: 30px;
-            }
-            .score-inputs-mejorado input {
-                width: 50px;
-                padding: 6px;
-                text-align: center;
-                font-size: 1rem;
-                font-weight: bold;
-                background: rgba(255,255,255,0.1);
-                border: 1px solid rgba(255,215,0,0.3);
-                border-radius: 6px;
-                color: white;
-            }
-            .score-inputs-mejorado input:focus {
-                outline: none;
-                border-color: #ffd700;
-            }
-            .score-inputs-mejorado .vs {
-                font-weight: bold;
-                color: #ffd700;
-            }
-            .badge-fase {
-                background: rgba(255,215,0,0.1);
-                padding: 2px 8px;
-                border-radius: 20px;
-                font-size: 0.65rem;
-                color: #ffd700;
-            }
-            .btn-guardar-resultado {
-                background: rgba(76, 175, 80, 0.2);
-                border: 1px solid rgba(76, 175, 80, 0.5);
-                color: #4caf50;
-                padding: 5px 12px;
-                border-radius: 20px;
-                cursor: pointer;
-                font-size: 0.8rem;
-                transition: all 0.2s;
-            }
-            .btn-guardar-resultado:hover {
-                background: rgba(76, 175, 80, 0.4);
-            }
-            .resultado-guardado {
-                font-size: 0.75rem;
-                color: #4caf50;
-                margin-left: 8px;
-            }
-            @media (max-width: 768px) {
-                .resultado-card-mejorado {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-                .score-inputs-mejorado {
-                    justify-content: center;
-                }
-                .match-info-mejorado {
-                    text-align: center;
-                }
-            }
-        </style>
-    `;
-    
-    fechasOrdenadas.forEach(fecha => {
-        const partidos = partidosPorFecha[fecha];
-        // Ordenar partidos por hora dentro de cada fecha
-        const partidosOrdenados = [...partidos].sort((a, b) => {
-            return (a.hora || '00:00').localeCompare(b.hora || '00:00');
-        });
-        
-        const fechaFormateada = formatearFechaLocal(fecha);
-        const isCollapsed = collapsedState[fecha] === true;
-        
-        html += `
-            <div class="resultados-fecha-group" data-fecha="${fecha}">
-                <div class="resultados-fecha-header" onclick="window.toggleResultadosFecha('${fecha}')">
-                    <span>📅 ${fechaFormateada} (${partidos.length} partidos)</span>
-                    <span class="toggle-icon">${isCollapsed ? '▶' : '▼'}</span>
-                </div>
-                <div class="resultados-fecha-body ${isCollapsed ? 'collapsed' : ''}" data-body="${fecha}">
-                    ${generarPartidosResultadosHTML(partidosOrdenados, resultados)}
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
-
-function generarPartidosResultadosHTML(partidos, resultados) {
-    return partidos.map(partido => {
+    container.innerHTML = partidosFiltrados.map(partido => {
         const resultado = resultados[partido.id];
-        const tieneResultado = resultado && (resultado.local !== undefined && resultado.visitante !== undefined);
-        const faseNombre = getFaseNombre(partido.fase);
-        const grupoInfo = partido.grupo ? `Grupo ${partido.grupo}` : '';
-        
-        // Determinar si el partido ya pasó (para estilo visual)
-        const partidoPasado = isPartidoPasadoLocal(partido.fecha, partido.hora);
-        
         return `
-            <div class="resultado-card-mejorado" data-id="${partido.id}" style="${partidoPasado && !tieneResultado ? 'border-left: 3px solid #ff9800;' : ''}">
-                <div class="match-info-mejorado">
-                    <div class="match-teams">
-                        ${conBandera(partido.local)} vs ${conBandera(partido.visitante)}
-                    </div>
-                    <div class="match-metadata">
-                        ⏰ ${partido.hora || '--:--'} hrs | 
-                        🏟️ ${partido.estadio} | 
-                        <span class="badge-fase">${faseNombre}</span>
-                        ${grupoInfo ? ` | ${grupoInfo}` : ''}
-                        ${partidoPasado && !tieneResultado ? ' | ⚠️ Partido pasado sin resultado' : ''}
-                    </div>
+            <div class="apuesta-card resultado-card" data-id="${partido.id}">
+                <div class="match-info">
+                    <div class="match-teams">${conBandera(partido.local)} vs ${conBandera(partido.visitante)}</div>
+                    <div class="match-date">📅 ${partido.fecha} ${partido.hora || ''} | ${getFaseNombre(partido.fase)}</div>
                 </div>
-                <div class="score-inputs-mejorado">
-                    <input type="number" 
-                           class="resultado-local-${partido.id}" 
-                           placeholder="0" 
-                           min="0" 
-                           max="20" 
-                           value="${resultado?.local !== undefined && resultado.local !== null ? resultado.local : ''}"
-                           style="${tieneResultado ? 'border-color: #4caf50;' : ''}">
+                <div class="score-inputs">
+                    <input type="number" class="resultado-local" placeholder="0" min="0" max="20" value="${resultado?.local !== undefined ? resultado.local : ''}">
                     <span class="vs">-</span>
-                    <input type="number" 
-                           class="resultado-visitante-${partido.id}" 
-                           placeholder="0" 
-                           min="0" 
-                           max="20" 
-                           value="${resultado?.visitante !== undefined && resultado.visitante !== null ? resultado.visitante : ''}"
-                           style="${tieneResultado ? 'border-color: #4caf50;' : ''}">
-                    <button class="btn-guardar-resultado" onclick="window.guardarResultadoUnico(${partido.id})">
-                        💾 Guardar
-                    </button>
-                    ${tieneResultado ? `<span class="resultado-guardado">✓ ${resultado.local} - ${resultado.visitante}</span>` : ''}
+                    <input type="number" class="resultado-visitante" placeholder="0" min="0" max="20" value="${resultado?.visitante !== undefined ? resultado.visitante : ''}">
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// Función para verificar si el partido ya pasó
-function isPartidoPasadoLocal(fechaPartido, horaPartido) {
-    if (!horaPartido) return false;
-    const [year, month, day] = fechaPartido.split('-');
-    const [hour, minute] = horaPartido.split(':');
-    const fechaHoraPartido = new Date(year, month - 1, day, parseInt(hour), parseInt(minute || '0'));
-    const ahora = new Date();
-    return ahora > fechaHoraPartido;
-}
-
-// Función global para colapsar/expandir fechas
-window.toggleResultadosFecha = (fecha) => {
-    const body = document.querySelector(`.resultados-fecha-body[data-body="${fecha}"]`);
-    const icon = document.querySelector(`.resultados-fecha-group[data-fecha="${fecha}"] .toggle-icon`);
-    if (body && icon) {
-        const isCollapsed = body.classList.contains('collapsed');
-        if (isCollapsed) {
-            body.classList.remove('collapsed');
-            icon.textContent = '▼';
-        } else {
-            body.classList.add('collapsed');
-            icon.textContent = '▶';
-        }
-        // Guardar estado
-        const collapsedState = JSON.parse(localStorage.getItem('resultadosCollapsedState') || '{}');
-        collapsedState[fecha] = !isCollapsed;
-        localStorage.setItem('resultadosCollapsedState', JSON.stringify(collapsedState));
-    }
-};
-
-// Función para guardar un resultado individual
-window.guardarResultadoUnico = async (idPartido) => {
-    const localInput = document.querySelector(`.resultado-local-${idPartido}`);
-    const visitanteInput = document.querySelector(`.resultado-visitante-${idPartido}`);
-    
-    if (!localInput || !visitanteInput) return;
-    
-    const local = parseInt(localInput.value);
-    const visitante = parseInt(visitanteInput.value);
-    
-    if (isNaN(local) || isNaN(visitante)) {
-        mostrarMensagem('Ingresá ambos marcadores', 'error');
-        return;
-    }
-    
-    const grupoId = document.getElementById('grupo-resultados-select').value;
-    if (!grupoId) {
-        mostrarMensagem('Seleccioná un grupo primero', 'error');
-        return;
-    }
-    
-    try {
-        await guardarResultadoEnGrupo(grupoId, idPartido, { local, visitante });
-        
-        // Cambiar estilo visual
-        localInput.style.borderColor = '#4caf50';
-        visitanteInput.style.borderColor = '#4caf50';
-        
-        // Actualizar o añadir el indicador de guardado
-        const parent = localInput.closest('.score-inputs-mejorado');
-        let savedSpan = parent.querySelector('.resultado-guardado');
-        if (!savedSpan) {
-            savedSpan = document.createElement('span');
-            savedSpan.className = 'resultado-guardado';
-            parent.appendChild(savedSpan);
-        }
-        savedSpan.textContent = `✓ ${local} - ${visitante}`;
-        
-        // También actualizar el borde del card si estaba marcado
-        const card = parent.closest('.resultado-card-mejorado');
-        if (card) {
-            card.style.borderLeft = '3px solid #4caf50';
-        }
-        
-        mostrarMensagem(`✅ Resultado ${local}-${visitante} guardado`, 'success');
-        
-        // Actualizar estadísticas
-        actualizarEstadisticas();
-    } catch (error) {
-        mostrarMensagem(`Error: ${error.message}`, 'error');
-    }
-};
-
-// Función de guardado masivo (reescrita para trabajar con la nueva UI)
 async function guardarResultadosDelGrupo(grupoId) {
     if (!grupoId) {
-        mostrarMensagem('Seleccioná un grupo', 'error');
+        mostrarMensaje('Seleccioná un grupo', 'error');
         return;
     }
     
-    // Recoger resultados de todos los inputs en la nueva UI
-    const cards = document.querySelectorAll('.resultado-card-mejorado');
+    const cards = document.querySelectorAll('#resultados-container .resultado-card');
     const resultados = {};
-    let contador = 0;
     
     cards.forEach(card => {
         const id = parseInt(card.dataset.id);
-        const localInput = card.querySelector(`.resultado-local-${id}`);
-        const visitanteInput = card.querySelector(`.resultado-visitante-${id}`);
+        const localInput = card.querySelector('.resultado-local');
+        const visitanteInput = card.querySelector('.resultado-visitante');
+        const local = parseInt(localInput.value);
+        const visitante = parseInt(visitanteInput.value);
         
-        if (localInput && visitanteInput) {
-            const local = parseInt(localInput.value);
-            const visitante = parseInt(visitanteInput.value);
-            
-            if (!isNaN(local) && !isNaN(visitante)) {
-                resultados[id] = { local, visitante };
-                contador++;
-            }
+        if (!isNaN(local) && !isNaN(visitante)) {
+            resultados[id] = { local, visitante };
         }
     });
     
-    if (contador === 0) {
-        mostrarMensagem('No ingresaste ningún resultado', 'error');
+    if (Object.keys(resultados).length === 0) {
+        mostrarMensaje('No ingresaste ningún resultado', 'error');
         return;
     }
-    
-    mostrarMensagem(`💾 Guardando ${contador} resultados...`, 'info');
     
     for (const [id, resultado] of Object.entries(resultados)) {
         await guardarResultadoEnGrupo(grupoId, parseInt(id), resultado);
     }
     
-    mostrarMensagem(`✅ ${contador} resultados guardados en el grupo`, 'success');
+    mostrarMensaje(`✅ ${Object.keys(resultados).length} resultados guardados en el grupo`, 'success');
     actualizarEstadisticas();
-    
-    // Recargar para mostrar los indicadores visuales
-    const filtroActual = document.getElementById('filtro-fase-resultados')?.value || 'all';
-    await cargarResultados(grupoId, filtroActual);
-}
-
-// Función auxiliar para formatear fecha
-function formatearFechaLocal(fecha) {
-    if (typeof formatearFecha === 'function') {
-        return formatearFecha(fecha);
-    }
-    // Fallback si no existe la función
-    const [year, month, day] = fecha.split('-');
-    const fechaObj = new Date(year, month - 1, day);
-    return fechaObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 // ============ REGLAS ============
