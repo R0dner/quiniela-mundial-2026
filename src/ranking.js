@@ -88,7 +88,7 @@ async function cargarRankingDelGrupo(grupoId) {
     document.getElementById('grupo-participantes-display').innerHTML = `👥 ${grupo.participantes.length} participantes`;
     
     const reglas = await getReglasDelGrupo(grupoId);
-    document.getElementById('grupo-reglas-display').innerHTML = `📜 ${reglas.puntosExacto} pts exacto / ${reglas.puntosGanador} pts ganador`;
+    document.getElementById('grupo-reglas-display').innerHTML = `📜 ${reglas.puntosExacto} pts exacto / ${reglas.puntosGanador} pts ganador / ${reglas.puntosEmpate || 2} pts empate`;
     
     await cargarDiasDisponibles();
     await actualizarRanking();
