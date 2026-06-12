@@ -199,6 +199,49 @@ window.agregarApuestaHandler = async function(partidoId, btnElement) {
         }
 };
 
+window.apostarEmpateHandler = async function(partidoId, btnElement) {
+    const ahora = Date.now();
+    if (ahora - ultimoClick < TIEMPO_ESPERA) return;
+    ultimoClick = ahora;
+
+    if (btnElement.disabled) return;
+
+    const limite = await getLimiteApuestasParticipante(currentGrupoId, currentParticipante);
+    const apuestasActuales = await getApuestasDePartido(currentGrupoId, currentParticipante, partidoId);
+
+    const yaTieneEmpate = apuestasActuales.some(a => a.esEmpate === true);
+    if (yaTieneEmpate) {
+        mostrarNotificacion('❌ Ya tienes un pronóstico de empate para este partido', 'error');
+        return;
+    }
+
+    if (apuestasActuales.length >= limite) {
+        mostrarNotificacion(`❌ Límite alcanzado (${limite} pronósticos)`, 'error');
+        return;
+    }
+
+    btnElement.disabled = true;
+    const textoOriginal = btnElement.textContent;
+    btnElement.textContent = '⏳ Guardando...';
+
+    const apuestaId = await agregarApuestaEnGrupo(
+        currentGrupoId,
+        currentParticipante,
+        partidoId,
+        { local: -1, visitante: -1, esEmpate: true }
+    );
+
+    if (apuestaId) {
+        mostrarNotificacion('🤝 Pronóstico de EMPATE agregado', 'success');
+        await cargarPartidos(currentFecha);
+        mostrarQR();
+    } else {
+        mostrarNotificacion('❌ Error al agregar empate', 'error');
+        btnElement.disabled = false;
+        btnElement.textContent = textoOriginal;
+    }
+};
+
 window.eliminarApuestaHandler = async function(partidoId, apuestaId, btnElement) {
     if (btnElement.disabled) return;
     
@@ -726,6 +769,9 @@ async function cargarPartidos(fecha) {
                             <input type="number" class="score-visitante" placeholder="Visitante" min="0" max="20">
                             <button class="btn-agregar-apuesta" data-id="${partido.id}" onclick="agregarApuestaHandler(${partido.id}, this)">➕ Agregar</button>
                         </div>
+                        <div class="btn-empate-container" style="text-align:center; margin-top:10px;">
+                            <button class="btn-empate" onclick="apostarEmpateHandler(${partido.id}, this)">🤝 Apostar Empate (X)</button>
+                        </div>
                         <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
                     </div>
                 ` : `<div class="score-readonly" id="readonly-${partido.id}"></div>`}
@@ -790,16 +836,23 @@ async function cargarApuestasExistentes(fecha) {
                 let html = '<div class="apuestas-multiples">';
                 apuestasPartido.forEach((apuesta, idx) => {
                     const resultado = resultados[partido.id];
+                    const esEmpate = apuesta.esEmpate === true;
+                    const marcador = esEmpate ? '🤝 EMPATE (X)' : `${apuesta.local} - ${apuesta.visitante}`;
                     let clase = '';
                     if (resultado) {
-                        if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) clase = 'acierto-exacto';
-                        else if ((apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                                 (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                                 (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)) clase = 'acierto-ganador';
-                        else clase = 'acierto-error';
+                        if (esEmpate) {
+                            if (resultado.local === resultado.visitante) clase = 'acierto-ganador';
+                            else clase = 'acierto-error';
+                        } else {
+                            if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) clase = 'acierto-exacto';
+                            else if ((apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                                     (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                                     (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)) clase = 'acierto-ganador';
+                            else clase = 'acierto-error';
+                        }
                     }
                     html += `<div class="apuesta-item ${clase}" data-apuesta-id="${apuesta.id}">
-                        <span>Pronóstico ${idx + 1}: ${apuesta.local} - ${apuesta.visitante}</span>
+                        <span>Pronóstico ${idx + 1}: ${marcador}</span>
                         ${puedeApostar ? `<button class="btn-eliminar-apuesta" onclick="eliminarApuestaHandler(${partido.id}, '${apuesta.id}', this)">🗑️</button>` : ''}
                     </div>`;
                 });

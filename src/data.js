@@ -93,7 +93,6 @@ export const todosLosPartidos = [
     
     // ========== GRUPO B ==========
     { id: 7, fecha: "2026-06-12", hora: "15:00", fase: "grupos", local: "Canadá", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "BMO Field, Toronto" },
-    { id: 8, fecha: "2026-06-12", hora: "21:00", fase: "grupos", local: "Estados Unidos", visitante: "Paraguay", grupo: "D", estadio: "SoFi Stadium, Los Ángeles" }, // Nota: EE.UU. está en Grupo D
     { id: 9, fecha: "2026-06-15", hora: "18:00", fase: "grupos", local: "Canadá", visitante: "Catar", grupo: "B", estadio: "BC Place, Vancouver" },
     { id: 10, fecha: "2026-06-15", hora: "15:00", fase: "grupos", local: "Suiza", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "SoFi Stadium, Los Ángeles" },
     { id: 11, fecha: "2026-06-21", hora: "15:00", fase: "grupos", local: "Suiza", visitante: "Canadá", grupo: "B", estadio: "BC Place, Vancouver" },

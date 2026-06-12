@@ -296,11 +296,12 @@ export async function calcularPuntosMultiples(grupoId, participante) {
     for (const [partidoId, apuestas] of Object.entries(apuestasPorPartido)) {
         const resultado = resultados[partidoId];
         if (resultado && Array.isArray(apuestas)) {
-            // DEDUPLICAR: una sola apuesta por marcador
+            
+            // Deduplicar antes de calcular
             const unicas = [];
             const claves = new Set();
             for (const apuesta of apuestas) {
-                const clave = `${apuesta.local}-${apuesta.visitante}`;
+                const clave = apuesta.esEmpate ? 'empate' : `${apuesta.local}-${apuesta.visitante}`;
                 if (!claves.has(clave)) {
                     claves.add(clave);
                     unicas.push(apuesta);
@@ -308,9 +309,19 @@ export async function calcularPuntosMultiples(grupoId, participante) {
             }
             
             for (const apuesta of unicas) {
+                // Caso empate genérico
+                if (apuesta.esEmpate === true) {
+                    if (resultado.local === resultado.visitante) {
+                        puntos += reglas.puntosGanador;
+                    }
+                    continue;
+                }
+                // Caso resultado exacto
                 if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
                     puntos += reglas.puntosExacto;
-                } else if (
+                }
+                // Caso ganador correcto
+                else if (
                     (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
                     (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
                     (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)

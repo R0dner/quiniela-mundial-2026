@@ -1357,6 +1357,41 @@
             }
         }
 
+/* ============ BOTÓN EMPATE ============ */
+        .btn-empate-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .btn-empate {
+            background: linear-gradient(135deg, rgba(100, 100, 255, 0.25), rgba(80, 80, 200, 0.15));
+            border: 1px solid rgba(150, 150, 255, 0.4);
+            color: #aaaaff;
+            padding: 9px 22px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-empate:hover {
+            background: linear-gradient(135deg, rgba(100, 100, 255, 0.45), rgba(80, 80, 200, 0.35));
+            border-color: rgba(150, 150, 255, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 100, 255, 0.2);
+        }
+
+        .btn-empate:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         /* ============ FIX MODAL MIS PRONÓSTICOS ============ */
 .modal-content {
     background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
@@ -1419,6 +1454,28 @@
 .modal-general-content::-webkit-scrollbar-thumb {
     background: rgba(255, 215, 0, 0.4);
     border-radius: 3px;
+}
+
+.btn-empate {
+    background: linear-gradient(135deg, rgba(100, 100, 255, 0.3), rgba(80, 80, 200, 0.2));
+    border: 1px solid rgba(150, 150, 255, 0.4);
+    color: #aaaaff;
+    padding: 8px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.btn-empate:hover {
+    background: linear-gradient(135deg, rgba(100,100,255,0.5), rgba(80,80,200,0.4));
+    border-color: rgba(150,150,255,0.7);
+    transform: translateY(-2px);
+}
+.btn-empate:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
 }
 
     </style>
