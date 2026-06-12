@@ -312,7 +312,7 @@ export async function calcularPuntosMultiples(grupoId, participante) {
                 // Caso empate genérico - siempre vale 2 puntos
                 if (apuesta.esEmpate === true) {
                     if (resultado.local === resultado.visitante) {
-                        puntos += 2;
+                        puntos += reglas.puntosEmpate || 2;
                     }
                     continue;
                 }

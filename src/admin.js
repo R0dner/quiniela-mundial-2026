@@ -365,6 +365,7 @@ async function cargarReglasDelGrupoEnPanel(grupoId) {
     const reglas = await getReglasDelGrupo(grupoId);
     document.getElementById('puntos-exacto').value = reglas.puntosExacto || 3;
     document.getElementById('puntos-ganador').value = reglas.puntosGanador || 1;
+    document.getElementById('puntos-empate').value = reglas.puntosEmpate || 2;
 }
 
 async function guardarReglasDelGrupo() {
@@ -377,6 +378,7 @@ async function guardarReglasDelGrupo() {
     const nuevasReglas = {
         puntosExacto: parseInt(document.getElementById('puntos-exacto').value),
         puntosGanador: parseInt(document.getElementById('puntos-ganador').value),
+        puntosEmpate: parseInt(document.getElementById('puntos-empate').value),
         permiteModificar: true,
         cierreAutomatico: true
     };
