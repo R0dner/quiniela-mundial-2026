@@ -1,8 +1,8 @@
 // src/ranking.js - Ranking diario y acumulado por grupos (con Firebase)
 import { 
     getGrupos, 
-    getRankingDelGrupo, 
-    getRankingDelGrupoPorDia,
+    getRankingDelGrupo,
+    getRankingDelGrupoPorDia,  // Importada desde groups.js
     getReglasDelGrupo,
     getPremiosDelGrupo
 } from './groups.js';
