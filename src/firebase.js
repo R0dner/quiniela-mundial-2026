@@ -154,24 +154,50 @@ export async function agregarApuestaEnFirebase(grupoId, participante, partidoId,
         const grupoRef = doc(db, 'grupos', grupoId);
         const grupoActual = await getDoc(grupoRef);
         
-        if (!grupoActual.exists()) {
-            return false;
-        }
+        if (!grupoActual.exists()) return false;
         
         const grupoData = grupoActual.data();
         
         if (!grupoData.apuestas) grupoData.apuestas = {};
         if (!grupoData.apuestas[participante]) grupoData.apuestas[participante] = {};
-        if (!grupoData.apuestas[participante][partidoId]) grupoData.apuestas[participante][partidoId] = [];
         
         const apuestaId = Date.now() + '-' + Math.random().toString(36).substr(2, 8);
         
-        grupoData.apuestas[participante][partidoId].push({
+        // Leer apuestas existentes del partido y normalizar a array
+        const apuestasExistentes = grupoData.apuestas[participante][partidoId];
+        let apuestasArray = [];
+        
+        if (Array.isArray(apuestasExistentes)) {
+            apuestasArray = apuestasExistentes;
+        } else if (apuestasExistentes && typeof apuestasExistentes === 'object') {
+            // Convertir objeto Firebase a array
+            apuestasArray = Object.values(apuestasExistentes);
+        }
+        
+        // Verificar duplicado
+        const yaExiste = apuestasArray.some(a => 
+            a.local === apuesta.local && 
+            a.visitante === apuesta.visitante &&
+            a.esEmpate === apuesta.esEmpate
+        );
+        if (yaExiste) return false;
+        
+        // Agregar nueva apuesta
+        apuestasArray.push({
             id: apuestaId,
             local: apuesta.local,
             visitante: apuesta.visitante,
+            esEmpate: apuesta.esEmpate || false,
             fecha: new Date().toISOString()
         });
+        
+        // Guardar como objeto indexado (más seguro en Firestore)
+        const apuestasComoObjeto = {};
+        apuestasArray.forEach((a, index) => {
+            apuestasComoObjeto[index] = a;
+        });
+        
+        grupoData.apuestas[participante][partidoId] = apuestasComoObjeto;
         
         await setDoc(grupoRef, grupoData);
         return apuestaId;
@@ -187,31 +213,39 @@ export async function eliminarApuestaEnFirebase(grupoId, participante, partidoId
         const grupoRef = doc(db, 'grupos', grupoId);
         const grupoActual = await getDoc(grupoRef);
         
-        if (!grupoActual.exists()) {
-            return false;
-        }
+        if (!grupoActual.exists()) return false;
         
         const grupoData = grupoActual.data();
-        const apuestasPartido = grupoData.apuestas?.[participante]?.[partidoId];
+        const apuestasRaw = grupoData.apuestas?.[participante]?.[partidoId];
         
-        if (apuestasPartido && Array.isArray(apuestasPartido)) {
-            const index = apuestasPartido.findIndex(a => a.id === apuestaId);
-            if (index !== -1) {
-                apuestasPartido.splice(index, 1);
-                if (apuestasPartido.length === 0) {
-                    delete grupoData.apuestas[participante][partidoId];
-                }
-                await setDoc(grupoRef, grupoData);
-                return true;
-            }
+        if (!apuestasRaw) return false;
+        
+        // Normalizar a array
+        let apuestasArray = Array.isArray(apuestasRaw) 
+            ? apuestasRaw 
+            : Object.values(apuestasRaw);
+        
+        // Filtrar la apuesta a eliminar
+        apuestasArray = apuestasArray.filter(a => a.id !== apuestaId);
+        
+        if (apuestasArray.length === 0) {
+            delete grupoData.apuestas[participante][partidoId];
+        } else {
+            // Guardar como objeto indexado
+            const apuestasComoObjeto = {};
+            apuestasArray.forEach((a, index) => {
+                apuestasComoObjeto[index] = a;
+            });
+            grupoData.apuestas[participante][partidoId] = apuestasComoObjeto;
         }
-        return false;
+        
+        await setDoc(grupoRef, grupoData);
+        return true;
     } catch (error) {
         console.error('Error al eliminar apuesta en Firebase:', error);
         return false;
     }
 }
-
 // ============ FUNCIONES PARA RESULTADOS ============
 
 // Guardar resultado en Firebase

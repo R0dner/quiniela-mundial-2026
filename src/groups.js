@@ -28,41 +28,24 @@ export function setPartidosGlobal(partidos) {
 
 // ============ GRUPOS (CON CONTROL DE CACHÉ) ============
 
-export async function getGrupos(forceRefresh = false) {
-    const ahora = Date.now();
-    
-    // Si forceRefresh es true o pasó el tiempo de caché, cargar desde Firebase
-    if (forceRefresh || (ahora - ultimaActualizacionGrupos) > TIEMPO_CACHE_MS) {
-        try {
-            const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
-            if (gruposFirebase && Object.keys(gruposFirebase).length > 0) {
-                gruposCache = gruposFirebase;
-                localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
-                ultimaActualizacionGrupos = ahora;
-                console.log('✅ Grupos cargados desde Firebase (refresh)');
-                return gruposFirebase;
-            }
-        } catch (error) {
-            console.error('Error cargando desde Firebase:', error);
+// REEMPLAZAR la función getGrupos() por esta:
+export async function getGrupos() {
+    try {
+        const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
+        if (Object.keys(gruposFirebase).length > 0) {
+            gruposCache = gruposFirebase;
+            localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
+            return gruposFirebase;
         }
+    } catch (error) {
+        console.error('Error cargando desde Firebase:', error);
     }
     
-    // Si hay caché, usarla
-    if (Object.keys(gruposCache).length > 0) {
-        console.log('📦 Usando caché de grupos');
-        return gruposCache;
-    }
-    
-    // Último recurso: localStorage
+    // Solo usar localStorage como fallback si Firebase falla
     const gruposGuardados = localStorage.getItem('quiniela_grupos');
     if (gruposGuardados) {
-        try {
-            gruposCache = JSON.parse(gruposGuardados);
-            console.log('📦 Grupos cargados desde localStorage');
-            return gruposCache;
-        } catch(e) {
-            console.error('Error parsing localStorage:', e);
-        }
+        gruposCache = JSON.parse(gruposGuardados);
+        return gruposCache;
     }
     
     return {};
@@ -283,11 +266,13 @@ export async function getApuestasMultiplesDeParticipante(grupoId, participante) 
     const apuestasLimpias = {};
     
     for (const [partidoId, valor] of Object.entries(apuestasBrutas)) {
-        // Firebase a veces convierte arrays a objetos {0: {...}, 1: {...}}
+        if (!valor) continue;
+        
+        // Firebase convierte arrays a objetos {0:{...}, 1:{...}}
+        // Hay que convertirlos de vuelta a array
         if (Array.isArray(valor)) {
             apuestasLimpias[partidoId] = valor;
-        } else if (typeof valor === 'object' && valor !== null) {
-            // Convertir objeto de Firebase a array
+        } else if (typeof valor === 'object') {
             apuestasLimpias[partidoId] = Object.values(valor);
         }
     }
@@ -302,7 +287,7 @@ export async function getApuestasDePartido(grupoId, participante, partidoId) {
     const valor = grupo.apuestas[participante][partidoId];
     if (!valor) return [];
     
-    // Firebase puede devolver objeto en lugar de array
+    // Mismo fix: Firebase puede devolver objeto en lugar de array
     if (Array.isArray(valor)) return valor;
     if (typeof valor === 'object') return Object.values(valor);
     return [];
