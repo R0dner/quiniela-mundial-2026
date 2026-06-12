@@ -782,47 +782,53 @@ async function cargarPartidos(fecha) {
                 </div>
                 <div id="apuestas-lista-${partido.id}" class="apuestas-lista"></div>
                 ${puedeApostar ? `
-                    <div class="nueva-apuesta-form">
-                    <div class="score-inputs" style="flex-direction: column; align-items: center; gap: 8px;">
-                        
-                        <!-- Etiquetas con nombres de equipos -->
-                        <div style="display: flex; align-items: center; gap: 12px; width: 100%; justify-content: center; margin-bottom: 4px;">
-                            <span style="font-size: 0.75rem; color: #ffd700; font-weight: 600; width: 85px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                ${partido.local}
-                            </span>
-                            <span style="width: 40px;"></span>
-                            <span style="font-size: 0.75rem; color: #ffd700; font-weight: 600; width: 85px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                ${partido.visitante}
-                            </span>
-                            <span style="width: 120px;"></span>
+                <div class="nueva-apuesta-form">
+                    <!-- Nombres de equipos -->
+                    <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+                        <span style="font-size:0.75rem; color:#ffd700; font-weight:600; text-align:center; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${partido.local}
+                        </span>
+                        <span style="color:rgba(255,255,255,0.3); font-size:0.75rem;">vs</span>
+                        <span style="font-size:0.75rem; color:#ffd700; font-weight:600; text-align:center; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            ${partido.visitante}
+                        </span>
+                    </div>
+
+                    <!-- Inputs y botón en una sola fila -->
+                    <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:nowrap;">
+                        <div style="display:flex; flex-direction:column; align-items:center;">
+                            <input type="number" class="score-local" 
+                                placeholder="0" min="0" max="20"
+                                style="width:60px; text-align:center; padding:10px 4px;">
+                            <span style="font-size:0.6rem; color:rgba(255,255,255,0.4); margin-top:3px;">LOCAL</span>
                         </div>
 
-                        <!-- Inputs con placeholder más claro -->
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="text-align: center;">
-                                <input type="number" class="score-local" 
-                                    placeholder="0" min="0" max="20"
-                                    style="text-align: center;">
-                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 3px;">LOCAL</div>
-                            </div>
-                            <span class="vs">-</span>
-                            <div style="text-align: center;">
-                                <input type="number" class="score-visitante" 
-                                    placeholder="0" min="0" max="20"
-                                    style="text-align: center;">
-                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 3px;">VISITANTE</div>
-                            </div>
-                            <button class="btn-agregar-apuesta" data-id="${partido.id}" 
-                                    onclick="agregarApuestaHandler(${partido.id}, this)">
-                                ➕ Agregar
-                            </button>
+                        <span class="vs" style="width:30px; height:30px; font-size:0.9rem;">-</span>
+
+                        <div style="display:flex; flex-direction:column; align-items:center;">
+                            <input type="number" class="score-visitante" 
+                                placeholder="0" min="0" max="20"
+                                style="width:60px; text-align:center; padding:10px 4px;">
+                            <span style="font-size:0.6rem; color:rgba(255,255,255,0.4); margin-top:3px;">VISITANTE</span>
                         </div>
+
+                        <button class="btn-agregar-apuesta" 
+                                data-id="${partido.id}" 
+                                onclick="agregarApuestaHandler(${partido.id}, this)"
+                                style="padding:10px 14px; font-size:0.8rem; white-space:nowrap;">
+                            ➕ Agregar
+                        </button>
                     </div>
-                        <div class="btn-empate-container" style="text-align:center; margin-top:10px;">
-                            <button class="btn-empate" onclick="apostarEmpateHandler(${partido.id}, this)">🤝 Apostar Empate (X)</button>
-                        </div>
-                        <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
+
+                    <!-- Botón empate -->
+                    <div class="btn-empate-container" style="text-align:center; margin-top:10px;">
+                        <button class="btn-empate" onclick="apostarEmpateHandler(${partido.id}, this)">
+                            🤝 Apostar Empate (X)
+                        </button>
                     </div>
+
+                    <div class="limite-apuestas">📊 Límite: ${limiteParticipante} pronóstico(s)</div>
+                </div>
                 ` : `<div class="score-readonly" id="readonly-${partido.id}"></div>`}
             </div>
         `;

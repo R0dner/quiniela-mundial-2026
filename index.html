@@ -1393,6 +1393,33 @@
             box-shadow: none;
         }
 
+/* Agregar dentro del <style> de index.html */
+@media (max-width: 480px) {
+    .score-local, .score-visitante {
+        width: 60px !important;
+        padding: 10px 4px !important;
+        font-size: 1rem !important;
+    }
+
+    .btn-agregar-apuesta {
+        padding: 10px 12px !important;
+        font-size: 0.78rem !important;
+    }
+
+    .btn-empate {
+        font-size: 0.8rem !important;
+        padding: 8px 16px !important;
+    }
+
+    /* Botones flotantes más chicos en móvil */
+    #btn-mostrar-qr-flotante,
+    #btn-mostrar-reglas-flotante {
+        padding: 10px 14px !important;
+        font-size: 0.78rem !important;
+        bottom: 15px !important;
+    }
+}
+
         /* ============ FIX MODAL MIS PRONÓSTICOS ============ */
 .modal-content {
     background: linear-gradient(135deg, #0f1a2e, #0a0f1f);
