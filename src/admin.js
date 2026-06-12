@@ -908,3 +908,210 @@ window.limpiarPronosticosDuplicados = async (grupoId, participanteNombre) => {
         mostrarMensaje('Error al limpiar: ' + error.message, 'error');
     }
 };
+
+// ============ REFERENCIA DE IDs DE PARTIDOS ============
+
+window.mostrarReferenciaPartidos = function() {
+    const existente = document.getElementById('modal-referencia-partidos');
+    if (existente) { existente.remove(); return; }
+
+    const grupos = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+    
+    let tabsHtml = grupos.map(g => 
+        `<button onclick="filtrarGrupoRef('${g}')" 
+            id="tab-ref-${g}"
+            style="padding:6px 14px; border-radius:20px; border:1px solid rgba(255,215,0,0.3); 
+                   background:rgba(255,215,0,0.1); color:#ffd700; cursor:pointer; font-size:0.8rem;">
+            Grupo ${g}
+        </button>`
+    ).join('');
+
+    tabsHtml += `
+        <button onclick="filtrarGrupoRef('octavos')" id="tab-ref-octavos"
+            style="padding:6px 14px; border-radius:20px; border:1px solid rgba(100,200,255,0.3); 
+                   background:rgba(100,200,255,0.1); color:#64c8ff; cursor:pointer; font-size:0.8rem;">
+            Octavos
+        </button>
+        <button onclick="filtrarGrupoRef('cuartos')" id="tab-ref-cuartos"
+            style="padding:6px 14px; border-radius:20px; border:1px solid rgba(100,200,255,0.3); 
+                   background:rgba(100,200,255,0.1); color:#64c8ff; cursor:pointer; font-size:0.8rem;">
+            Cuartos
+        </button>
+        <button onclick="filtrarGrupoRef('semis')" id="tab-ref-semis"
+            style="padding:6px 14px; border-radius:20px; border:1px solid rgba(100,200,255,0.3); 
+                   background:rgba(100,200,255,0.1); color:#64c8ff; cursor:pointer; font-size:0.8rem;">
+            Semis + Final
+        </button>
+    `;
+
+    const modal = document.createElement('div');
+    modal.id = 'modal-referencia-partidos';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.92); z-index: 99999;
+        display: flex; align-items: flex-start; justify-content: center;
+        overflow-y: auto; padding: 20px;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: #0d1b35; border-radius: 16px; max-width: 900px; width: 100%; 
+                    padding: 24px; border: 1px solid rgba(255,215,0,0.3); margin: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="color:#ffd700; margin:0;">🗺️ Mapa de IDs de Partidos — Mundial 2026</h3>
+                <button onclick="document.getElementById('modal-referencia-partidos').remove()"
+                    style="background:rgba(255,255,255,0.1); border:none; color:white; 
+                           width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1.1rem;">✕</button>
+            </div>
+            <p style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-bottom:16px;">
+                Usá este mapa cuando trabajés directamente en Firebase para saber a qué partido corresponde cada ID.
+            </p>
+
+            <!-- Filtros por grupo -->
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
+                <button onclick="filtrarGrupoRef('todos')" id="tab-ref-todos"
+                    style="padding:6px 14px; border-radius:20px; border:1px solid #ffd700; 
+                           background:rgba(255,215,0,0.2); color:#ffd700; cursor:pointer; font-size:0.8rem; font-weight:bold;">
+                    Todos
+                </button>
+                ${tabsHtml}
+            </div>
+
+            <!-- Tabla -->
+            <div id="tabla-referencia-partidos" style="overflow-x:auto;"></div>
+
+            <!-- Búsqueda por ID -->
+            <div style="margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <input type="number" id="buscar-id-partido" placeholder="Buscar por ID (ej: 15)"
+                    style="padding:8px 14px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,215,0,0.3); 
+                           border-radius:8px; color:white; width:180px;">
+                <button onclick="buscarPartidoPorId()"
+                    style="padding:8px 16px; background:rgba(255,215,0,0.2); border:1px solid #ffd700; 
+                           color:#ffd700; border-radius:8px; cursor:pointer;">
+                    🔍 Buscar
+                </button>
+                <span id="resultado-busqueda" style="color:#ffd700; font-size:0.9rem;"></span>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    // Mostrar todos al abrir
+    filtrarGrupoRef('todos');
+};
+
+window.filtrarGrupoRef = function(filtro) {
+    const container = document.getElementById('tabla-referencia-partidos');
+    if (!container) return;
+
+    let partidos = todosLosPartidosData;
+
+    if (filtro === 'todos') {
+        partidos = todosLosPartidosData;
+    } else if (['octavos','cuartos'].includes(filtro)) {
+        partidos = todosLosPartidosData.filter(p => p.fase === filtro);
+    } else if (filtro === 'semis') {
+        partidos = todosLosPartidosData.filter(p => ['semis','final','tercer'].includes(p.fase));
+    } else {
+        // Es un grupo (A-L)
+        partidos = todosLosPartidosData.filter(p => p.grupo === filtro);
+    }
+
+    if (partidos.length === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center; padding:20px;">No hay partidos para este filtro</p>';
+        return;
+    }
+
+    const faseColores = {
+        'grupos':  { bg: 'rgba(255,215,0,0.08)',  border: 'rgba(255,215,0,0.2)',  label: '🟡' },
+        'octavos': { bg: 'rgba(100,200,255,0.08)', border: 'rgba(100,200,255,0.2)', label: '🔵' },
+        'cuartos': { bg: 'rgba(150,255,150,0.08)', border: 'rgba(150,255,150,0.2)', label: '🟢' },
+        'semis':   { bg: 'rgba(255,150,50,0.08)',  border: 'rgba(255,150,50,0.2)',  label: '🟠' },
+        'final':   { bg: 'rgba(255,80,80,0.08)',   border: 'rgba(255,80,80,0.2)',   label: '🔴' },
+        'tercer':  { bg: 'rgba(180,180,180,0.08)', border: 'rgba(180,180,180,0.2)', label: '⚪' },
+    };
+
+    let html = `
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+            <thead>
+                <tr style="background:rgba(255,215,0,0.15);">
+                    <th style="padding:10px 8px; color:#ffd700; text-align:center; width:60px;">ID Firebase</th>
+                    <th style="padding:10px 8px; color:#ffd700;">Local</th>
+                    <th style="padding:10px 8px; color:#ffd700; text-align:center;">-</th>
+                    <th style="padding:10px 8px; color:#ffd700;">Visitante</th>
+                    <th style="padding:10px 8px; color:#ffd700; text-align:center;">Fecha</th>
+                    <th style="padding:10px 8px; color:#ffd700; text-align:center;">Hora (BOL)</th>
+                    <th style="padding:10px 8px; color:#ffd700; text-align:center;">Fase</th>
+                    ${filtro === 'todos' ? '<th style="padding:10px 8px; color:#ffd700; text-align:center;">Grupo</th>' : ''}
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    partidos.forEach(p => {
+        const c = faseColores[p.fase] || faseColores['grupos'];
+        html += `
+            <tr style="background:${c.bg}; border-bottom:1px solid ${c.border}; transition:background 0.2s;"
+                onmouseover="this.style.background='rgba(255,215,0,0.12)'"
+                onmouseout="this.style.background='${c.bg}'">
+                <td style="padding:8px; text-align:center;">
+                    <span style="background:rgba(255,215,0,0.2); border:1px solid #ffd700; 
+                                 border-radius:6px; padding:3px 10px; font-weight:bold; color:#ffd700; font-size:0.9rem;">
+                        ${p.id}
+                    </span>
+                </td>
+                <td style="padding:8px; font-weight:500; color:white;">${p.local}</td>
+                <td style="padding:8px; text-align:center; color:rgba(255,255,255,0.4);">vs</td>
+                <td style="padding:8px; font-weight:500; color:white;">${p.visitante}</td>
+                <td style="padding:8px; text-align:center; color:rgba(255,255,255,0.6); font-size:0.8rem;">
+                    ${formatearFechaCorta(p.fecha)}
+                </td>
+                <td style="padding:8px; text-align:center; color:rgba(255,255,255,0.6); font-size:0.8rem;">
+                    ${p.hora}
+                </td>
+                <td style="padding:8px; text-align:center; font-size:0.75rem;">
+                    ${c.label} ${getFaseNombre(p.fase)}
+                    ${p.grupo ? `<span style="font-size:0.7rem; color:rgba(255,255,255,0.4);"> Gr.${p.grupo}</span>` : ''}
+                </td>
+                ${filtro === 'todos' ? `<td style="padding:8px; text-align:center; color:rgba(255,255,255,0.5);">${p.grupo || '—'}</td>` : ''}
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>
+        <div style="text-align:right; margin-top:8px; color:rgba(255,255,255,0.3); font-size:0.75rem;">
+            ${partidos.length} partido(s) mostrado(s)
+        </div>`;
+
+    container.innerHTML = html;
+};
+
+window.buscarPartidoPorId = function() {
+    const idBuscado = parseInt(document.getElementById('buscar-id-partido').value);
+    const resultado = document.getElementById('resultado-busqueda');
+    
+    if (isNaN(idBuscado)) {
+        resultado.textContent = '❌ Ingresá un número válido';
+        return;
+    }
+
+    const partido = todosLosPartidosData.find(p => p.id === idBuscado);
+    
+    if (partido) {
+        resultado.innerHTML = `
+            ✅ ID <strong>${idBuscado}</strong>: 
+            <span style="color:white;">${partido.local} vs ${partido.visitante}</span> — 
+            ${formatearFechaCorta(partido.fecha)} ${partido.hora} — 
+            <span style="color:#aaa;">${getFaseNombre(partido.fase)}${partido.grupo ? ` Gr.${partido.grupo}` : ''}</span>
+        `;
+    } else {
+        resultado.textContent = `❌ No existe ningún partido con ID ${idBuscado}`;
+    }
+};
+
+function formatearFechaCorta(fecha) {
+    const [y, m, d] = fecha.split('-');
+    const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return `${d} ${meses[parseInt(m)]}`;
+}

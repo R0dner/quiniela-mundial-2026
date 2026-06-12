@@ -1,4 +1,4 @@
-// src/groups.js - Sistema de grupos con Firebase (CORREGIDO)
+// src/groups.js - Sistema de grupos con Firebase (CORREGIDO - PERSISTENCIA ASEGURADA)
 import { 
     guardarGrupoEnFirebase, 
     obtenerGrupoDeFirebase, 
@@ -35,7 +35,7 @@ export async function getGrupos(forceRefresh = false) {
     if (forceRefresh || (ahora - ultimaActualizacionGrupos) > TIEMPO_CACHE_MS) {
         try {
             const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
-            if (Object.keys(gruposFirebase).length > 0) {
+            if (gruposFirebase && Object.keys(gruposFirebase).length > 0) {
                 gruposCache = gruposFirebase;
                 localStorage.setItem('quiniela_grupos', JSON.stringify(gruposFirebase));
                 ultimaActualizacionGrupos = ahora;
@@ -56,9 +56,13 @@ export async function getGrupos(forceRefresh = false) {
     // Último recurso: localStorage
     const gruposGuardados = localStorage.getItem('quiniela_grupos');
     if (gruposGuardados) {
-        gruposCache = JSON.parse(gruposGuardados);
-        console.log('📦 Grupos cargados desde localStorage');
-        return gruposCache;
+        try {
+            gruposCache = JSON.parse(gruposGuardados);
+            console.log('📦 Grupos cargados desde localStorage');
+            return gruposCache;
+        } catch(e) {
+            console.error('Error parsing localStorage:', e);
+        }
     }
     
     return {};
@@ -272,15 +276,23 @@ export async function agregarApuestaEnGrupo(grupoId, participante, partidoId, ap
 }
 
 export async function getApuestasMultiplesDeParticipante(grupoId, participante) {
-    // FORZAR RECARGA para obtener datos actualizados
-    const grupo = await getGrupo(grupoId, true);
-    if (!grupo || !grupo.apuestas || !grupo.apuestas[participante]) {
-        console.log('📭 No hay apuestas para', participante);
+    // FORZAR RECARGA ABSOLUTA desde Firebase - SIN CACHÉ
+    try {
+        const gruposFirebase = await obtenerTodosLosGruposDeFirebase();
+        const grupo = gruposFirebase[grupoId];
+        
+        if (!grupo || !grupo.apuestas || !grupo.apuestas[participante]) {
+            console.log(`📭 No hay apuestas para ${participante} en ${grupoId}`);
+            return {};
+        }
+        
+        console.log(`📊 Apuestas encontradas para ${participante}:`, Object.keys(grupo.apuestas[participante]).length, 'partidos');
+        return grupo.apuestas[participante];
+        
+    } catch (error) {
+        console.error('Error cargando apuestas:', error);
         return {};
     }
-    
-    console.log(`📊 Apuestas cargadas para ${participante}:`, Object.keys(grupo.apuestas[participante]).length, 'partidos');
-    return grupo.apuestas[participante];
 }
 
 export async function getApuestasDePartido(grupoId, participante, partidoId) {
@@ -305,6 +317,31 @@ export async function eliminarApuesta(grupoId, participante, partidoId, apuestaI
         }
     }
     return resultado;
+}
+
+// Función de depuración para verificar apuestas
+export async function verificarApuestasEnFirebase(grupoId, participante) {
+    try {
+        const grupos = await getGrupos(true);
+        const grupo = grupos[grupoId];
+        
+        if (!grupo) {
+            console.log('❌ Grupo no encontrado:', grupoId);
+            return null;
+        }
+        
+        const apuestas = grupo.apuestas?.[participante];
+        console.log(`🔍 Verificando apuestas para ${participante} en ${grupoId}:`, apuestas);
+        
+        return {
+            existe: !!apuestas,
+            cantidadPartidos: apuestas ? Object.keys(apuestas).length : 0,
+            totalApuestas: apuestas ? Object.values(apuestas).reduce((sum, arr) => sum + (arr?.length || 0), 0) : 0
+        };
+    } catch (error) {
+        console.error('Error verificando:', error);
+        return null;
+    }
 }
 
 // ============ RESULTADOS ============
@@ -406,7 +443,6 @@ export async function getRankingDelGrupoPorDia(grupoId, fecha) {
     const grupo = await getGrupo(grupoId, true);
     if (!grupo) return [];
     
-    // Obtener los IDs de los partidos de esa fecha
     const partidosDeFecha = todosLosPartidosGlobal.filter(p => p.fecha === fecha);
     const partidosIds = partidosDeFecha.map(p => p.id);
     
@@ -421,7 +457,6 @@ export async function getRankingDelGrupoPorDia(grupoId, fecha) {
             const apuestas = apuestasPorPartido[partidoId];
             const resultado = resultados[partidoId];
             if (apuestas && Array.isArray(apuestas) && resultado) {
-                // DEDUPLICAR: una sola apuesta por marcador
                 const unicas = [];
                 const claves = new Set();
                 for (const apuesta of apuestas) {
@@ -510,12 +545,7 @@ export async function getPremiosDelGrupo(grupoId) {
 export async function getLimiteApuestasParticipante(grupoId, participante) {
     const grupo = await getGrupo(grupoId, true);
     if (!grupo) return 1;
-    
-    if (!grupo.apuestasExtras) {
-        return 1;
-    }
-    
-    return grupo.apuestasExtras[participante] || 1;
+    return grupo.apuestasExtras?.[participante] || 1;
 }
 
 export async function actualizarLimiteApuestasParticipante(grupoId, participante, limite) {
@@ -533,8 +563,7 @@ export async function actualizarLimiteApuestasParticipante(grupoId, participante
 
 export async function getApuestasExtrasDelGrupo(grupoId) {
     const grupo = await getGrupo(grupoId, true);
-    if (!grupo) return {};
-    return grupo.apuestasExtras || {};
+    return grupo?.apuestasExtras || {};
 }
 
 // ============ GRUPO GENERAL ============
