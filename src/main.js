@@ -682,25 +682,36 @@ async function mostrarMisApuestas() {
         
         let puntos = 0;
         let acierto = '';
+        let clasePuntos = '';
+        
         if (ap.resultado) {
             if (ap.local === ap.resultado.local && ap.visitante === ap.resultado.visitante) {
                 puntos = reglas.puntosExacto;
                 acierto = '✅ EXACTO';
+                clasePuntos = 'puntos-exacto';
             } else if ((ap.local > ap.visitante && ap.resultado.local > ap.resultado.visitante) ||
                        (ap.local < ap.visitante && ap.resultado.local < ap.resultado.visitante) ||
                        (ap.local === ap.visitante && ap.resultado.local === ap.resultado.visitante)) {
                 puntos = reglas.puntosGanador;
                 acierto = '🎯 GANADOR';
+                clasePuntos = 'puntos-ganador';
             } else {
                 acierto = '❌ ERROR';
+                clasePuntos = 'puntos-error';
             }
             totalPuntos += puntos;
         }
         
-        html += `<div class="apuesta-resumen">
-            Pronóstico: ${ap.local} - ${ap.visitante}
-            ${ap.resultado ? `<br>Resultado: ${ap.resultado.local} - ${ap.resultado.visitante}<br>${acierto} ${puntos > 0 ? `(+${puntos})` : ''}` : '<br>⏳ Resultado pendiente'}
-        </div>`;
+        html += `
+            <div class="apuesta-resumen">
+                <strong>🎯 Pronóstico:</strong>
+                <div class="pronostico">${ap.local} - ${ap.visitante}</div>
+                ${ap.resultado ? `
+                    <div class="resultado">🏆 Resultado oficial: ${ap.resultado.local} - ${ap.resultado.visitante}</div>
+                    <div class="puntos ${clasePuntos}">${acierto} +${puntos} puntos</div>
+                ` : '<div class="resultado" style="color: #ffc107;">⏳ Resultado pendiente</div>'}
+            </div>
+        `;
     });
     
     html += `<div class="total-puntos">🏆 TOTAL DE PUNTOS: ${totalPuntos}</div>`;
