@@ -72,9 +72,21 @@ export async function guardarGrupos(grupos) {
     }
 }
 
-export async function getGrupo(grupoId, forceRefresh = false) {
-    const grupos = await getGrupos(forceRefresh);
-    return grupos[grupoId];
+// REEMPLAZAR getGrupo por:
+export async function getGrupo(grupoId) {
+    try {
+        // Siempre leer directo de Firebase para tener datos frescos
+        const grupoFirebase = await obtenerGrupoDeFirebase(grupoId);
+        if (grupoFirebase) {
+            // Actualizar caché
+            gruposCache[grupoId] = grupoFirebase;
+            return grupoFirebase;
+        }
+    } catch (error) {
+        console.error('Error leyendo grupo de Firebase:', error);
+    }
+    // Fallback al caché
+    return gruposCache[grupoId] || null;
 }
 
 export async function crearGrupo(grupoId, config) {
@@ -358,51 +370,53 @@ export async function getResultadosDelGrupo(grupoId) {
 
 // ============ CÁLCULO DE PUNTOS ============
 
+// REEMPLAZAR calcularPuntosMultiples por:
 export async function calcularPuntosMultiples(grupoId, participante) {
-    const grupo = await getGrupo(grupoId, true);
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return 0;
     
-    const apuestasPorPartido = grupo.apuestas[participante] || {};
+    const apuestasPorPartido = grupo.apuestas?.[participante] || {};
     const resultados = grupo.resultados || {};
     const reglas = grupo.reglas;
     
     let puntos = 0;
     
-    for (const [partidoId, apuestas] of Object.entries(apuestasPorPartido)) {
+    for (const [partidoId, apuestasRaw] of Object.entries(apuestasPorPartido)) {
         const resultado = resultados[partidoId];
-        if (resultado && Array.isArray(apuestas)) {
-            
-            // Deduplicar antes de calcular
-            const unicas = [];
-            const claves = new Set();
-            for (const apuesta of apuestas) {
-                const clave = apuesta.esEmpate ? 'empate' : `${apuesta.local}-${apuesta.visitante}`;
-                if (!claves.has(clave)) {
-                    claves.add(clave);
-                    unicas.push(apuesta);
-                }
+        if (!resultado || !apuestasRaw) continue;
+        
+        // ← NORMALIZAR: objeto Firebase {0:{...}} → array [{...}]
+        let apuestas = [];
+        if (Array.isArray(apuestasRaw)) {
+            apuestas = apuestasRaw;
+        } else if (typeof apuestasRaw === 'object') {
+            apuestas = Object.values(apuestasRaw);
+        }
+        
+        // Deduplicar
+        const unicas = [];
+        const claves = new Set();
+        for (const apuesta of apuestas) {
+            const clave = apuesta.esEmpate ? 'empate' : `${apuesta.local}-${apuesta.visitante}`;
+            if (!claves.has(clave)) {
+                claves.add(clave);
+                unicas.push(apuesta);
             }
-            
-            for (const apuesta of unicas) {
-                // Caso empate genérico
-                if (apuesta.esEmpate === true) {
-                    if (resultado.local === resultado.visitante) {
-                        puntos += reglas.puntosEmpate || 2;
-                    }
-                    continue;
+        }
+        
+        for (const apuesta of unicas) {
+            if (apuesta.esEmpate === true) {
+                if (resultado.local === resultado.visitante) {
+                    puntos += reglas.puntosEmpate || 2;
                 }
-                // Caso resultado exacto
-                if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                    puntos += reglas.puntosExacto;
-                }
-                // Caso ganador correcto
-                else if (
-                    (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                    (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                    (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                ) {
-                    puntos += reglas.puntosGanador;
-                }
+            } else if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                puntos += reglas.puntosExacto;
+            } else if (
+                (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+            ) {
+                puntos += reglas.puntosGanador;
             }
         }
     }

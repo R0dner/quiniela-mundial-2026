@@ -1,6 +1,7 @@
 // src/admin.js - Admin con todas las funciones (con Firebase)
 import { 
     getGrupos, 
+    getGrupo,
     guardarGrupos, 
     crearGrupo, 
     eliminarGrupo,
@@ -299,15 +300,25 @@ async function cargarParticipantesDelGrupoEnPanel(grupoId) {
     });
 }
 
-// Función auxiliar para contar pronósticos
+// REEMPLAZAR la función por:
 async function getCantidadPronosticosParticipante(grupoId, participanteNombre) {
     try {
-        const grupos = await getGrupos();
-        const grupo = grupos[grupoId];
-        if (grupo && grupo.apuestas && grupo.apuestas[participanteNombre]) {
-            return Object.keys(grupo.apuestas[participanteNombre]).length;
+        const grupo = await getGrupo(grupoId); // ← usa getGrupo directo, no getGrupos
+        if (!grupo?.apuestas?.[participanteNombre]) return 0;
+        
+        const apuestasPorPartido = grupo.apuestas[participanteNombre];
+        let total = 0;
+        
+        for (const apuestasRaw of Object.values(apuestasPorPartido)) {
+            // Normalizar objeto Firebase a array
+            if (Array.isArray(apuestasRaw)) {
+                total += apuestasRaw.length;
+            } else if (typeof apuestasRaw === 'object' && apuestasRaw !== null) {
+                total += Object.values(apuestasRaw).length;
+            }
         }
-        return 0;
+        
+        return total;
     } catch (error) {
         return 0;
     }
@@ -405,25 +416,37 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
         let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
         html += '<thead><tr style="background: rgba(255,215,0,0.1);"><th style="padding: 8px;">Partido</th><th>Pronóstico</th><th>Acción</th></tr></thead><tbody>';
         
-        for (const [partidoId, apuesta] of Object.entries(pronosticos)) {
+        // Dentro de cargarPronosticosParticipante, REEMPLAZAR el for loop por:
+        for (const [partidoId, apuestasRaw] of Object.entries(pronosticos)) {
             const partido = partidosMap[parseInt(partidoId)];
             if (!partido) continue;
             
-            const pronosticoTexto = `${apuesta.local}-${apuesta.visitante}`;
-            const partidoTexto = `${partido.local} vs ${partido.visitante}`;
+            // Normalizar objeto Firebase a array
+            let apuestasArray = [];
+            if (Array.isArray(apuestasRaw)) {
+                apuestasArray = apuestasRaw;
+            } else if (typeof apuestasRaw === 'object' && apuestasRaw !== null) {
+                apuestasArray = Object.values(apuestasRaw);
+            }
             
-            html += `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;">${partidoTexto}</td>
-                    <td style="padding: 8px; text-align: center; font-weight: bold; color: #ffd700;">${pronosticoTexto}</td>
-                    <td style="padding: 8px;">
-                        <button onclick="window.eliminarPronostico('${grupoId}', '${participanteNombre}', ${partidoId})" 
-                                style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 4px 10px; border-radius: 5px; cursor: pointer;">
-                            🗑️ Eliminar
-                        </button>
-                    </td>
-                </tr>
-            `;
+            for (const apuesta of apuestasArray) {
+                const esEmpate = apuesta.esEmpate === true;
+                const pronosticoTexto = esEmpate ? '🤝 EMPATE (X)' : `${apuesta.local}-${apuesta.visitante}`;
+                const partidoTexto = `${partido.local} vs ${partido.visitante}`;
+                
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <td style="padding: 8px;">${partidoTexto}</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; color: #ffd700;">${pronosticoTexto}</td>
+                        <td style="padding: 8px;">
+                            <button onclick="window.eliminarPronostico('${grupoId}', '${participanteNombre}', ${partidoId}, '${apuesta.id}')" 
+                                    style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 4px 10px; border-radius: 5px; cursor: pointer;">
+                                🗑️ Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
         }
         
         html += '</tbody></table>';
