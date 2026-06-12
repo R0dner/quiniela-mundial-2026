@@ -1788,6 +1788,29 @@
         </div>
     </div>
 
+<!-- Botón flotante para mostrar QR de pago -->
+<button id="btn-mostrar-qr-flotante" 
+    onclick="toggleQR()"
+    style="
+        display: none;
+        position: fixed;
+        bottom: 25px;
+        right: 20px;
+        background: linear-gradient(135deg, #25D366, #128C7E);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 0.9rem;
+        box-shadow: 0 5px 20px rgba(37,211,102,0.4);
+        z-index: 9000;
+        transition: all 0.3s;
+    ">
+    💰 Ver datos de pago
+</button>
+
     <script type="module" src="src/main.js"></script>
 </body>
 </html>

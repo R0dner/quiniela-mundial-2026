@@ -689,6 +689,10 @@ function iniciarPanelApuestas() {
     
     cargarSelectorDias();
     configurarSelectorDias();
+
+    // ← AGREGAR ESTO: mostrar botón flotante siempre que el usuario esté logueado
+    const btnFlotante = document.getElementById('btn-mostrar-qr-flotante');
+    if (btnFlotante) btnFlotante.style.display = 'block';
 }
 
 function cargarSelectorDias() {
@@ -918,10 +922,18 @@ function cambiarDeGrupo() {
     currentGrupoId = '';
     currentGrupoNombre = '';
     currentParticipante = '';
+    qrMostrado = false; // ← resetear el estado del QR
+
+    // Ocultar botón flotante y QR
+    const btnFlotante = document.getElementById('btn-mostrar-qr-flotante');
+    const qrDiv = document.getElementById('qr-pago');
+    if (btnFlotante) btnFlotante.style.display = 'none';
+    if (qrDiv) qrDiv.style.display = 'none';
+
     registroPanel.style.display = 'none';
     apuestasPanel.style.display = 'none';
     seleccionGruposDiv.style.display = 'block';
-    cargarListaGrupos(); // recarga el banner principal
+    cargarListaGrupos();
     mostrarNotificacion('🔄 Has salido del grupo', 'info');
 }
 
@@ -1260,24 +1272,47 @@ function configurarEventListeners() {
 
 let qrMostrado = false;
 
+// REEMPLAZAR la función mostrarQR por:
 function mostrarQR() {
     const qrDiv = document.getElementById('qr-pago');
+    const btnFlotante = document.getElementById('btn-mostrar-qr-flotante');
 
-    if (qrDiv && !qrMostrado) {
+    if (qrDiv) {
         qrDiv.style.display = 'block';
         qrMostrado = true;
 
-        // ACTIVAR BOTÓN DE WHATSAPP
+        // Mostrar botón flotante
+        if (btnFlotante) btnFlotante.style.display = 'block';
+
         setupWhatsAppButton();
 
         setTimeout(() => {
-            qrDiv.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
+            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 500);
     }
 }
+
+// AGREGAR esta función nueva (después de mostrarQR):
+window.toggleQR = function() {
+    const qrDiv = document.getElementById('qr-pago');
+    const btnFlotante = document.getElementById('btn-mostrar-qr-flotante');
+
+    if (!qrDiv) return;
+
+    if (qrDiv.style.display === 'none' || qrDiv.style.display === '') {
+        // Mostrar QR
+        qrDiv.style.display = 'block';
+        if (btnFlotante) btnFlotante.textContent = '✖ Ocultar pago';
+        setupWhatsAppButton();
+        setTimeout(() => {
+            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    } else {
+        // Ocultar QR
+        qrDiv.style.display = 'none';
+        if (btnFlotante) btnFlotante.textContent = '💰 Ver datos de pago';
+    }
+};
 
 // Configurar el botón de WhatsApp
 function configurarBotonWhatsApp() {
