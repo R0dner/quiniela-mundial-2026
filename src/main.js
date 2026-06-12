@@ -52,41 +52,41 @@ const verApuestasBtn = document.getElementById('ver-mis-apuestas');
 
 // ============ POPUP DE REGLAS ============
 
+// REEMPLAZAR mostrarPopupReglas por:
 function mostrarPopupReglas() {
+    // El botón flotante siempre visible
+    const btnFlotante = document.getElementById('btn-mostrar-reglas-flotante');
+    if (btnFlotante) btnFlotante.style.display = 'block';
+
+    // Solo mostrar el popup automáticamente si no marcó "no mostrar"
     const noMostrar = localStorage.getItem('quiniela_no_mostrar_reglas');
-    if (noMostrar === 'true') {
-        return;
-    }
-    
+    if (noMostrar === 'true') return;
+
     const popup = document.getElementById('popup-rules');
     if (popup) {
         popup.style.display = 'flex';
-        
+
         const cerrarBtn = document.getElementById('cerrar-rules-btn');
         const noMostrarCheck = document.getElementById('no-mostrar-rules');
-        
+
         const cerrarPopup = () => {
             popup.style.display = 'none';
-            if (noMostrarCheck && noMostrarCheck.checked) {
+            if (noMostrarCheck?.checked) {
                 localStorage.setItem('quiniela_no_mostrar_reglas', 'true');
             }
         };
-        
+
         const newCerrarBtn = cerrarBtn.cloneNode(true);
-        if (cerrarBtn && cerrarBtn.parentNode) {
+        if (cerrarBtn?.parentNode) {
             cerrarBtn.parentNode.replaceChild(newCerrarBtn, cerrarBtn);
         }
-        
-        if (newCerrarBtn) {
-            newCerrarBtn.addEventListener('click', cerrarPopup);
-        }
-        
+
+        newCerrarBtn?.addEventListener('click', cerrarPopup);
+
         popup.addEventListener('click', (e) => {
-            if (e.target === popup) {
-                cerrarPopup();
-            }
+            if (e.target === popup) cerrarPopup();
         });
-        
+
         const handleEsc = (e) => {
             if (e.key === 'Escape') {
                 cerrarPopup();
@@ -1311,6 +1311,37 @@ window.toggleQR = function() {
         // Ocultar QR
         qrDiv.style.display = 'none';
         if (btnFlotante) btnFlotante.textContent = '💰 Ver datos de pago';
+    }
+};
+
+window.toggleReglas = function() {
+    const popup = document.getElementById('popup-rules');
+    if (!popup) return;
+
+    if (popup.style.display === 'flex') {
+        popup.style.display = 'none';
+    } else {
+        popup.style.display = 'flex';
+
+        // Reasignar el botón cerrar por si acaso
+        const cerrarBtn = document.getElementById('cerrar-rules-btn');
+        const noMostrarCheck = document.getElementById('no-mostrar-rules');
+
+        const newCerrarBtn = cerrarBtn.cloneNode(true);
+        if (cerrarBtn?.parentNode) {
+            cerrarBtn.parentNode.replaceChild(newCerrarBtn, cerrarBtn);
+        }
+
+        newCerrarBtn?.addEventListener('click', () => {
+            popup.style.display = 'none';
+            if (noMostrarCheck?.checked) {
+                localStorage.setItem('quiniela_no_mostrar_reglas', 'true');
+            }
+        });
+
+        popup.onclick = (e) => {
+            if (e.target === popup) popup.style.display = 'none';
+        };
     }
 };
 

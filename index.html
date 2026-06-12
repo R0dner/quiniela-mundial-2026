@@ -1773,6 +1773,7 @@
                     <ul>
                         <li>Solo se puede apostar el DÍA del partido</li>
                         <li>Las apuestas se cierran a la HORA de inicio del partido</li>
+                        <li>Jugador que no pague su inscripcion no valdra sus pronosticos ni puntos sumados </li>
                         <li>Los partidos de días pasados quedan bloqueados</li>
                         <li>Puedes hacer múltiples pronósticos por partido (según tu límite)</li>
                     </ul>
@@ -1809,6 +1810,29 @@
         transition: all 0.3s;
     ">
     💰 Ver datos de pago
+</button>
+
+<!-- Botón flotante para ver reglas -->
+<button id="btn-mostrar-reglas-flotante"
+    onclick="toggleReglas()"
+    style="
+        display: block;
+        position: fixed;
+        bottom: 25px;
+        left: 20px;
+        background: linear-gradient(135deg, #1a3a6c, #0a1e3c);
+        color: #ffd700;
+        border: 1px solid rgba(255,215,0,0.4);
+        padding: 12px 20px;
+        border-radius: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 0.9rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+        z-index: 9000;
+        transition: all 0.3s;
+    ">
+    📜 Ver Reglas
 </button>
 
     <script type="module" src="src/main.js"></script>
