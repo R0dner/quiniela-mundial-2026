@@ -927,7 +927,7 @@ async function mostrarMisApuestas() {
                 if (resultado) {
                     if (apuesta.esEmpate === true) {
                         if (resultado.local === resultado.visitante) {
-                            puntos = reglas.puntosGanador;
+                            puntos = 2;
                             estado = 'ganador';
                             claseEstado = 'ganador';
                             mensajeEstado = '¡EMPATE CORRECTO!';
