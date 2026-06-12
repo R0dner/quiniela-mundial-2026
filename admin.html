@@ -304,6 +304,53 @@
             border-radius: 6px;
             cursor: pointer;
         }
+
+        /* ========== ESTILOS PARA MODAL DE EDICIÓN ========== */
+        .btn-editar-participante {
+            background: rgba(255,215,0,0.15);
+            border: 1px solid rgba(255,215,0,0.3);
+            color: #ffd700;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-editar-participante:hover {
+            background: rgba(255,215,0,0.3);
+        }
+
+        /* Estilos para la tabla de pronósticos en el modal */
+        #pronosticos-lista table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #pronosticos-lista th,
+        #pronosticos-lista td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #pronosticos-lista th {
+            background: rgba(255,215,0,0.1);
+            color: #ffd700;
+        }
+        #pronosticos-lista tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Scroll personalizado para el modal */
+        #modal-editar-participante ::-webkit-scrollbar {
+            width: 8px;
+        }
+        #modal-editar-participante ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+        #modal-editar-participante ::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 10px;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
@@ -366,6 +413,7 @@
             <div id="tab-participantes" class="tab-content">
                 <div class="admin-section">
                     <h2>👥 Gestión de Participantes por Grupo</h2>
+                    <p>✏️ Haz clic en "Editar" para ver/eliminar pronósticos o modificar datos del participante.</p>
                     
                     <div class="grupo-selector">
                         <label>Seleccionar Grupo:</label>

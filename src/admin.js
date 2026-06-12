@@ -235,7 +235,7 @@ async function crearNuevoGrupo() {
     }
 }
 
-// ============ PARTICIPANTES POR GRUPO ============
+// ============ PARTICIPANTES POR GRUPO (MEJORADO CON EDITAR) ============
 
 async function cargarParticipantesDelGrupoEnPanel(grupoId) {
     const participantes = await getParticipantesDelGrupo(grupoId);
@@ -249,21 +249,42 @@ async function cargarParticipantesDelGrupoEnPanel(grupoId) {
     let html = '';
     for (const participante of participantes) {
         const info = await getInfoParticipante(grupoId, participante);
+        const cantidadPronosticos = await getCantidadPronosticosParticipante(grupoId, participante);
+        
         html += `
-            <div class="participante-item" data-nombre="${participante}">
-                <div class="participante-info">
-                    <span>👤 <strong>${participante}</strong></span>
-                    ${info.telefono ? `<span>📞 ${info.telefono}</span>` : '<span style="color:#666;">📞 Sin teléfono</span>'}
-                    <span style="font-size:0.7rem; color:#888;">📅 ${new Date(info.fechaRegistro).toLocaleDateString()}</span>
-                </div>
-                <div class="participante-actions">
-                    <button class="btn-danger btn-small" data-participante="${participante}">🗑️ Eliminar</button>
+            <div class="participante-item" data-nombre="${participante}" style="border: 1px solid rgba(255,215,0,0.2); border-radius: 10px; margin-bottom: 10px; padding: 12px;">
+                <div class="participante-info" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="flex: 1;">
+                        <div><strong>👤 ${participante}</strong></div>
+                        <div style="font-size: 0.8rem; color: #aaa;">📞 ${info.telefono || 'Sin teléfono'}</div>
+                        <div style="font-size: 0.75rem; color: #ffd700;">📝 ${cantidadPronosticos} pronóstico(s)</div>
+                        <div style="font-size: 0.7rem; color: #666;">📅 ${new Date(info.fechaRegistro).toLocaleDateString()}</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-editar-participante btn-secondary btn-small" 
+                                data-participante="${participante}" 
+                                style="background: rgba(255,215,0,0.2); border-color: #ffd700; color: #ffd700; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                            ✏️ Editar
+                        </button>
+                        <button class="btn-danger btn-small" data-participante="${participante}" style="padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
     }
     container.innerHTML = html;
     
+    // Evento para editar participante
+    document.querySelectorAll('.btn-editar-participante').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const participante = btn.dataset.participante;
+            await abrirModalEditarParticipante(currentGrupoId, participante);
+        });
+    });
+    
+    // Evento para eliminar participante
     document.querySelectorAll('#lista-participantes-grupo .btn-danger').forEach(btn => {
         btn.addEventListener('click', async () => {
             const participante = btn.dataset.participante;
@@ -276,6 +297,247 @@ async function cargarParticipantesDelGrupoEnPanel(grupoId) {
             }
         });
     });
+}
+
+// Función auxiliar para contar pronósticos
+async function getCantidadPronosticosParticipante(grupoId, participanteNombre) {
+    try {
+        const grupos = await getGrupos();
+        const grupo = grupos[grupoId];
+        if (grupo && grupo.apuestas && grupo.apuestas[participanteNombre]) {
+            return Object.keys(grupo.apuestas[participanteNombre]).length;
+        }
+        return 0;
+    } catch (error) {
+        return 0;
+    }
+}
+
+// ============ MODAL EDITAR PARTICIPANTE Y ELIMINAR PRONÓSTICOS ============
+
+async function abrirModalEditarParticipante(grupoId, participanteNombre) {
+    const info = await getInfoParticipante(grupoId, participanteNombre);
+    
+    const modalHtml = `
+        <div id="modal-editar-participante" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: #1a1a2e; border-radius: 16px; max-width: 600px; width: 90%; max-height: 85%; overflow-y: auto; padding: 20px; border: 1px solid #ffd700;">
+                <h3 style="color: #ffd700; margin-bottom: 20px;">✏️ Editar Participante: ${participanteNombre}</h3>
+                
+                <div class="form-group">
+                    <label>📛 Nombre del participante:</label>
+                    <input type="text" id="edit-nombre" class="form-input" value="${participanteNombre}" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; color: white;">
+                </div>
+                
+                <div class="form-group">
+                    <label>📞 Teléfono (opcional):</label>
+                    <input type="text" id="edit-telefono" class="form-input" value="${info.telefono || ''}" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; color: white;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="guardar-edicion" class="btn-primary" style="background: linear-gradient(135deg, #ffd700, #ffed4e); color: #0a1e3c; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">💾 Guardar Cambios</button>
+                    <button id="cancelar-edicion" class="btn-secondary" style="background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.3); color: #ffd700; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Cancelar</button>
+                </div>
+                
+                <hr style="margin: 20px 0; border-color: rgba(255,215,0,0.2);">
+                
+                <h4 style="color: #ffd700;">📝 Pronósticos de ${participanteNombre}</h4>
+                <div id="pronosticos-lista" style="max-height: 300px; overflow-y: auto;">
+                    Cargando pronósticos...
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Cargar pronósticos del participante
+    await cargarPronosticosParticipante(grupoId, participanteNombre);
+    
+    // Eventos
+    document.getElementById('guardar-edicion').addEventListener('click', async () => {
+        const nuevoNombre = document.getElementById('edit-nombre').value.trim();
+        const nuevoTelefono = document.getElementById('edit-telefono').value.trim();
+        
+        if (!nuevoNombre) {
+            mostrarMensaje('El nombre no puede estar vacío', 'error');
+            return;
+        }
+        
+        if (nuevoNombre !== participanteNombre) {
+            await renombrarParticipante(grupoId, participanteNombre, nuevoNombre);
+        }
+        
+        await actualizarTelefonoParticipante(grupoId, nuevoNombre, nuevoTelefono);
+        
+        mostrarMensaje('✅ Datos actualizados correctamente', 'success');
+        document.getElementById('modal-editar-participante').remove();
+        
+        await cargarParticipantesDelGrupoEnPanel(grupoId);
+    });
+    
+    document.getElementById('cancelar-edicion').addEventListener('click', () => {
+        document.getElementById('modal-editar-participante').remove();
+    });
+}
+
+async function cargarPronosticosParticipante(grupoId, participanteNombre) {
+    const container = document.getElementById('pronosticos-lista');
+    if (!container) return;
+    
+    try {
+        const grupos = await getGrupos();
+        const grupo = grupos[grupoId];
+        
+        if (!grupo || !grupo.apuestas || !grupo.apuestas[participanteNombre]) {
+            container.innerHTML = '<p style="color: #888;">No hay pronósticos para este participante</p>';
+            return;
+        }
+        
+        const pronosticos = grupo.apuestas[participanteNombre];
+        const partidosMap = {};
+        todosLosPartidosData.forEach(p => { partidosMap[p.id] = p; });
+        
+        if (Object.keys(pronosticos).length === 0) {
+            container.innerHTML = '<p style="color: #888;">No hay pronósticos para este participante</p>';
+            return;
+        }
+        
+        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
+        html += '<thead><tr style="background: rgba(255,215,0,0.1);"><th style="padding: 8px;">Partido</th><th>Pronóstico</th><th>Acción</th></tr></thead><tbody>';
+        
+        for (const [partidoId, apuesta] of Object.entries(pronosticos)) {
+            const partido = partidosMap[parseInt(partidoId)];
+            if (!partido) continue;
+            
+            const pronosticoTexto = `${apuesta.local}-${apuesta.visitante}`;
+            const partidoTexto = `${partido.local} vs ${partido.visitante}`;
+            
+            html += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;">${partidoTexto}</td>
+                    <td style="padding: 8px; text-align: center; font-weight: bold; color: #ffd700;">${pronosticoTexto}</td>
+                    <td style="padding: 8px;">
+                        <button onclick="window.eliminarPronostico('${grupoId}', '${participanteNombre}', ${partidoId})" 
+                                style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 4px 10px; border-radius: 5px; cursor: pointer;">
+                            🗑️ Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        html += '</tbody>}</div>';
+        container.innerHTML = html;
+        
+        if (Object.keys(pronosticos).length > 0) {
+            container.innerHTML += `
+                <div style="margin-top: 15px; text-align: center;">
+                    <button id="eliminar-todos-pronosticos" style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
+                        🗑️ Eliminar TODOS los pronósticos de ${participanteNombre}
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('eliminar-todos-pronosticos')?.addEventListener('click', () => {
+                if (confirm(`⚠️ ¿Eliminar TODOS los pronósticos de ${participanteNombre}? Esta acción no se puede deshacer.`)) {
+                    eliminarTodosPronosticos(grupoId, participanteNombre);
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error cargando pronósticos:', error);
+        container.innerHTML = '<p style="color: #f44336;">Error al cargar pronósticos</p>';
+    }
+}
+
+window.eliminarPronostico = async (grupoId, participanteNombre, partidoId) => {
+    if (!confirm(`¿Eliminar el pronóstico para este partido?`)) return;
+    
+    try {
+        const grupos = await getGrupos();
+        const grupo = grupos[grupoId];
+        
+        if (grupo && grupo.apuestas && grupo.apuestas[participanteNombre]) {
+            delete grupo.apuestas[participanteNombre][partidoId];
+            
+            if (Object.keys(grupo.apuestas[participanteNombre]).length === 0) {
+                delete grupo.apuestas[participanteNombre];
+            }
+            
+            await guardarGrupos(grupos);
+            mostrarMensaje('✅ Pronóstico eliminado correctamente', 'success');
+            
+            await cargarPronosticosParticipante(grupoId, participanteNombre);
+            await cargarParticipantesDelGrupoEnPanel(grupoId);
+            actualizarEstadisticas();
+        }
+    } catch (error) {
+        mostrarMensaje('Error al eliminar: ' + error.message, 'error');
+    }
+};
+
+async function eliminarTodosPronosticos(grupoId, participanteNombre) {
+    try {
+        const grupos = await getGrupos();
+        const grupo = grupos[grupoId];
+        
+        if (grupo && grupo.apuestas) {
+            delete grupo.apuestas[participanteNombre];
+            await guardarGrupos(grupos);
+            mostrarMensaje(`✅ Todos los pronósticos de ${participanteNombre} han sido eliminados`, 'success');
+            
+            document.getElementById('modal-editar-participante')?.remove();
+            await cargarParticipantesDelGrupoEnPanel(grupoId);
+            actualizarEstadisticas();
+        }
+    } catch (error) {
+        mostrarMensaje('Error al eliminar: ' + error.message, 'error');
+    }
+}
+
+async function renombrarParticipante(grupoId, nombreActual, nuevoNombre) {
+    const grupos = await getGrupos();
+    const grupo = grupos[grupoId];
+    
+    if (!grupo) return false;
+    
+    if (grupo.apuestas && grupo.apuestas[nombreActual]) {
+        grupo.apuestas[nuevoNombre] = grupo.apuestas[nombreActual];
+        delete grupo.apuestas[nombreActual];
+    }
+    
+    const index = grupo.participantes.indexOf(nombreActual);
+    if (index !== -1) {
+        grupo.participantes[index] = nuevoNombre;
+    }
+    
+    if (grupo.participantesInfo && grupo.participantesInfo[nombreActual]) {
+        grupo.participantesInfo[nuevoNombre] = grupo.participantesInfo[nombreActual];
+        delete grupo.participantesInfo[nombreActual];
+    }
+    
+    await guardarGrupos(grupos);
+    return true;
+}
+
+async function actualizarTelefonoParticipante(grupoId, participanteNombre, telefono) {
+    const grupos = await getGrupos();
+    const grupo = grupos[grupoId];
+    
+    if (!grupo) return false;
+    
+    if (!grupo.participantesInfo) {
+        grupo.participantesInfo = {};
+    }
+    
+    if (!grupo.participantesInfo[participanteNombre]) {
+        grupo.participantesInfo[participanteNombre] = {};
+    }
+    
+    grupo.participantesInfo[participanteNombre].telefono = telefono;
+    await guardarGrupos(grupos);
+    return true;
 }
 
 // ============ RESULTADOS ============
@@ -491,9 +753,9 @@ async function cargarApuestasExtraEnPanel(grupoId) {
             if (resultado) {
                 const limiteSpan = document.getElementById(`limite-${participanteId}`);
                 if (limiteSpan) limiteSpan.textContent = nuevoLimite;
-                mostrarMensagem(`✅ Límite de ${participante} actualizado a ${nuevoLimite} pronóstico(s)`, 'success');
+                mostrarMensaje(`✅ Límite de ${participante} actualizado a ${nuevoLimite} pronóstico(s)`, 'success');
             } else {
-                mostrarMensagem(`❌ Error al actualizar límite de ${participante}`, 'error');
+                mostrarMensaje(`❌ Error al actualizar límite de ${participante}`, 'error');
             }
         });
     });
@@ -507,21 +769,21 @@ function cargarSelectoresSincronizacion() {
     
     if (syncBtn) {
         syncBtn.addEventListener('click', async () => {
-            mostrarMensagem('🔄 Sincronizando con la nube...', 'info');
+            mostrarMensaje('🔄 Sincronizando con la nube...', 'info');
             await sincronizarLocalAFirebase();
-            mostrarMensagem('✅ Datos sincronizados correctamente', 'success');
+            mostrarMensaje('✅ Datos sincronizados correctamente', 'success');
         });
     }
     
     if (forceBtn) {
         forceBtn.addEventListener('click', async () => {
-            mostrarMensagem('📥 Cargando datos desde la nube...', 'info');
+            mostrarMensaje('📥 Cargando datos desde la nube...', 'info');
             const cargados = await cargarFirebaseALocal();
             if (cargados) {
-                mostrarMensagem('✅ Datos cargados desde la nube. Recargando...', 'success');
+                mostrarMensaje('✅ Datos cargados desde la nube. Recargando...', 'success');
                 setTimeout(() => location.reload(), 1500);
             } else {
-                mostrarMensagem('❌ No hay datos en la nube', 'error');
+                mostrarMensaje('❌ No hay datos en la nube', 'error');
             }
         });
     }
@@ -548,7 +810,7 @@ async function actualizarEstadisticas() {
     if (totalApuestasSpan) totalApuestasSpan.textContent = totalApuestas;
 }
 
-function mostrarMensagem(msg, tipo) {
+function mostrarMensaje(msg, tipo) {
     const toast = document.createElement('div');
     toast.textContent = msg;
     toast.style.cssText = `
