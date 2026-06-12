@@ -1217,13 +1217,19 @@ let qrMostrado = false;
 
 function mostrarQR() {
     const qrDiv = document.getElementById('qr-pago');
+
     if (qrDiv && !qrMostrado) {
         qrDiv.style.display = 'block';
         qrMostrado = true;
-        
-        // Scroll suave al QR
+
+        // ACTIVAR BOTÓN DE WHATSAPP
+        setupWhatsAppButton();
+
         setTimeout(() => {
-            qrDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            qrDiv.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
         }, 500);
     }
 }
@@ -1274,6 +1280,6 @@ function setupWhatsAppButton() {
     });
 }
 
-// Llamar a la función cuando se carga el panel de apuestas
-// setupWhatsAppButton();
+setupWhatsAppButton();
+
 init();
