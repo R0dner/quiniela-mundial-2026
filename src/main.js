@@ -326,26 +326,31 @@ async function mostrarBannerGrupoGeneral() {
 
 function mostrarModalGrupoGeneral() {
     const modal = document.getElementById('modal-general');
+    if (!modal) return;
+
+    // Limpiar todos los inputs
+    const campos = ['general-nombre-ingresar', 'general-nombre-registro', 'general-telefono-registro'];
+    campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // Ocultar todos los mensajes de error
+    const errores = ['general-error-ingresar', 'general-error-registro'];
+    errores.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // Siempre mostrar solo el paso 1 al abrir
     const pasoVerificar = document.getElementById('general-paso-verificar');
     const pasoIngresar = document.getElementById('general-paso-ingresar');
     const pasoRegistro = document.getElementById('general-paso-registro');
-    
-    const nombreIngresar = document.getElementById('general-nombre-ingresar');
-    const nombreRegistro = document.getElementById('general-nombre-registro');
-    const telefonoRegistro = document.getElementById('general-telefono-registro');
-    const errorIngresar = document.getElementById('general-error-ingresar');
-    const errorRegistro = document.getElementById('general-error-registro');
-    
-    if (nombreIngresar) nombreIngresar.value = '';
-    if (nombreRegistro) nombreRegistro.value = '';
-    if (telefonoRegistro) telefonoRegistro.value = '';
-    if (errorIngresar) errorIngresar.style.display = 'none';
-    if (errorRegistro) errorRegistro.style.display = 'none';
-    
+
     if (pasoVerificar) pasoVerificar.style.display = 'block';
     if (pasoIngresar) pasoIngresar.style.display = 'none';
     if (pasoRegistro) pasoRegistro.style.display = 'none';
-    
+
     modal.style.display = 'flex';
 }
 

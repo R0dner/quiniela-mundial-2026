@@ -1503,6 +1503,7 @@
                 <h3>GRUPO GENERAL</h3>
                 <p>POZO MAYOR - PREMIOS ESPECIALES</p>
             </div>
+
             <div class="modal-general-benefits">
                 <h4>✨ BENEFICIOS EXCLUSIVOS ✨</h4>
                 <div class="benefits-grid">
@@ -1538,14 +1539,51 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-general-body">
-                <input type="text" id="modal-general-nombre" placeholder="Tu nombre" autocomplete="off">
-                <input type="tel" id="modal-general-telefono" placeholder="Teléfono (opcional)">
+
+            <!-- PASO 1: ¿Ya estás registrado? -->
+            <div id="general-paso-verificar">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; margin-bottom:15px; text-align:center;">
+                    ¿Ya tienes una cuenta en el Grupo General?
+                </p>
+                <div class="modal-general-buttons">
+                    <button id="general-btn-si" class="btn-confirmar-general">✅ Sí, ya estoy registrado</button>
+                    <button id="general-btn-no" class="btn-confirmar-general" style="background: linear-gradient(135deg,#4caf50,#45a049);">📝 No, quiero registrarme</button>
+                </div>
+                <div style="text-align:center; margin-top:12px;">
+                    <button id="general-cancelar" class="btn-cancelar-general">❌ Cancelar</button>
+                </div>
             </div>
-            <div class="modal-general-buttons">
-                <button id="btn-confirmar-general" class="btn-confirmar-general">🎉 UNIRME AHORA</button>
-                <button id="btn-cancelar-general" class="btn-cancelar-general">❌ AHORA NO</button>
+
+            <!-- PASO 2a: Ingresar (ya registrado) -->
+            <div id="general-paso-ingresar" style="display:none;">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; margin-bottom:12px; text-align:center;">
+                    Ingresa tu nombre para verificar
+                </p>
+                <input type="text" id="general-nombre-ingresar" placeholder="Tu nombre" autocomplete="off"
+                    style="width:100%; padding:14px; background:rgba(0,0,0,0.5); border:2px solid rgba(255,215,0,0.3); border-radius:12px; color:white; font-size:1rem; margin-bottom:10px;">
+                <div id="general-error-ingresar" style="display:none; background:rgba(244,67,54,0.2); color:#ff8888; padding:10px; border-radius:10px; font-size:0.85rem; margin-bottom:10px;"></div>
+                <div class="modal-general-buttons">
+                    <button id="general-btn-ingresar" class="btn-confirmar-general">✅ Entrar</button>
+                    <button id="general-btn-volver" class="btn-cancelar-general">← Volver</button>
+                </div>
             </div>
+
+            <!-- PASO 2b: Registrarse (nuevo) -->
+            <div id="general-paso-registro" style="display:none;">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.9rem; margin-bottom:12px; text-align:center;">
+                    Completa tus datos para registrarte
+                </p>
+                <input type="text" id="general-nombre-registro" placeholder="Tu nombre" autocomplete="off"
+                    style="width:100%; padding:14px; background:rgba(0,0,0,0.5); border:2px solid rgba(255,215,0,0.3); border-radius:12px; color:white; font-size:1rem; margin-bottom:10px;">
+                <input type="tel" id="general-telefono-registro" placeholder="Teléfono (opcional)"
+                    style="width:100%; padding:14px; background:rgba(0,0,0,0.5); border:2px solid rgba(255,215,0,0.3); border-radius:12px; color:white; font-size:1rem; margin-bottom:10px;">
+                <div id="general-error-registro" style="display:none; background:rgba(244,67,54,0.2); color:#ff8888; padding:10px; border-radius:10px; font-size:0.85rem; margin-bottom:10px;"></div>
+                <div class="modal-general-buttons">
+                    <button id="general-btn-registrar" class="btn-confirmar-general">🎉 Registrarme</button>
+                    <button id="general-btn-volver2" class="btn-cancelar-general">← Volver</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
