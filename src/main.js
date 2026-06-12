@@ -1241,8 +1241,39 @@ function configurarBotonWhatsApp() {
     }
 }
 
-// Modificar la función cargarPartidos para mostrar QR después de la primera apuesta
-// En la función handleAgregarClick (dentro de agregarApuestaHandler), después del éxito, agregar:
-// mostrarQR();
-// Iniciar
+// Función para enviar comprobante por WhatsApp (versión reducida)
+function setupWhatsAppButton() {
+    const btnWhatsApp = document.getElementById('btn-enviar-comprobante');
+    if (!btnWhatsApp) return;
+    
+    // Eliminar event listeners anteriores para evitar duplicados
+    const newBtn = btnWhatsApp.cloneNode(true);
+    btnWhatsApp.parentNode.replaceChild(newBtn, btnWhatsApp);
+    
+    newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Obtener información del participante
+        const participanteNombre = document.getElementById('participante-nombre-display')?.innerText || 'No especificado';
+        
+        // Contar cuántas apuestas tiene el participante
+        const apuestasItems = document.querySelectorAll('.apuesta-item');
+        const cantidadApuestas = apuestasItems.length;
+        
+        // Calcular monto total (Bs. 5 por partido/apuesta)
+        const montoTotal = cantidadApuestas * 5;
+        
+        // Crear mensaje simple para WhatsApp
+        const mensaje = `*PAGO QUINIELA MUNDIAL 2026*\n\n` +
+                       `👤 *Nombre:* ${participanteNombre}\n` +
+                       `📎 Adjunto comprobante de pago`;
+        
+        // Codificar mensaje y abrir WhatsApp
+        const urlWhatsApp = `https://wa.me/59174277508?text=${encodeURIComponent(mensaje)}`;
+        window.open(urlWhatsApp, '_blank');
+    });
+}
+
+// Llamar a la función cuando se carga el panel de apuestas
+// setupWhatsAppButton();
 init();
