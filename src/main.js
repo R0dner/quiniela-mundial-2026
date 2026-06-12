@@ -1125,7 +1125,7 @@ async function mostrarMisApuestas() {
                 ${cantidadGanadores >= 3 ? `<span>🥉 3ro: ${premios?.tercero || 20}%</span>` : ''}
             </div>
             <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 8px;">
-                📌 Los premios se reparten al finalizar cada jornada (20% para organizador, 80% para ganadores)
+                📌 Los premios se reparten al finalizar cada jornada para ganadores
             </div>
         </div>
     `;

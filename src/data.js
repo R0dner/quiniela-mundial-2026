@@ -85,7 +85,7 @@ export const conBandera = (equipo) => {
 export const todosLosPartidos = [
     // ========== GRUPO A ==========
     { id: 1, fecha: "2026-06-11", hora: "15:00", fase: "grupos", local: "México", visitante: "Sudáfrica", grupo: "A", estadio: "Estadio Azteca, Ciudad de México" },
-    { id: 2, fecha: "2026-06-11", hora: "23:40", fase: "grupos", local: "Corea del Sur", visitante: "República Checa", grupo: "A", estadio: "Estadio Akron, Guadalajara" },
+    { id: 2, fecha: "2026-06-11", hora: "22:00", fase: "grupos", local: "Corea del Sur", visitante: "República Checa", grupo: "A", estadio: "Estadio Akron, Guadalajara" },
     { id: 3, fecha: "2026-06-16", hora: "21:00", fase: "grupos", local: "México", visitante: "Corea del Sur", grupo: "A", estadio: "Estadio Akron, Guadalajara" },
     { id: 4, fecha: "2026-06-17", hora: "12:00", fase: "grupos", local: "República Checa", visitante: "Sudáfrica", grupo: "A", estadio: "Mercedes-Benz Stadium, Atlanta" },
     { id: 5, fecha: "2026-06-21", hora: "21:00", fase: "grupos", local: "República Checa", visitante: "México", grupo: "A", estadio: "Estadio Azteca, Ciudad de México" },
