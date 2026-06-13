@@ -446,7 +446,7 @@ export async function getRankingDelGrupo(grupoId) {
 }
 
 export async function getRankingDelGrupoPorDia(grupoId, fecha) {
-    const grupo = await getGrupo(grupoId, true);
+    const grupo = await getGrupo(grupoId);
     if (!grupo) return [];
     
     const partidosDeFecha = todosLosPartidosGlobal.filter(p => p.fecha === fecha);
@@ -455,43 +455,59 @@ export async function getRankingDelGrupoPorDia(grupoId, fecha) {
     const ranking = [];
     for (const participante of grupo.participantes) {
         let puntos = 0;
-        const apuestasPorPartido = grupo.apuestas[participante] || {};
+        let tienePronósticos = false; // ← NUEVO
+        const apuestasPorPartido = grupo.apuestas?.[participante] || {};
         const resultados = grupo.resultados || {};
         const reglas = grupo.reglas;
         
         for (const partidoId of partidosIds) {
-            const apuestas = apuestasPorPartido[partidoId];
+            const apuestasRaw = apuestasPorPartido[partidoId];
+            if (!apuestasRaw) continue;
+            
+            // Normalizar a array
+            let apuestas = Array.isArray(apuestasRaw) 
+                ? apuestasRaw 
+                : Object.values(apuestasRaw);
+            
+            if (apuestas.length > 0) {
+                tienePronósticos = true; // ← tiene al menos un pronóstico ese día
+            }
+            
             const resultado = resultados[partidoId];
-            if (apuestas && Array.isArray(apuestas) && resultado) {
-                const unicas = [];
-                const claves = new Set();
-                for (const apuesta of apuestas) {
-                    const clave = `${apuesta.local}-${apuesta.visitante}`;
-                    if (!claves.has(clave)) {
-                        claves.add(clave);
-                        unicas.push(apuesta);
-                    }
+            if (!resultado) continue;
+            
+            const unicas = [];
+            const claves = new Set();
+            for (const apuesta of apuestas) {
+                const clave = apuesta.esEmpate ? 'empate' : `${apuesta.local}-${apuesta.visitante}`;
+                if (!claves.has(clave)) {
+                    claves.add(clave);
+                    unicas.push(apuesta);
                 }
-                
-                for (const apuesta of unicas) {
-                    if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
-                        puntos += reglas.puntosExacto;
-                    } else if (
-                        (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
-                        (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
-                        (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
-                    ) {
-                        puntos += reglas.puntosGanador;
+            }
+            
+            for (const apuesta of unicas) {
+                if (apuesta.esEmpate === true) {
+                    if (resultado.local === resultado.visitante) {
+                        puntos += reglas.puntosEmpate || 2;
                     }
+                } else if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                    puntos += reglas.puntosExacto;
+                } else if (
+                    (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                    (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                    (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                ) {
+                    puntos += reglas.puntosGanador;
                 }
             }
         }
         
         ranking.push({
             nombre: participante,
-            puntos: puntos,
-            telefono: grupo.participantesInfo?.[participante]?.telefono || '',
-            fechaRegistro: grupo.participantesInfo?.[participante]?.fechaRegistro || ''
+            puntos,
+            tienePronósticos, // ← AGREGAR al objeto
+            telefono: grupo.participantesInfo?.[participante]?.telefono || ''
         });
     }
     

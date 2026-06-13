@@ -137,8 +137,11 @@ async function actualizarRanking() {
             const dias = getDiasCalendario();
             if (dias.length > 0) currentFecha = dias[0];
         }
-        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha); // ← ahora usa la de groups.js
+        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
         document.getElementById('dia-selector-container').style.display = 'flex';
+        
+        // ← AGREGAR ESTO: filtrar solo jugadores con pronósticos ese día
+        ranking = ranking.filter(p => p.tienePronósticos === true);
     }
     
     const premios = await getPremiosDelGrupo(currentGrupoId);
