@@ -519,6 +519,37 @@
                         <button id="guardar-premios-btn" class="btn-primary">💾 Guardar Premios</button>
                     </div>
                 </div>
+
+                <!-- AGREGAR después del div de premios -->
+                <div class="admin-section">
+                    <h2>💰 Pozo Acumulado</h2>
+                    <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:15px;">
+                        Este monto se mostrará públicamente en la página de apuestas.
+                    </p>
+                    <div class="grupo-selector">
+                        <label>Seleccionar Grupo:</label>
+                        <select id="grupo-pozo-select">
+                            <option value="">-- Seleccionar grupo --</option>
+                        </select>
+                    </div>
+                    <div id="pozo-panel" style="display:none; margin-top:15px;">
+                        <div class="form-group">
+                            <label>💵 Monto actual del pozo (Bs.):</label>
+                            <input type="number" id="pozo-monto" class="form-input" 
+                                min="0" placeholder="Ej: 250" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>📝 Mensaje adicional (opcional):</label>
+                            <input type="text" id="pozo-mensaje" class="form-input" 
+                                placeholder="Ej: ¡Se acumula por jornada!">
+                        </div>
+                        <button id="guardar-pozo-btn" class="btn-primary">💾 Guardar Pozo</button>
+                        <div id="pozo-actual" style="margin-top:15px; padding:15px; background:rgba(255,215,0,0.1); border-radius:12px; display:none;">
+                            <p style="color:#ffd700;">💰 Pozo actual: <strong id="pozo-monto-display">0</strong> Bs.</p>
+                            <p style="color:rgba(255,255,255,0.6); font-size:0.8rem;" id="pozo-mensaje-display"></p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 5: APUESTAS EXTRA -->

@@ -141,7 +141,9 @@ async function actualizarRanking() {
         document.getElementById('dia-selector-container').style.display = 'flex';
         
         // ← AGREGAR ESTO: filtrar solo jugadores con pronósticos ese día
-        ranking = ranking.filter(p => p.tienePronósticos === true);
+        ranking = ranking
+            .filter(p => p.tienePronósticos === true)
+            .map((item, index) => ({ ...item, posicion: index + 1 }));
     }
     
     const premios = await getPremiosDelGrupo(currentGrupoId);

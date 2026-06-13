@@ -693,6 +693,29 @@ function iniciarPanelApuestas() {
     // ← AGREGAR ESTO: mostrar botón flotante siempre que el usuario esté logueado
     const btnFlotante = document.getElementById('btn-mostrar-qr-flotante');
     if (btnFlotante) btnFlotante.style.display = 'block';
+
+    cargarPozoDisplay();
+}
+
+async function cargarPozoDisplay() {
+    try {
+        const grupos = await getGrupos();
+        const grupo = grupos[currentGrupoId];
+        if (!grupo?.pozo) return;
+
+        const pozo = grupo.pozo;
+        const bannerPozo = document.getElementById('banner-pozo');
+        const montoDisplay = document.getElementById('pozo-monto-display-index');
+        const mensajeDisplay = document.getElementById('pozo-mensaje-display-index');
+
+        if (bannerPozo && pozo.monto > 0) {
+            bannerPozo.style.display = 'block';
+            montoDisplay.textContent = `Bs. ${pozo.monto}`;
+            if (mensajeDisplay) mensajeDisplay.textContent = pozo.mensaje || '';
+        }
+    } catch (error) {
+        console.error('Error cargando pozo:', error);
+    }
 }
 
 function cargarSelectorDias() {

@@ -131,6 +131,25 @@ function setupEventListeners() {
             if (tercerGroup) tercerGroup.style.display = cantidad >= 3 ? 'block' : 'none';
         });
     }
+
+    // AGREGAR al final de setupEventListeners():
+    const grupoPozoSelect = document.getElementById('grupo-pozo-select');
+    if (grupoPozoSelect) {
+        grupoPozoSelect.addEventListener('change', async (e) => {
+            const grupoId = e.target.value;
+            if (grupoId) {
+                await cargarPozoEnPanel(grupoId);
+                document.getElementById('pozo-panel').style.display = 'block';
+            } else {
+                document.getElementById('pozo-panel').style.display = 'none';
+            }
+        });
+    }
+
+    const guardarPozoBtn = document.getElementById('guardar-pozo-btn');
+    if (guardarPozoBtn) {
+        guardarPozoBtn.addEventListener('click', guardarPozo);
+    }
 }
 
 function cargarGruposEnSelectores() {
@@ -140,6 +159,7 @@ function cargarGruposEnSelectores() {
             'grupo-resultados-select',
             'grupo-reglas-select',
             'grupo-premios-select',
+            'grupo-pozo-select',
             'grupo-apuestasextras-select'
         ];
         
@@ -863,6 +883,50 @@ function mostrarMensaje(msg, tipo) {
         toast.remove();
     }, 3000);
 }
+
+// AGREGAR estas funciones nuevas:
+async function cargarPozoEnPanel(grupoId) {
+    const grupos = await getGrupos();
+    const grupo = grupos[grupoId];
+    if (!grupo) return;
+
+    const pozo = grupo.pozo || { monto: 0, mensaje: '' };
+    document.getElementById('pozo-monto').value = pozo.monto || 0;
+    document.getElementById('pozo-mensaje').value = pozo.mensaje || '';
+
+    const pozoActual = document.getElementById('pozo-actual');
+    const pozoMontoDisplay = document.getElementById('pozo-monto-display');
+    const pozoMensajeDisplay = document.getElementById('pozo-mensaje-display');
+
+    pozoActual.style.display = 'block';
+    pozoMontoDisplay.textContent = pozo.monto || 0;
+    pozoMensajeDisplay.textContent = pozo.mensaje || '';
+}
+
+async function guardarPozo() {
+    const grupoId = document.getElementById('grupo-pozo-select').value;
+    if (!grupoId) {
+        mostrarMensaje('Seleccioná un grupo', 'error');
+        return;
+    }
+
+    const monto = parseInt(document.getElementById('pozo-monto').value) || 0;
+    const mensaje = document.getElementById('pozo-mensaje').value.trim();
+
+    const grupos = await getGrupos();
+    if (grupos[grupoId]) {
+        grupos[grupoId].pozo = { monto, mensaje, actualizado: new Date().toISOString() };
+        await guardarGrupos(grupos);
+        mostrarMensaje(`✅ Pozo actualizado: Bs. ${monto}`, 'success');
+
+        // Actualizar display
+        document.getElementById('pozo-actual').style.display = 'block';
+        document.getElementById('pozo-monto-display').textContent = monto;
+        document.getElementById('pozo-mensaje-display').textContent = mensaje;
+    }
+}
+
+
 
 // Inicializar
 setTimeout(() => {
