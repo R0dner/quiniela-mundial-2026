@@ -126,34 +126,34 @@ async function cargarDiasDisponibles() {
 
 async function actualizarRanking() {
     if (!currentGrupoId) return;
-    
+
     let ranking = [];
-    
+
     if (currentTipoRanking === 'acumulado') {
         ranking = await getRankingDelGrupo(currentGrupoId);
         document.getElementById('dia-selector-container').style.display = 'none';
+
+        const premios = await getPremiosDelGrupo(currentGrupoId);
+        mostrarPodio(ranking, premios.cantidadGanadores || 3);
+        await mostrarPremios(currentGrupoId);
+        mostrarRanking(ranking, 'acumulado', currentFecha);
+
     } else {
+        // Modo diario: ocultar podio, mostrar rankings por partido
         if (!currentFecha) {
             const dias = getDiasCalendario();
             if (dias.length > 0) currentFecha = dias[0];
         }
-        ranking = await getRankingDelGrupoPorDia(currentGrupoId, currentFecha);
         document.getElementById('dia-selector-container').style.display = 'flex';
-        
-        // ← AGREGAR ESTO: filtrar solo jugadores con pronósticos ese día
-        ranking = ranking
-            .filter(p => p.tienePronósticos === true)
-            .map((item, index) => ({ ...item, posicion: index + 1 }));
-    }
-    
-    const premios = await getPremiosDelGrupo(currentGrupoId);
-    const cantidadGanadores = premios.cantidadGanadores || 3;
-    mostrarPodio(ranking, cantidadGanadores);
-    
-    await mostrarPremios(currentGrupoId);
-    mostrarRanking(ranking, currentTipoRanking, currentFecha);
-}
 
+        // Ocultar podio en modo diario (no aplica por partido)
+        const podioContainer = document.getElementById('podium-container');
+        if (podioContainer) podioContainer.style.display = 'none';
+
+        // Mostrar rankings por partido directamente
+        mostrarRanking([], 'diario', currentFecha);
+    }
+}
 
 function mostrarPodio(ranking, cantidadGanadores) {
     const container = document.getElementById('podium-container');
@@ -226,77 +226,245 @@ async function mostrarPremios(grupoId) {
 function mostrarRanking(ranking, tipo, fecha) {
     const container = document.getElementById('ranking-table');
     if (!container) return;
-    
-    if (ranking.length === 0) {
-        container.innerHTML = '<div class="empty-ranking">📊 Aún no hay participantes en este grupo</div>';
-        return;
+
+    if (tipo === 'acumulado') {
+        // Ranking acumulado: mostrar tabla normal
+        if (ranking.length === 0) {
+            container.innerHTML = '<div class="empty-ranking">📊 Aún no hay participantes en este grupo</div>';
+            return;
+        }
+
+        const html = `
+            <h3 style="margin-bottom:15px;">🏆 RANKING ACUMULADO DEL TORNEO</h3>
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Participante</th>
+                        <th>📞 Teléfono</th>
+                        <th>🏆 Puntos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${ranking.map((p, index) => {
+                        let medalla = '';
+                        let claseTop = '';
+                        if (index === 0) { medalla = '🥇 '; claseTop = 'top-1'; }
+                        else if (index === 1) { medalla = '🥈 '; claseTop = 'top-2'; }
+                        else if (index === 2) { medalla = '🥉 '; claseTop = 'top-3'; }
+                        return `
+                            <tr class="${claseTop}">
+                                <td><span class="posicion-medal">${medalla}${p.posicion}</span></td>
+                                <td>
+                                    <strong>${p.nombre}</strong>
+                                    <button onclick="verHistorialParticipante('${p.nombre}')"
+                                        style="margin-left:8px; background:rgba(255,215,0,0.2); border:1px solid rgba(255,215,0,0.4); color:#ffd700; padding:3px 8px; border-radius:12px; cursor:pointer; font-size:0.7rem;">
+                                        📋
+                                    </button>
+                                </td>
+                                <td>${p.telefono || '—'}</td>
+                                <td style="font-size:1.3rem; font-weight:800; color:#ffd700;">${p.puntos}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+        container.innerHTML = html;
+
+    } else {
+        // Ranking por día: mostrar un ranking POR PARTIDO
+        mostrarRankingPorPartidos(fecha, container);
     }
-    
-    const titulo = tipo === 'acumulado' 
-        ? '<h3 style="margin-bottom:15px;">🏆 RANKING ACUMULADO DEL TORNEO</h3>'
-        : `<h3 style="margin-bottom:15px;">📅 RANKING DEL DÍA: ${formatearFecha(fecha)}</h3>`;
-    
-    const html = `
-        ${titulo}
-        <table class="ranking-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Participante</th>
-                    <th>📞 Teléfono</th>
-                    <th>🏆 Puntos</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${ranking.map((p, index) => {
-                    let medalla = '';
-                    let claseTop = '';
-                    if (index === 0) {
-                        medalla = '🥇 ';
-                        claseTop = 'top-1';
-                    } else if (index === 1) {
-                        medalla = '🥈 ';
-                        claseTop = 'top-2';
-                    } else if (index === 2) {
-                        medalla = '🥉 ';
-                        claseTop = 'top-3';
+}
+
+async function mostrarRankingPorPartidos(fecha, container) {
+    if (!currentGrupoId || !fecha) return;
+
+    container.innerHTML = `
+        <div style="text-align:center; padding:20px; color:#ffd700;">
+            ⏳ Cargando rankings por partido...
+        </div>
+    `;
+
+    try {
+        const { obtenerGrupoDeFirebase } = await import('./firebase.js'); // ← directo sin caché
+        const grupo = await obtenerGrupoDeFirebase(currentGrupoId);
+        
+        if (!grupo) {
+            container.innerHTML = '<div class="empty-ranking">❌ Error cargando datos</div>';
+            return;
+        }
+
+        // Obtener partidos del día
+        const { getPartidosPorDia, formatearFecha } = await import('./data.js');
+        const partidosDelDia = getPartidosPorDia(fecha);
+
+        if (partidosDelDia.length === 0) {
+            container.innerHTML = '<div class="empty-ranking">📅 No hay partidos este día</div>';
+            return;
+        }
+
+        const reglas = grupo.reglas || { puntosExacto: 3, puntosGanador: 1, puntosEmpate: 2 };
+        const resultados = grupo.resultados || {};
+        const apuestas = grupo.apuestas || {};
+
+        let htmlTotal = `<h3 style="margin-bottom:20px;">📅 RANKINGS DEL DÍA: ${formatearFecha(fecha)}</h3>`;
+
+        for (const partido of partidosDelDia) {
+            const resultado = resultados[partido.id];
+
+            // Recopilar todos los jugadores que apostaron en este partido
+            const jugadoresConApuesta = [];
+
+            for (const [nombreJugador, apuestasPorPartido] of Object.entries(apuestas)) {
+                const apuestasRaw = apuestasPorPartido[partido.id];
+                if (!apuestasRaw) continue;
+
+                // Normalizar a array
+                let apuestasArray = [];
+                if (Array.isArray(apuestasRaw)) {
+                    apuestasArray = apuestasRaw;
+                } else if (typeof apuestasRaw === 'object') {
+                    apuestasArray = Object.values(apuestasRaw);
+                }
+
+                if (apuestasArray.length === 0) continue;
+
+                // Calcular puntos para este partido
+                let puntosPartido = 0;
+                const pronosticosTexto = [];
+
+                for (const apuesta of apuestasArray) {
+                    let pts = 0;
+                    let estado = '';
+
+                    if (resultado) {
+                        if (apuesta.esEmpate === true) {
+                            if (resultado.local === resultado.visitante) {
+                                pts = reglas.puntosEmpate || 2;
+                                estado = '✅';
+                            } else {
+                                estado = '❌';
+                            }
+                            pronosticosTexto.push(`🤝 X ${estado} +${pts}`);
+                        } else {
+                            if (apuesta.local === resultado.local && apuesta.visitante === resultado.visitante) {
+                                pts = reglas.puntosExacto;
+                                estado = '✅';
+                            } else if (
+                                (apuesta.local > apuesta.visitante && resultado.local > resultado.visitante) ||
+                                (apuesta.local < apuesta.visitante && resultado.local < resultado.visitante) ||
+                                (apuesta.local === apuesta.visitante && resultado.local === resultado.visitante)
+                            ) {
+                                pts = reglas.puntosGanador;
+                                estado = '🎯';
+                            } else {
+                                estado = '❌';
+                            }
+                            pronosticosTexto.push(`${apuesta.local}-${apuesta.visitante} ${estado} +${pts}`);
+                        }
+                        puntosPartido += pts;
+                    } else {
+                        if (apuesta.esEmpate === true) {
+                            pronosticosTexto.push('🤝 X ⏳');
+                        } else {
+                            pronosticosTexto.push(`${apuesta.local}-${apuesta.visitante} ⏳`);
+                        }
                     }
-                    
-                    return `
-                        <tr class="${claseTop}">
-                            <td><span class="posicion-medal">${medalla}${p.posicion}</span></td>
-                            <td>
-                                <strong>${p.nombre}</strong>
-                                <!-- ← AGREGAR ESTE BOTÓN -->
-                                <button 
-                                    onclick="verHistorialParticipante('${p.nombre}')"
-                                    style="margin-left:8px; background:rgba(255,215,0,0.2); border:1px solid rgba(255,215,0,0.4); color:#ffd700; padding:3px 8px; border-radius:12px; cursor:pointer; font-size:0.7rem;">
-                                    📋
-                                </button>
-                            </td>
-                            <td>${p.telefono || '—'}</td>
-                            <td style="font-size:1.3rem; font-weight:800; color:#ffd700;">${p.puntos}</td>
-                        </tr>
-                    `;
-                }).join('')}
-            </tbody>
-        </table>
-    `;
-    
-    container.innerHTML = html;
-    
-    const totalParticipantes = ranking.length;
-    const totalPuntos = ranking.reduce((sum, p) => sum + p.puntos, 0);
-    const promedioGeneral = totalParticipantes > 0 ? (totalPuntos / totalParticipantes).toFixed(2) : 0;
-    
-    const resumen = document.createElement('div');
-    resumen.style.cssText = 'margin-top:20px; padding:15px; background:rgba(0,0,0,0.3); border-radius:12px; text-align:center;';
-    resumen.innerHTML = `
-        <strong>📊 Resumen:</strong> ${totalParticipantes} participantes | 
-        Total puntos: ${totalPuntos} | 
-        Promedio: ${promedioGeneral} pts/participante
-    `;
-    container.appendChild(resumen);
+                }
+
+                jugadoresConApuesta.push({
+                    nombre: nombreJugador,
+                    puntos: puntosPartido,
+                    pronosticos: pronosticosTexto,
+                    telefono: grupo.participantesInfo?.[nombreJugador]?.telefono || ''
+                });
+            }
+
+            // Ordenar por puntos
+            jugadoresConApuesta.sort((a, b) => b.puntos - a.puntos);
+
+            // Estado del resultado
+            const resultadoTexto = resultado 
+                ? `<span style="color:#4caf50; font-weight:bold;">✅ ${resultado.local} - ${resultado.visitante}</span>`
+                : `<span style="color:#ffc107;">⏳ Sin resultado aún</span>`;
+
+            // Construir tabla del partido
+            let tablaHtml = '';
+            if (jugadoresConApuesta.length === 0) {
+                tablaHtml = `<p style="color:rgba(255,255,255,0.4); font-size:0.85rem; padding:10px; text-align:center;">
+                    📭 Ningún jugador apostó en este partido
+                </p>`;
+            } else {
+                tablaHtml = `
+                    <table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px;">
+                        <thead>
+                            <tr style="background:rgba(255,215,0,0.1);">
+                                <th style="padding:8px 10px; text-align:left; color:#ffd700;">#</th>
+                                <th style="padding:8px 10px; text-align:left; color:#ffd700;">Jugador</th>
+                                <th style="padding:8px 10px; text-align:center; color:#ffd700;">Pronóstico(s)</th>
+                                <th style="padding:8px 10px; text-align:center; color:#ffd700;">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${jugadoresConApuesta.map((j, idx) => {
+                                let medalla = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
+                                let bgRow = idx === 0 ? 'rgba(255,215,0,0.08)' 
+                                          : idx === 1 ? 'rgba(192,192,192,0.06)' 
+                                          : idx === 2 ? 'rgba(205,127,50,0.06)' 
+                                          : 'transparent';
+                                return `
+                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.08); background:${bgRow};">
+                                        <td style="padding:8px 10px; font-size:1rem;">${medalla}</td>
+                                        <td style="padding:8px 10px;">
+                                            <strong style="color:white;">${j.nombre}</strong>
+                                            ${j.telefono ? `<br><span style="font-size:0.7rem; color:rgba(255,255,255,0.4);">📞 ${j.telefono}</span>` : ''}
+                                        </td>
+                                        <td style="padding:8px 10px; text-align:center;">
+                                            ${j.pronosticos.map(p => 
+                                                `<span style="display:inline-block; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.2); border-radius:20px; padding:2px 10px; margin:2px; font-size:0.8rem; color:#ffd700;">${p}</span>`
+                                            ).join('')}
+                                        </td>
+                                        <td style="padding:8px 10px; text-align:center; font-size:1.2rem; font-weight:800; color:#ffd700;">${j.puntos}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    <div style="text-align:right; font-size:0.75rem; color:rgba(255,255,255,0.4); margin-top:5px;">
+                        ${jugadoresConApuesta.length} jugador(es) apostaron
+                    </div>
+                `;
+            }
+
+            htmlTotal += `
+                <div style="background:rgba(0,0,0,0.3); border-radius:16px; padding:20px; margin-bottom:20px; border:1px solid rgba(255,215,0,0.15);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <div style="font-size:1rem; font-weight:bold; color:#ffd700;">
+                                ⚽ ${partido.local} vs ${partido.visitante}
+                            </div>
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); margin-top:3px;">
+                                🕐 ${partido.hora} | ID: ${partido.id}
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">Resultado oficial:</div>
+                            <div style="font-size:0.9rem;">${resultadoTexto}</div>
+                        </div>
+                    </div>
+                    ${tablaHtml}
+                </div>
+            `;
+        }
+
+        container.innerHTML = htmlTotal;
+
+    } catch (error) {
+        console.error('Error cargando rankings por partido:', error);
+        container.innerHTML = `<div class="empty-ranking">❌ Error: ${error.message}</div>`;
+    }
 }
 
 function setupEventListeners() {
