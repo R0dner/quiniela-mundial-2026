@@ -371,7 +371,55 @@ async function abrirModalEditarParticipante(grupoId, participanteNombre) {
                 
                 <hr style="margin: 20px 0; border-color: rgba(255,215,0,0.2);">
                 
-                <h4 style="color: #ffd700;">📝 Pronósticos de ${participanteNombre}</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="color: #ffd700; margin:0;">📝 Pronósticos de ${participanteNombre}</h4>
+                    <button id="btn-agregar-pronostico-manual" 
+                        style="background:rgba(76,175,80,0.2); border:1px solid #4caf50; color:#4caf50; 
+                            padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.8rem;">
+                        ➕ Agregar pronóstico
+                    </button>
+                </div>
+                <div id="form-agregar-pronostico" style="display:none; background:rgba(0,0,0,0.3); 
+                    border-radius:10px; padding:15px; margin-bottom:15px; border:1px solid rgba(76,175,80,0.3);">
+                    <p style="color:#4caf50; font-size:0.85rem; margin-bottom:10px;">➕ Agregar pronóstico manual</p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                        <div style="flex:1; min-width:150px;">
+                            <label style="font-size:0.75rem; color:rgba(255,255,255,0.6);">Partido (ID):</label>
+                            <select id="manual-partido-id" style="width:100%; padding:8px; background:rgba(0,0,0,0.5); 
+                                    border:1px solid rgba(255,215,0,0.3); border-radius:6px; color:white; margin-top:4px;">
+                                <option value="">-- Seleccionar partido --</option>
+                                ${todosLosPartidosData.map(p => 
+                                    `<option value="${p.id}">[${p.id}] ${p.local} vs ${p.visitante} (${p.fecha})</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <div style="text-align:center;">
+                                <label style="font-size:0.7rem; color:rgba(255,255,255,0.5);">Local</label>
+                                <input type="number" id="manual-local" min="0" max="20" value="0"
+                                    style="width:60px; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,215,0,0.3); 
+                                        border-radius:6px; color:white; text-align:center; display:block; margin-top:4px;">
+                            </div>
+                            <span style="color:#ffd700; font-weight:bold; margin-top:18px;">-</span>
+                            <div style="text-align:center;">
+                                <label style="font-size:0.7rem; color:rgba(255,255,255,0.5);">Visitante</label>
+                                <input type="number" id="manual-visitante" min="0" max="20" value="0"
+                                    style="width:60px; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,215,0,0.3); 
+                                        border-radius:6px; color:white; text-align:center; display:block; margin-top:4px;">
+                            </div>
+                        </div>
+                        <button id="btn-confirmar-pronostico-manual"
+                            style="background:rgba(76,175,80,0.3); border:1px solid #4caf50; color:#4caf50; 
+                                padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:18px;">
+                            💾 Guardar
+                        </button>
+                        <button id="btn-cancelar-pronostico-manual"
+                            style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); 
+                                color:rgba(255,255,255,0.6); padding:8px 16px; border-radius:8px; cursor:pointer; margin-top:18px;">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
                 <div id="pronosticos-lista" style="max-height: 300px; overflow-y: auto;">
                     Cargando pronósticos...
                 </div>
@@ -418,7 +466,6 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
     container.innerHTML = '<p style="color:#ffd700;">⏳ Cargando desde Firebase...</p>';
     
     try {
-        // Leer DIRECTO de Firebase, saltando todo caché
         const { obtenerGrupoDeFirebase } = await import('./firebase.js');
         const grupo = await obtenerGrupoDeFirebase(grupoId);
         
@@ -441,14 +488,12 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
         
         let totalReal = 0;
 
-        // Ordenar por partidoId para mostrar en orden
         const partidosOrdenados = Object.entries(pronosticos)
             .sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
 
         for (const [partidoId, apuestasRaw] of partidosOrdenados) {
             const partido = partidosMap[parseInt(partidoId)];
             
-            // Normalizar a array sin importar cómo Firebase lo guardó
             let apuestasArray = [];
             if (Array.isArray(apuestasRaw)) {
                 apuestasArray = apuestasRaw;
@@ -494,29 +539,151 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
                 📊 Total en Firebase: <strong style="color:#ffd700;">${totalReal}</strong> pronóstico(s) en 
                 <strong style="color:#ffd700;">${Object.keys(pronosticos).length}</strong> partido(s)
             </div>
-            <div style="margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+
+            <!-- Formulario agregar manual -->
+            <div style="margin-top:15px;">
+                <button id="btn-agregar-pronostico-manual"
+                    style="background:rgba(76,175,80,0.2); border:1px solid #4caf50; color:#4caf50; 
+                           padding:8px 16px; border-radius:8px; cursor:pointer; font-size:0.85rem; width:100%; margin-bottom:10px;">
+                    ➕ Agregar pronóstico manualmente
+                </button>
+                <div id="form-agregar-pronostico" style="display:none; background:rgba(0,0,0,0.3); 
+                     border-radius:10px; padding:15px; margin-bottom:10px; border:1px solid rgba(76,175,80,0.3);">
+                    <p style="color:#4caf50; font-size:0.85rem; margin-bottom:10px;">Seleccioná el partido y el marcador:</p>
+                    <div style="margin-bottom:10px;">
+                        <select id="manual-partido-id" style="width:100%; padding:8px; background:rgba(0,0,0,0.5); 
+                                border:1px solid rgba(255,215,0,0.3); border-radius:6px; color:white;">
+                            <option value="">-- Seleccionar partido --</option>
+                            ${todosLosPartidosData.map(p => 
+                                `<option value="${p.id}">[${p.id}] ${p.local} vs ${p.visitante} (${p.fecha})</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                        <div style="text-align:center;">
+                            <label style="font-size:0.7rem; color:rgba(255,255,255,0.5); display:block;">Local</label>
+                            <input type="number" id="manual-local" min="0" max="20" value="0"
+                                style="width:60px; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,215,0,0.3); 
+                                       border-radius:6px; color:white; text-align:center;">
+                        </div>
+                        <span style="color:#ffd700; font-weight:bold;">-</span>
+                        <div style="text-align:center;">
+                            <label style="font-size:0.7rem; color:rgba(255,255,255,0.5); display:block;">Visitante</label>
+                            <input type="number" id="manual-visitante" min="0" max="20" value="0"
+                                style="width:60px; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,215,0,0.3); 
+                                       border-radius:6px; color:white; text-align:center;">
+                        </div>
+                        <button id="btn-confirmar-pronostico-manual"
+                            style="background:rgba(76,175,80,0.3); border:1px solid #4caf50; color:#4caf50; 
+                                   padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">
+                            💾 Guardar
+                        </button>
+                        <button id="btn-cancelar-pronostico-manual"
+                            style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); 
+                                   color:rgba(255,255,255,0.6); padding:8px 12px; border-radius:8px; cursor:pointer;">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                 <button id="limpiar-duplicados" style="background:rgba(255,152,0,0.2); border:1px solid #ff9800; color:#ff9800; padding:8px 16px; border-radius:8px; cursor:pointer;">
                     🔧 Limpiar duplicados
                 </button>
                 <button id="eliminar-todos-pronosticos" style="background:rgba(244,67,54,0.2); border:1px solid #f44336; color:#f44336; padding:8px 16px; border-radius:8px; cursor:pointer;">
-                    🗑️ Eliminar TODOS los pronósticos
+                    🗑️ Eliminar TODOS
                 </button>
             </div>
         `;
         
+        // ← AQUÍ VAN LOS EVENTOS, justo después de insertar el HTML
+        document.getElementById('btn-agregar-pronostico-manual')?.addEventListener('click', () => {
+            const form = document.getElementById('form-agregar-pronostico');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('btn-cancelar-pronostico-manual')?.addEventListener('click', () => {
+            document.getElementById('form-agregar-pronostico').style.display = 'none';
+        });
+
+        document.getElementById('btn-confirmar-pronostico-manual')?.addEventListener('click', async () => {
+            const partidoId = parseInt(document.getElementById('manual-partido-id').value);
+            const local = parseInt(document.getElementById('manual-local').value);
+            const visitante = parseInt(document.getElementById('manual-visitante').value);
+
+            if (!partidoId) {
+                mostrarMensaje('Seleccioná un partido', 'error');
+                return;
+            }
+            if (isNaN(local) || isNaN(visitante)) {
+                mostrarMensaje('Ingresá marcadores válidos', 'error');
+                return;
+            }
+
+            try {
+                const { obtenerGrupoDeFirebase } = await import('./firebase.js');
+                const grupoFresh = await obtenerGrupoDeFirebase(grupoId);
+                const grupos = await getGrupos();
+
+                if (!grupos[grupoId]) grupos[grupoId] = grupoFresh;
+                if (!grupos[grupoId].apuestas) grupos[grupoId].apuestas = {};
+                if (!grupos[grupoId].apuestas[participanteNombre]) grupos[grupoId].apuestas[participanteNombre] = {};
+
+                const apuestaId = Date.now() + '-manual-' + Math.random().toString(36).substr(2, 6);
+                const apuestasExistentes = grupos[grupoId].apuestas[participanteNombre][partidoId];
+
+                let apuestasArray = [];
+                if (Array.isArray(apuestasExistentes)) {
+                    apuestasArray = apuestasExistentes;
+                } else if (apuestasExistentes && typeof apuestasExistentes === 'object') {
+                    apuestasArray = Object.values(apuestasExistentes);
+                }
+
+                const yaExiste = apuestasArray.some(a => a.local === local && a.visitante === visitante);
+                if (yaExiste) {
+                    mostrarMensaje(`Ya existe el pronóstico ${local}-${visitante} para ese partido`, 'error');
+                    return;
+                }
+
+                apuestasArray.push({
+                    id: apuestaId,
+                    local,
+                    visitante,
+                    esEmpate: false,
+                    fecha: new Date().toISOString()
+                });
+
+                const comoObjeto = {};
+                apuestasArray.forEach((a, i) => { comoObjeto[i] = a; });
+                grupos[grupoId].apuestas[participanteNombre][partidoId] = comoObjeto;
+
+                await guardarGrupos(grupos);
+                mostrarMensaje(`✅ Pronóstico ${local}-${visitante} agregado`, 'success');
+
+                document.getElementById('form-agregar-pronostico').style.display = 'none';
+                await cargarPronosticosParticipante(grupoId, participanteNombre);
+                await cargarParticipantesDelGrupoEnPanel(grupoId);
+                actualizarEstadisticas();
+
+            } catch (error) {
+                mostrarMensaje('Error: ' + error.message, 'error');
+            }
+        });
+
         document.getElementById('limpiar-duplicados')?.addEventListener('click', () => {
             if (confirm(`¿Limpiar duplicados de ${participanteNombre}?`)) {
                 window.limpiarPronosticosDuplicados(grupoId, participanteNombre);
             }
         });
-        
+
         document.getElementById('eliminar-todos-pronosticos')?.addEventListener('click', () => {
             if (confirm(`⚠️ ¿Eliminar TODOS los pronósticos de ${participanteNombre}?`)) {
                 eliminarTodosPronosticos(grupoId, participanteNombre);
             }
         });
 
-    } catch (error) {
+    } catch (error) {  // ← cierre del try original
         console.error('Error:', error);
         container.innerHTML = `<p style="color:#f44336;">❌ Error: ${error.message}</p>`;
     }
