@@ -416,8 +416,8 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
     if (!container) return;
     
     try {
-        const grupos = await getGrupos();
-        const grupo = grupos[grupoId];
+        // ← CAMBIO CLAVE: usar getGrupo() directo a Firebase, no getGrupos() del caché
+        const grupo = await getGrupo(grupoId);
         
         if (!grupo || !grupo.apuestas || !grupo.apuestas[participanteNombre]) {
             container.innerHTML = '<p style="color: #888;">No hay pronósticos para este participante</p>';
@@ -436,12 +436,11 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
         let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
         html += '<thead><tr style="background: rgba(255,215,0,0.1);"><th style="padding: 8px;">Partido</th><th>Pronóstico</th><th>Acción</th></tr></thead><tbody>';
         
-        // Dentro de cargarPronosticosParticipante, REEMPLAZAR el for loop por:
         for (const [partidoId, apuestasRaw] of Object.entries(pronosticos)) {
             const partido = partidosMap[parseInt(partidoId)];
             if (!partido) continue;
             
-            // Normalizar objeto Firebase a array
+            // Normalizar objeto Firebase {0:{...}} a array
             let apuestasArray = [];
             if (Array.isArray(apuestasRaw)) {
                 apuestasArray = apuestasRaw;
@@ -451,17 +450,25 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
             
             for (const apuesta of apuestasArray) {
                 const esEmpate = apuesta.esEmpate === true;
-                const pronosticoTexto = esEmpate ? '🤝 EMPATE (X)' : `${apuesta.local}-${apuesta.visitante}`;
+                const pronosticoTexto = esEmpate 
+                    ? '🤝 EMPATE (X)' 
+                    : `${apuesta.local}-${apuesta.visitante}`;
                 const partidoTexto = `${partido.local} vs ${partido.visitante}`;
+                const fechaCorta = partido.fecha ? partido.fecha.slice(5) : '';
                 
                 html += `
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                        <td style="padding: 8px;">${partidoTexto}</td>
-                        <td style="padding: 8px; text-align: center; font-weight: bold; color: #ffd700;">${pronosticoTexto}</td>
+                        <td style="padding: 8px;">
+                            ${partidoTexto}
+                            <span style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-left:5px;">${fechaCorta}</span>
+                        </td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold; color: #ffd700;">
+                            ${pronosticoTexto}
+                        </td>
                         <td style="padding: 8px;">
                             <button onclick="window.eliminarPronostico('${grupoId}', '${participanteNombre}', ${partidoId}, '${apuesta.id}')" 
                                     style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 4px 10px; border-radius: 5px; cursor: pointer;">
-                                🗑️ Eliminar
+                                🗑️
                             </button>
                         </td>
                     </tr>
@@ -472,11 +479,20 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
         html += '</tbody></table>';
         container.innerHTML = html;
         
-        // Botones de acciones (después de la tabla)
+        // Contar total real
+        let totalReal = 0;
+        for (const apuestasRaw of Object.values(pronosticos)) {
+            if (Array.isArray(apuestasRaw)) totalReal += apuestasRaw.length;
+            else if (typeof apuestasRaw === 'object') totalReal += Object.values(apuestasRaw).length;
+        }
+        
         container.innerHTML += `
+            <div style="margin-top:10px; padding:8px; background:rgba(255,215,0,0.08); border-radius:8px; text-align:center; font-size:0.8rem; color:rgba(255,255,255,0.6);">
+                📊 Total pronósticos encontrados en Firebase: <strong style="color:#ffd700;">${totalReal}</strong>
+            </div>
             <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <button id="limpiar-duplicados" style="background: rgba(255,152,0,0.2); border: 1px solid #ff9800; color: #ff9800; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
-                    🔧 Limpiar pronósticos duplicados automáticamente
+                    🔧 Limpiar duplicados
                 </button>
                 <button id="eliminar-todos-pronosticos" style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
                     🗑️ Eliminar TODOS los pronósticos de ${participanteNombre}
@@ -484,49 +500,63 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
             </div>
         `;
         
-        // Event listener para limpiar duplicados
         document.getElementById('limpiar-duplicados')?.addEventListener('click', () => {
-            if (confirm(`🔧 ¿Limpiar pronósticos duplicados de ${participanteNombre}? Se mantendrá solo un pronóstico por partido.`)) {
+            if (confirm(`🔧 ¿Limpiar duplicados de ${participanteNombre}?`)) {
                 window.limpiarPronosticosDuplicados(grupoId, participanteNombre);
             }
         });
         
-        // Event listener para eliminar todos
         document.getElementById('eliminar-todos-pronosticos')?.addEventListener('click', () => {
-            if (confirm(`⚠️ ¿Eliminar TODOS los pronósticos de ${participanteNombre}? Esta acción no se puede deshacer.`)) {
+            if (confirm(`⚠️ ¿Eliminar TODOS los pronósticos de ${participanteNombre}?`)) {
                 eliminarTodosPronosticos(grupoId, participanteNombre);
             }
         });
         
     } catch (error) {
         console.error('Error cargando pronósticos:', error);
-        container.innerHTML = '<p style="color: #f44336;">Error al cargar pronósticos</p>';
+        container.innerHTML = '<p style="color: #f44336;">Error al cargar pronósticos: ' + error.message + '</p>';
     }
 }
 
-window.eliminarPronostico = async (grupoId, participanteNombre, partidoId) => {
-    if (!confirm(`¿Eliminar el pronóstico para este partido?`)) return;
+window.eliminarPronostico = async (grupoId, participanteNombre, partidoId, apuestaId) => {
+    if (!confirm(`¿Eliminar este pronóstico?`)) return;
     
     try {
+        // Leer fresco de Firebase
+        const grupo = await getGrupo(grupoId);
         const grupos = await getGrupos();
-        const grupo = grupos[grupoId];
         
-        if (grupo && grupo.apuestas && grupo.apuestas[participanteNombre]) {
-            delete grupo.apuestas[participanteNombre][partidoId];
+        if (grupo?.apuestas?.[participanteNombre]?.[partidoId]) {
+            const apuestasRaw = grupo.apuestas[participanteNombre][partidoId];
             
-            if (Object.keys(grupo.apuestas[participanteNombre]).length === 0) {
-                delete grupo.apuestas[participanteNombre];
+            // Normalizar a array
+            let apuestasArray = Array.isArray(apuestasRaw) 
+                ? apuestasRaw 
+                : Object.values(apuestasRaw);
+            
+            // Filtrar la apuesta eliminada
+            apuestasArray = apuestasArray.filter(a => a.id !== apuestaId);
+            
+            // Actualizar en el objeto de grupos
+            if (!grupos[grupoId]) grupos[grupoId] = grupo;
+            
+            if (apuestasArray.length === 0) {
+                delete grupos[grupoId].apuestas[participanteNombre][partidoId];
+            } else {
+                // Guardar como objeto indexado
+                const comoObjeto = {};
+                apuestasArray.forEach((a, i) => { comoObjeto[i] = a; });
+                grupos[grupoId].apuestas[participanteNombre][partidoId] = comoObjeto;
             }
             
             await guardarGrupos(grupos);
-            mostrarMensaje('✅ Pronóstico eliminado correctamente', 'success');
-            
+            mostrarMensaje('✅ Pronóstico eliminado', 'success');
             await cargarPronosticosParticipante(grupoId, participanteNombre);
             await cargarParticipantesDelGrupoEnPanel(grupoId);
             actualizarEstadisticas();
         }
     } catch (error) {
-        mostrarMensaje('Error al eliminar: ' + error.message, 'error');
+        mostrarMensaje('Error: ' + error.message, 'error');
     }
 };
 
