@@ -415,9 +415,12 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
     const container = document.getElementById('pronosticos-lista');
     if (!container) return;
     
+    container.innerHTML = '<p style="color:#ffd700;">⏳ Cargando desde Firebase...</p>';
+    
     try {
-        // ← CAMBIO CLAVE: usar getGrupo() directo a Firebase, no getGrupos() del caché
-        const grupo = await getGrupo(grupoId);
+        // Leer DIRECTO de Firebase, saltando todo caché
+        const { obtenerGrupoDeFirebase } = await import('./firebase.js');
+        const grupo = await obtenerGrupoDeFirebase(grupoId);
         
         if (!grupo || !grupo.apuestas || !grupo.apuestas[participanteNombre]) {
             container.innerHTML = '<p style="color: #888;">No hay pronósticos para este participante</p>';
@@ -429,18 +432,23 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
         todosLosPartidosData.forEach(p => { partidosMap[p.id] = p; });
         
         if (Object.keys(pronosticos).length === 0) {
-            container.innerHTML = '<p style="color: #888;">No hay pronósticos para este participante</p>';
+            container.innerHTML = '<p style="color: #888;">No hay pronósticos</p>';
             return;
         }
+
+        let html = '<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">';
+        html += '<thead><tr style="background:rgba(255,215,0,0.1);"><th style="padding:8px;">Partido</th><th>Fecha</th><th>Pronóstico</th><th>Acción</th></tr></thead><tbody>';
         
-        let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
-        html += '<thead><tr style="background: rgba(255,215,0,0.1);"><th style="padding: 8px;">Partido</th><th>Pronóstico</th><th>Acción</th></tr></thead><tbody>';
-        
-        for (const [partidoId, apuestasRaw] of Object.entries(pronosticos)) {
+        let totalReal = 0;
+
+        // Ordenar por partidoId para mostrar en orden
+        const partidosOrdenados = Object.entries(pronosticos)
+            .sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+
+        for (const [partidoId, apuestasRaw] of partidosOrdenados) {
             const partido = partidosMap[parseInt(partidoId)];
-            if (!partido) continue;
             
-            // Normalizar objeto Firebase {0:{...}} a array
+            // Normalizar a array sin importar cómo Firebase lo guardó
             let apuestasArray = [];
             if (Array.isArray(apuestasRaw)) {
                 apuestasArray = apuestasRaw;
@@ -448,26 +456,28 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
                 apuestasArray = Object.values(apuestasRaw);
             }
             
+            totalReal += apuestasArray.length;
+
             for (const apuesta of apuestasArray) {
                 const esEmpate = apuesta.esEmpate === true;
                 const pronosticoTexto = esEmpate 
-                    ? '🤝 EMPATE (X)' 
-                    : `${apuesta.local}-${apuesta.visitante}`;
-                const partidoTexto = `${partido.local} vs ${partido.visitante}`;
-                const fechaCorta = partido.fecha ? partido.fecha.slice(5) : '';
+                    ? '🤝 EMPATE' 
+                    : `${apuesta.local} - ${apuesta.visitante}`;
+                const partidoTexto = partido 
+                    ? `${partido.local} vs ${partido.visitante}` 
+                    : `Partido ID: ${partidoId}`;
+                const fechaTexto = partido?.fecha 
+                    ? partido.fecha.slice(5).replace('-', '/') 
+                    : '—';
                 
                 html += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                        <td style="padding: 8px;">
-                            ${partidoTexto}
-                            <span style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-left:5px;">${fechaCorta}</span>
-                        </td>
-                        <td style="padding: 8px; text-align: center; font-weight: bold; color: #ffd700;">
-                            ${pronosticoTexto}
-                        </td>
-                        <td style="padding: 8px;">
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                        <td style="padding:8px; font-size:0.8rem;">${partidoTexto}</td>
+                        <td style="padding:8px; font-size:0.75rem; color:rgba(255,255,255,0.5);">${fechaTexto}</td>
+                        <td style="padding:8px; text-align:center; font-weight:bold; color:#ffd700;">${pronosticoTexto}</td>
+                        <td style="padding:8px;">
                             <button onclick="window.eliminarPronostico('${grupoId}', '${participanteNombre}', ${partidoId}, '${apuesta.id}')" 
-                                    style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 4px 10px; border-radius: 5px; cursor: pointer;">
+                                    style="background:rgba(244,67,54,0.2); border:1px solid #f44336; color:#f44336; padding:4px 8px; border-radius:5px; cursor:pointer;">
                                 🗑️
                             </button>
                         </td>
@@ -479,29 +489,23 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
         html += '</tbody></table>';
         container.innerHTML = html;
         
-        // Contar total real
-        let totalReal = 0;
-        for (const apuestasRaw of Object.values(pronosticos)) {
-            if (Array.isArray(apuestasRaw)) totalReal += apuestasRaw.length;
-            else if (typeof apuestasRaw === 'object') totalReal += Object.values(apuestasRaw).length;
-        }
-        
         container.innerHTML += `
-            <div style="margin-top:10px; padding:8px; background:rgba(255,215,0,0.08); border-radius:8px; text-align:center; font-size:0.8rem; color:rgba(255,255,255,0.6);">
-                📊 Total pronósticos encontrados en Firebase: <strong style="color:#ffd700;">${totalReal}</strong>
+            <div style="margin-top:10px; padding:10px; background:rgba(255,215,0,0.08); border-radius:8px; text-align:center; font-size:0.85rem;">
+                📊 Total en Firebase: <strong style="color:#ffd700;">${totalReal}</strong> pronóstico(s) en 
+                <strong style="color:#ffd700;">${Object.keys(pronosticos).length}</strong> partido(s)
             </div>
-            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <button id="limpiar-duplicados" style="background: rgba(255,152,0,0.2); border: 1px solid #ff9800; color: #ff9800; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
+            <div style="margin-top:15px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button id="limpiar-duplicados" style="background:rgba(255,152,0,0.2); border:1px solid #ff9800; color:#ff9800; padding:8px 16px; border-radius:8px; cursor:pointer;">
                     🔧 Limpiar duplicados
                 </button>
-                <button id="eliminar-todos-pronosticos" style="background: rgba(244,67,54,0.2); border: 1px solid #f44336; color: #f44336; padding: 8px 16px; border-radius: 8px; cursor: pointer;">
-                    🗑️ Eliminar TODOS los pronósticos de ${participanteNombre}
+                <button id="eliminar-todos-pronosticos" style="background:rgba(244,67,54,0.2); border:1px solid #f44336; color:#f44336; padding:8px 16px; border-radius:8px; cursor:pointer;">
+                    🗑️ Eliminar TODOS los pronósticos
                 </button>
             </div>
         `;
         
         document.getElementById('limpiar-duplicados')?.addEventListener('click', () => {
-            if (confirm(`🔧 ¿Limpiar duplicados de ${participanteNombre}?`)) {
+            if (confirm(`¿Limpiar duplicados de ${participanteNombre}?`)) {
                 window.limpiarPronosticosDuplicados(grupoId, participanteNombre);
             }
         });
@@ -511,10 +515,10 @@ async function cargarPronosticosParticipante(grupoId, participanteNombre) {
                 eliminarTodosPronosticos(grupoId, participanteNombre);
             }
         });
-        
+
     } catch (error) {
-        console.error('Error cargando pronósticos:', error);
-        container.innerHTML = '<p style="color: #f44336;">Error al cargar pronósticos: ' + error.message + '</p>';
+        console.error('Error:', error);
+        container.innerHTML = `<p style="color:#f44336;">❌ Error: ${error.message}</p>`;
     }
 }
 

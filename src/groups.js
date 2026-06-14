@@ -75,17 +75,16 @@ export async function guardarGrupos(grupos) {
 // REEMPLAZAR getGrupo por:
 export async function getGrupo(grupoId) {
     try {
-        // Siempre leer directo de Firebase para tener datos frescos
+        // SIEMPRE ir a Firebase, nunca usar caché
+        const { obtenerGrupoDeFirebase } = await import('./firebase.js');
         const grupoFirebase = await obtenerGrupoDeFirebase(grupoId);
         if (grupoFirebase) {
-            // Actualizar caché
             gruposCache[grupoId] = grupoFirebase;
             return grupoFirebase;
         }
     } catch (error) {
         console.error('Error leyendo grupo de Firebase:', error);
     }
-    // Fallback al caché
     return gruposCache[grupoId] || null;
 }
 
