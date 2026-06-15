@@ -89,8 +89,8 @@ export const todosLosPartidos = [
     // ========== GRUPO B (CORREGIDO: se añade partido faltante y se ordena) ==========
     { id: 7, fecha: "2026-06-12", hora: "15:00", fase: "grupos", local: "Canadá", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "BMO Field, Toronto" },
     { id: 8, fecha: "2026-06-13", hora: "15:00", fase: "grupos", local: "Catar", visitante: "Suiza", grupo: "B", estadio: "Levi's Stadium, San Francisco" }, // CORREGIDO: Ahora grupo B
-    { id: 9, fecha: "2026-06-15", hora: "18:00", fase: "grupos", local: "Canadá", visitante: "Catar", grupo: "B", estadio: "BC Place, Vancouver" },
-    { id: 10, fecha: "2026-06-15", hora: "15:00", fase: "grupos", local: "Suiza", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "SoFi Stadium, Los Ángeles" },
+    { id: 9, fecha: "2026-06-18", hora: "18:00", fase: "grupos", local: "Canadá", visitante: "Catar", grupo: "B", estadio: "BC Place, Vancouver" },
+    { id: 10, fecha: "2026-06-18", hora: "15:00", fase: "grupos", local: "Suiza", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "SoFi Stadium, Los Ángeles" },
     { id: 11, fecha: "2026-06-21", hora: "15:00", fase: "grupos", local: "Suiza", visitante: "Canadá", grupo: "B", estadio: "BC Place, Vancouver" },
     { id: 12, fecha: "2026-06-21", hora: "15:00", fase: "grupos", local: "Bosnia y Herzegovina", visitante: "Catar", grupo: "B", estadio: "Lumen Field, Seattle" },
     
