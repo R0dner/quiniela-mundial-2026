@@ -82,7 +82,7 @@ export const todosLosPartidos = [
     { id: 1, fecha: "2026-06-11", hora: "15:00", fase: "grupos", local: "México", visitante: "Sudáfrica", grupo: "A", estadio: "Estadio Azteca, Ciudad de México" },
     { id: 2, fecha: "2026-06-11", hora: "22:00", fase: "grupos", local: "Corea del Sur", visitante: "República Checa", grupo: "A", estadio: "Estadio Akron, Guadalajara" },
     { id: 3, fecha: "2026-06-18", hora: "21:00", fase: "grupos", local: "México", visitante: "Corea del Sur", grupo: "A", estadio: "Estadio Akron, Guadalajara" },
-    { id: 4, fecha: "2026-06-17", hora: "12:00", fase: "grupos", local: "República Checa", visitante: "Sudáfrica", grupo: "A", estadio: "Mercedes-Benz Stadium, Atlanta" },
+    { id: 4, fecha: "2026-06-18", hora: "12:00", fase: "grupos", local: "República Checa", visitante: "Sudáfrica", grupo: "A", estadio: "Mercedes-Benz Stadium, Atlanta" },
     { id: 5, fecha: "2026-06-21", hora: "21:00", fase: "grupos", local: "República Checa", visitante: "México", grupo: "A", estadio: "Estadio Azteca, Ciudad de México" },
     { id: 6, fecha: "2026-06-21", hora: "21:00", fase: "grupos", local: "Sudáfrica", visitante: "Corea del Sur", grupo: "A", estadio: "Estadio BBVA, Monterrey" },
     
@@ -98,8 +98,8 @@ export const todosLosPartidos = [
     // Nota: El partido Catar vs Suiza (id:8) ahora está en Grupo B. El Grupo C comienza con Brasil vs Marruecos.
     { id: 13, fecha: "2026-06-13", hora: "18:00", fase: "grupos", local: "Brasil", visitante: "Marruecos", grupo: "C", estadio: "MetLife Stadium, Nueva Jersey" },
     { id: 14, fecha: "2026-06-13", hora: "21:00", fase: "grupos", local: "Haití", visitante: "Escocia", grupo: "C", estadio: "Gillette Stadium, Boston" },
-    { id: 15, fecha: "2026-06-17", hora: "18:00", fase: "grupos", local: "Escocia", visitante: "Marruecos", grupo: "C", estadio: "Gillette Stadium, Boston" },
-    { id: 16, fecha: "2026-06-17", hora: "21:00", fase: "grupos", local: "Brasil", visitante: "Haití", grupo: "C", estadio: "Lincoln Financial Field, Filadelfia" },
+    { id: 15, fecha: "2026-06-19", hora: "18:00", fase: "grupos", local: "Escocia", visitante: "Marruecos", grupo: "C", estadio: "Gillette Stadium, Boston" },
+    { id: 16, fecha: "2026-06-19", hora: "21:00", fase: "grupos", local: "Brasil", visitante: "Haití", grupo: "C", estadio: "Lincoln Financial Field, Filadelfia" },
     { id: 17, fecha: "2026-06-21", hora: "18:00", fase: "grupos", local: "Escocia", visitante: "Brasil", grupo: "C", estadio: "Hard Rock Stadium, Miami" },
     { id: 18, fecha: "2026-06-21", hora: "18:00", fase: "grupos", local: "Marruecos", visitante: "Haití", grupo: "C", estadio: "Mercedes-Benz Stadium, Atlanta" },
     
