@@ -161,7 +161,7 @@ export const todosLosPartidos = [
     
     // ========== GRUPO K ==========
     { id: 61, fecha: "2026-06-17", hora: "13:00", fase: "grupos", local: "Portugal", visitante: "RD Congo", grupo: "K", estadio: "NRG Stadium, Houston" },
-    { id: 62, fecha: "2026-06-17", hora: "22:00", fase: "grupos", local: "Uzbekistán", visitante: "Colombia", grupo: "K", estadio: "Estadio Azteca, Ciudad de México" },
+    { id: 62, fecha: "2026-06-17", hora: "22:30", fase: "grupos", local: "Uzbekistán", visitante: "Colombia", grupo: "K", estadio: "Estadio Azteca, Ciudad de México" },
     { id: 63, fecha: "2026-06-21", hora: "13:00", fase: "grupos", local: "Portugal", visitante: "Uzbekistán", grupo: "K", estadio: "NRG Stadium, Houston" },
     { id: 64, fecha: "2026-06-21", hora: "19:30", fase: "grupos", local: "Colombia", visitante: "RD Congo", grupo: "K", estadio: "Hard Rock Stadium, Miami" },
     { id: 65, fecha: "2026-06-24", hora: "19:30", fase: "grupos", local: "Colombia", visitante: "Portugal", grupo: "K", estadio: "Hard Rock Stadium, Miami" },
