@@ -107,22 +107,22 @@ export const todosLosPartidos = [
     { id: 19, fecha: "2026-06-12", hora: "21:00", fase: "grupos", local: "Estados Unidos", visitante: "Paraguay", grupo: "D", estadio: "SoFi Stadium, Los Ángeles" },
     { id: 20, fecha: "2026-06-14", hora: "00:00", fase: "grupos", local: "Australia", visitante: "Turquía", grupo: "D", estadio: "BC Place, Vancouver" }, // ID 20 (antes 16 y 23)
     { id: 21, fecha: "2026-06-19", hora: "15:00", fase: "grupos", local: "Estados Unidos", visitante: "Australia", grupo: "D", estadio: "Lumen Field, Seattle" },
-    { id: 22, fecha: "2026-06-18", hora: "00:00", fase: "grupos", local: "Turquía", visitante: "Paraguay", grupo: "D", estadio: "Levi's Stadium, San Francisco" }, // ID 22 (antes 19 y 25)
+    { id: 22, fecha: "2026-06-19", hora: "00:00", fase: "grupos", local: "Turquía", visitante: "Paraguay", grupo: "D", estadio: "Levi's Stadium, San Francisco" }, // ID 22 (antes 19 y 25)
     { id: 23, fecha: "2026-06-22", hora: "22:00", fase: "grupos", local: "Turquía", visitante: "Estados Unidos", grupo: "D", estadio: "SoFi Stadium, Los Ángeles" },
     { id: 24, fecha: "2026-06-22", hora: "22:00", fase: "grupos", local: "Paraguay", visitante: "Australia", grupo: "D", estadio: "Levi's Stadium, San Francisco" },
     
     // ========== GRUPO E ==========
     { id: 25, fecha: "2026-06-14", hora: "13:00", fase: "grupos", local: "Alemania", visitante: "Curazao", grupo: "E", estadio: "NRG Stadium, Houston" },
     { id: 26, fecha: "2026-06-14", hora: "19:00", fase: "grupos", local: "Costa de Marfil", visitante: "Ecuador", grupo: "E", estadio: "Lincoln Financial Field, Filadelfia" },
-    { id: 27, fecha: "2026-06-18", hora: "16:00", fase: "grupos", local: "Alemania", visitante: "Costa de Marfil", grupo: "E", estadio: "BMO Field, Toronto" },
-    { id: 28, fecha: "2026-06-18", hora: "22:00", fase: "grupos", local: "Ecuador", visitante: "Curazao", grupo: "E", estadio: "Arrowhead Stadium, Kansas City" },
+    { id: 27, fecha: "2026-06-20", hora: "16:00", fase: "grupos", local: "Alemania", visitante: "Costa de Marfil", grupo: "E", estadio: "BMO Field, Toronto" },
+    { id: 28, fecha: "2026-06-20", hora: "22:00", fase: "grupos", local: "Ecuador", visitante: "Curazao", grupo: "E", estadio: "Arrowhead Stadium, Kansas City" },
     { id: 29, fecha: "2026-06-22", hora: "16:00", fase: "grupos", local: "Curazao", visitante: "Costa de Marfil", grupo: "E", estadio: "Lincoln Financial Field, Filadelfia" },
     { id: 30, fecha: "2026-06-22", hora: "16:00", fase: "grupos", local: "Ecuador", visitante: "Alemania", grupo: "E", estadio: "MetLife Stadium, Nueva Jersey" },
     
     // ========== GRUPO F ==========
     { id: 31, fecha: "2026-06-14", hora: "16:00", fase: "grupos", local: "Países Bajos", visitante: "Japón", grupo: "F", estadio: "AT&T Stadium, Dallas" },
     { id: 32, fecha: "2026-06-14", hora: "22:00", fase: "grupos", local: "Suecia", visitante: "Túnez", grupo: "F", estadio: "Estadio BBVA, Monterrey" },
-    { id: 33, fecha: "2026-06-18", hora: "13:00", fase: "grupos", local: "Países Bajos", visitante: "Suecia", grupo: "F", estadio: "NRG Stadium, Houston" },
+    { id: 33, fecha: "2026-06-20", hora: "13:00", fase: "grupos", local: "Países Bajos", visitante: "Suecia", grupo: "F", estadio: "NRG Stadium, Houston" },
     { id: 34, fecha: "2026-06-19", hora: "00:00", fase: "grupos", local: "Túnez", visitante: "Japón", grupo: "F", estadio: "Estadio BBVA, Monterrey" },
     { id: 35, fecha: "2026-06-22", hora: "19:00", fase: "grupos", local: "Japón", visitante: "Suecia", grupo: "F", estadio: "AT&T Stadium, Dallas" },
     { id: 36, fecha: "2026-06-22", hora: "19:00", fase: "grupos", local: "Túnez", visitante: "Países Bajos", grupo: "F", estadio: "Arrowhead Stadium, Kansas City" },
