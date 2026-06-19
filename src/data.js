@@ -107,7 +107,7 @@ export const todosLosPartidos = [
     { id: 19, fecha: "2026-06-12", hora: "21:00", fase: "grupos", local: "Estados Unidos", visitante: "Paraguay", grupo: "D", estadio: "SoFi Stadium, Los Ángeles" },
     { id: 20, fecha: "2026-06-14", hora: "00:00", fase: "grupos", local: "Australia", visitante: "Turquía", grupo: "D", estadio: "BC Place, Vancouver" }, // ID 20 (antes 16 y 23)
     { id: 21, fecha: "2026-06-19", hora: "15:00", fase: "grupos", local: "Estados Unidos", visitante: "Australia", grupo: "D", estadio: "Lumen Field, Seattle" },
-    { id: 22, fecha: "2026-06-19", hora: "00:00", fase: "grupos", local: "Turquía", visitante: "Paraguay", grupo: "D", estadio: "Levi's Stadium, San Francisco" }, // ID 22 (antes 19 y 25)
+    { id: 22, fecha: "2026-06-19", hora: "23:00", fase: "grupos", local: "Turquía", visitante: "Paraguay", grupo: "D", estadio: "Levi's Stadium, San Francisco" }, // ID 22 (antes 19 y 25)
     { id: 23, fecha: "2026-06-22", hora: "22:00", fase: "grupos", local: "Turquía", visitante: "Estados Unidos", grupo: "D", estadio: "SoFi Stadium, Los Ángeles" },
     { id: 24, fecha: "2026-06-22", hora: "22:00", fase: "grupos", local: "Paraguay", visitante: "Australia", grupo: "D", estadio: "Levi's Stadium, San Francisco" },
     
@@ -138,8 +138,8 @@ export const todosLosPartidos = [
     // ========== GRUPO H ==========
     { id: 43, fecha: "2026-06-15", hora: "12:00", fase: "grupos", local: "España", visitante: "Cabo Verde", grupo: "H", estadio: "Mercedes-Benz Stadium, Atlanta" },
     { id: 44, fecha: "2026-06-15", hora: "18:00", fase: "grupos", local: "Arabia Saudita", visitante: "Uruguay", grupo: "H", estadio: "Hard Rock Stadium, Miami" },
-    { id: 45, fecha: "2026-06-19", hora: "12:00", fase: "grupos", local: "España", visitante: "Arabia Saudita", grupo: "H", estadio: "Mercedes-Benz Stadium, Atlanta" },
-    { id: 46, fecha: "2026-06-19", hora: "18:00", fase: "grupos", local: "Uruguay", visitante: "Cabo Verde", grupo: "H", estadio: "Hard Rock Stadium, Miami" },
+    { id: 45, fecha: "2026-06-21", hora: "12:00", fase: "grupos", local: "España", visitante: "Arabia Saudita", grupo: "H", estadio: "Mercedes-Benz Stadium, Atlanta" },
+    { id: 46, fecha: "2026-06-21", hora: "18:00", fase: "grupos", local: "Uruguay", visitante: "Cabo Verde", grupo: "H", estadio: "Hard Rock Stadium, Miami" },
     { id: 47, fecha: "2026-06-23", hora: "20:00", fase: "grupos", local: "Cabo Verde", visitante: "Arabia Saudita", grupo: "H", estadio: "NRG Stadium, Houston" },
     { id: 48, fecha: "2026-06-23", hora: "20:00", fase: "grupos", local: "Uruguay", visitante: "España", grupo: "H", estadio: "Estadio Akron, Guadalajara" },
     
