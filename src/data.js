@@ -123,15 +123,15 @@ export const todosLosPartidos = [
     { id: 31, fecha: "2026-06-14", hora: "16:00", fase: "grupos", local: "Países Bajos", visitante: "Japón", grupo: "F", estadio: "AT&T Stadium, Dallas" },
     { id: 32, fecha: "2026-06-14", hora: "22:00", fase: "grupos", local: "Suecia", visitante: "Túnez", grupo: "F", estadio: "Estadio BBVA, Monterrey" },
     { id: 33, fecha: "2026-06-20", hora: "13:00", fase: "grupos", local: "Países Bajos", visitante: "Suecia", grupo: "F", estadio: "NRG Stadium, Houston" },
-    { id: 34, fecha: "2026-06-19", hora: "00:00", fase: "grupos", local: "Túnez", visitante: "Japón", grupo: "F", estadio: "Estadio BBVA, Monterrey" },
+    { id: 34, fecha: "2026-06-21", hora: "00:00", fase: "grupos", local: "Túnez", visitante: "Japón", grupo: "F", estadio: "Estadio BBVA, Monterrey" },
     { id: 35, fecha: "2026-06-22", hora: "19:00", fase: "grupos", local: "Japón", visitante: "Suecia", grupo: "F", estadio: "AT&T Stadium, Dallas" },
     { id: 36, fecha: "2026-06-22", hora: "19:00", fase: "grupos", local: "Túnez", visitante: "Países Bajos", grupo: "F", estadio: "Arrowhead Stadium, Kansas City" },
     
     // ========== GRUPO G ==========
     { id: 37, fecha: "2026-06-15", hora: "15:00", fase: "grupos", local: "Bélgica", visitante: "Egipto", grupo: "G", estadio: "Lumen Field, Seattle" },
     { id: 38, fecha: "2026-06-15", hora: "21:00", fase: "grupos", local: "Irán", visitante: "Nueva Zelanda", grupo: "G", estadio: "SoFi Stadium, Los Ángeles" },
-    { id: 39, fecha: "2026-06-19", hora: "15:00", fase: "grupos", local: "Bélgica", visitante: "Irán", grupo: "G", estadio: "SoFi Stadium, Los Ángeles" },
-    { id: 40, fecha: "2026-06-19", hora: "21:00", fase: "grupos", local: "Nueva Zelanda", visitante: "Egipto", grupo: "G", estadio: "BC Place, Vancouver" },
+    { id: 39, fecha: "2026-06-21", hora: "15:00", fase: "grupos", local: "Bélgica", visitante: "Irán", grupo: "G", estadio: "SoFi Stadium, Los Ángeles" },
+    { id: 40, fecha: "2026-06-21", hora: "21:00", fase: "grupos", local: "Nueva Zelanda", visitante: "Egipto", grupo: "G", estadio: "BC Place, Vancouver" },
     { id: 41, fecha: "2026-06-23", hora: "23:00", fase: "grupos", local: "Egipto", visitante: "Irán", grupo: "G", estadio: "Lumen Field, Seattle" },
     { id: 42, fecha: "2026-06-23", hora: "23:00", fase: "grupos", local: "Nueva Zelanda", visitante: "Bélgica", grupo: "G", estadio: "BC Place, Vancouver" },
     
